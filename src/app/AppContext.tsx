@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useTransition } from 'react'
+import React, { useEffect, useState, useTransition, useMemo } from 'react'
 import type { AnalysisResult, AppError } from '../domain'
 import {
   analyzeMaterial,
@@ -8,7 +8,7 @@ import {
   type WorksheetTemplate,
 } from '../services'
 import { type AppRoute, ROUTE_METAS } from './routes'
-import { AppContext, type UploadedFileInfo } from './app-context'
+import { AppContext, type UploadedFileInfo, type AnalysisScope } from './app-context'
 
 const API_KEY_STORAGE_KEY = 'ws_gemini_api_key'
 
@@ -85,12 +85,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(API_KEY_STORAGE_KEY)
   }
 
+  // 設定已選頁碼
+  const setSelectedPages = (pages: number[]) => {
+    setUploadedFile((prev) => (prev ? { ...prev, selectedPages: pages } : null))
+  }
+
+  // 計算預估處理範圍（依 PROJECT.md 第 6 節規範：顯示頁數、選取項目數，不猜測費用）
+  const analysisScope: AnalysisScope = useMemo(() => {
+    const pages = uploadedFile?.selectedPages && uploadedFile.selectedPages.length > 0
+      ? uploadedFile.selectedPages
+      : [1]
+    const pageCount = pages.length
+    return {
+      pageCount,
+      selectedPages: pages,
+      estimatedItemsMin: Math.max(1, pageCount * 2),
+      estimatedItemsMax: pageCount * 4,
+      grade: selectedGrade,
+    }
+  }, [uploadedFile, selectedGrade])
+
   /**
    * 執行教材分析 use case 流程：
-   * 1. 檢查檔案存在性
-   * 2. 計算特徵雜湊值並比對快取
-   * 3. 呼叫 analyzeMaterial 取得驗證後結果
-   * 4. 成功更新 state，失敗記錄 AppError
+   * 1. 昂貴操作：嚴格由使用者點擊按鈕觸發
+   * 2. 計算特徵雜湊值（包含檔案與所選頁碼）並比對本機快取
+   * 3. 呼叫 analyzeMaterial 取得驗證後結構化結果
    */
   const runAnalysis = async (overrideFile?: UploadedFileInfo): Promise<boolean> => {
     const targetFile = overrideFile !== undefined ? overrideFile : uploadedFile
@@ -110,8 +129,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return false
       }
 
-      // 計算簡易特徵雜湊
-      const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}`
+      const activePages = targetFile.selectedPages && targetFile.selectedPages.length > 0
+        ? targetFile.selectedPages
+        : [1]
+
+      // 計算特徵雜湊值（包含所選頁碼以確保多頁 PDF 快取命中正確性）
+      const pagesKey = activePages.sort((a, b) => a - b).join(',')
+      const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
 
       // 檢查快取
       const cached = await getCachedAnalysis(contentHash)
@@ -127,6 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fileName: targetFile.name,
         mimeType: targetFile.mimeType,
         contentHash,
+        selectedPages: activePages,
         context: {
           grade: selectedGrade,
           language: 'zh-TW',
@@ -134,6 +159,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
 
       if (res.ok) {
+        // 短暫保留非同步過渡，使 loading 狀態與進度檢核清晰可見
+        await new Promise((resolve) => setTimeout(resolve, 700))
         setAnalysisResult(res.value)
         setAnalysisError(null)
         setIsAnalyzing(false)
@@ -166,6 +193,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearApiKey,
         uploadedFile,
         setUploadedFile,
+        setSelectedPages,
+        analysisScope,
         analysisResult,
         setAnalysisResult,
         analysisError,
