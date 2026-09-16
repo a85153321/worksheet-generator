@@ -1,0 +1,21 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 完成模板選擇頁（TemplateSelectionPage.tsx）：提供 4 種國小國語學習單模板選擇（生字田字格練習單、詞語積木擴展單、句型仿寫應用單、生字語文綜合單）；每款模板提供視覺線框圖（Wireframe）與選定模板之即時版面模擬預覽（Live Layout Previewer），並支援放大預覽彈窗；完整串接 `buildWorksheet` use case，驗證在選取模板後能正確組裝出 `WorksheetDoc`（包含頁面與區塊資料）並平順導引至 A4 預覽與列印頁。
+- Changed files:
+  - `src/features/templates/TemplateSelectionPage.tsx`（重構模板選擇頁：新增模板縮圖線框、適用年級標籤、即時版面結構模擬預覽、放大預覽 Modal、串接 buildWorksheet、空狀態提示與三上示範生字快速載入）
+  - `src/styles/app.css`（新增模板線框圖 `.template-wireframe` 樣式）
+  - `docs/changes/2026-09-16-template-selection-and-build-worksheet.md`
+- Contract change: none（嚴格遵循 Codex 交付之 `buildWorksheet` use case、`WorksheetTemplate` 與 `WorksheetDoc` 契約）
+- Verified:
+  - `npm.cmd run lint`：0 error, 0 warning，全部通過。
+  - `npm.cmd run build`：TypeScript 及 Vite 打包 100% 成功（261ms）。
+  - 自動化 Headless 測試（`scratch/test_templates_page.mjs`，透過 Microsoft Edge CDP）：
+    - 測試 1（無生字之空狀態）：確認顯示警告提示且「建立學習單」按鈕自動禁用。
+    - 測試 2（示範生字載入）：點擊立即載入三上示範生字，成功恢復資料並消除警告。
+    - 測試 3（4 種模板與線框圖）：確認 4 張模板卡片與 4 個視覺縮圖線框皆正確渲染。
+    - 測試 4（切換模板與即時預覽）：依序切換「生字田字格」、「詞語積木」、「句型仿寫」與「語文綜合」，即時模擬預覽區皆立即更新對應排版標題與模擬內容。
+    - 測試 5（放大預覽彈窗）：點選展開放大預覽，彈窗成功開啟並支援鍵盤與按鈕關閉。
+    - 測試 6（串接 buildWorksheet）：點擊套用模板並建立學習單，成功呼叫 `buildWorksheet` 組出 `WorksheetDoc`，並順暢導航至 `#/preview` 呈現完整的 A4 學習單區塊。
+- Risks / open questions: none
+- Next owner action:
+  - Codex 與 Antigravity 可接續完善 A4 列印頁面之跨頁分割與匯出 PDF 管線。
