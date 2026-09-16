@@ -2,42 +2,34 @@ import { describe, expect, it } from 'vitest'
 import {
   ANALYSIS_SKILL_TAGS,
   analysisContextSchema,
-  type AnalysisSkillTag,
 } from '../src/domain'
 import { DEFAULT_SKILL_TAGS } from '../src/app/app-context'
 import { buildAnalysisCacheKey } from '../src/services'
 
 describe('Skill Tags and Zhuyin Toggle Integration', () => {
-  it('has all 19 required skill tags defined in domain', () => {
-    expect(ANALYSIS_SKILL_TAGS).toHaveLength(19)
-    const requiredTags: AnalysisSkillTag[] = [
-      '生字',
-      '部件',
-      '造詞',
-      '注音符號拼讀',
-      '筆順識字',
-      '詞語搭配',
-      '看圖造句',
-      '句型仿寫',
-      '段落寫作',
-      '關聯詞運用',
-      '形音義辨析',
-      '成語運用',
-      '語病修改',
-      '修辭技巧',
-      '長文閱讀理解',
-      '摘要',
-      '多元文本閱讀',
-      '觀點思辨',
-      '短文論述',
+  it('has exactly the 6 refined skill tags defined in domain without brackets', () => {
+    expect(ANALYSIS_SKILL_TAGS).toHaveLength(6)
+    const expectedTags = [
+      '生字練習',
+      '語詞練習',
+      '句型練習',
+      '字音字形',
+      '造句練習',
+      '閱讀理解',
     ]
-    for (const tag of requiredTags) {
-      expect(ANALYSIS_SKILL_TAGS).toContain(tag)
+    expect(ANALYSIS_SKILL_TAGS).toEqual(expectedTags)
+
+    // 確認無附加括號說明文字
+    for (const tag of ANALYSIS_SKILL_TAGS) {
+      expect(tag).not.toContain('(')
+      expect(tag).not.toContain(')')
+      expect(tag).not.toContain('（')
+      expect(tag).not.toContain('）')
     }
   })
 
-  it('provides sensible DEFAULT_SKILL_TAGS in app-context', () => {
-    expect(DEFAULT_SKILL_TAGS.length).toBeGreaterThan(0)
+  it('provides sensible DEFAULT_SKILL_TAGS in app-context matching core templates', () => {
+    expect(DEFAULT_SKILL_TAGS).toEqual(['生字練習', '語詞練習', '句型練習'])
     for (const tag of DEFAULT_SKILL_TAGS) {
       expect(ANALYSIS_SKILL_TAGS).toContain(tag)
     }

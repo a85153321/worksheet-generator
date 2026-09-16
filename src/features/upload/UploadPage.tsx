@@ -194,7 +194,7 @@ export const UploadPage: React.FC = () => {
   }
 
   const handleDefaultSkills = () => {
-    setSkillTags(['生字', '部件', '造詞', '句型仿寫'])
+    setSkillTags(['生字練習', '語詞練習', '句型練習'])
   }
 
   // 昂貴操作：點擊時才觸發 runAnalysis
@@ -486,7 +486,7 @@ export const UploadPage: React.FC = () => {
             <div className="skill-tags-header">
               <div className="skill-tags-header-left">
                 <span className="skill-tags-title">
-                  🎯 學習單功能標籤（可複選，共 {ANALYSIS_SKILL_TAGS.length} 項）：
+                  🎯 學習單功能標籤：
                 </span>
                 <div className="skill-quick-btns">
                   <button
@@ -494,7 +494,7 @@ export const UploadPage: React.FC = () => {
                     className="skill-quick-btn"
                     onClick={handleDefaultSkills}
                     disabled={isAnalyzing}
-                    title="選取常用核心標籤：生字、部件、造詞、句型仿寫"
+                    title="選取常用預設標籤：生字練習、語詞練習、句型練習"
                   >
                     常用預設
                   </button>
@@ -503,7 +503,7 @@ export const UploadPage: React.FC = () => {
                     className="skill-quick-btn"
                     onClick={handleSelectAllSkills}
                     disabled={isAnalyzing}
-                    title="全選 19 項功能標籤"
+                    title="全選功能標籤"
                   >
                     全選
                   </button>
@@ -664,7 +664,7 @@ export const UploadPage: React.FC = () => {
               )}
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <strong>已選功能標籤（{skillTags.length} 項）：</strong>{' '}
+              <strong>已選功能標籤：</strong>{' '}
               {skillTags.length > 0 ? (
                 <span style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
                   {skillTags.join('、')}

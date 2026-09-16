@@ -3,7 +3,7 @@ import type { AnalysisResult, AnalysisSkillTag, AppError } from '../domain'
 import type { ImageResult, WorksheetDoc, WorksheetTemplate } from '../services'
 import type { AppRoute } from './routes'
 
-export const DEFAULT_SKILL_TAGS: AnalysisSkillTag[] = ['生字', '部件', '造詞', '句型仿寫']
+export const DEFAULT_SKILL_TAGS: AnalysisSkillTag[] = ['生字練習', '語詞練習', '句型練習']
 
 export interface UploadedFileInfo {
   name: string
