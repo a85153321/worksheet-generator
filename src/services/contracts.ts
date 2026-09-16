@@ -43,6 +43,7 @@ export type WorksheetTemplate =
   | 'character-practice'
   | 'word-practice'
   | 'sentence-practice'
+  | 'picture-practice'
   | 'mixed'
 
 export type WorksheetBlock = Pick<
@@ -50,15 +51,67 @@ export type WorksheetBlock = Pick<
   'character' | 'zhuyin' | 'words' | 'exampleSentences'
 >
 
+interface WorksheetSectionBase {
+  id: string
+  instructions: string
+}
+
+export interface CharacterWorksheetSection extends WorksheetSectionBase {
+  kind: 'character'
+  item: Pick<CharacterAnalysis, 'character' | 'zhuyin' | 'radical' | 'strokeCount'> & {
+    practiceBoxCount: number
+  }
+}
+
+export interface WordWorksheetSection extends WorksheetSectionBase {
+  kind: 'word'
+  item: {
+    character: CharacterAnalysis['character']
+    words: Array<{ text: string; practiceLineCount: number }>
+  }
+}
+
+export interface SentenceWorksheetSection extends WorksheetSectionBase {
+  kind: 'sentence'
+  item: {
+    character: CharacterAnalysis['character']
+    sentences: Array<{ text: string; answerLineCount: number }>
+  }
+}
+
+export interface PictureWorksheetSection extends WorksheetSectionBase {
+  kind: 'picture'
+  item: {
+    character: CharacterAnalysis['character']
+    prompt: string
+    rationale: string
+    image: Pick<ImageResult, 'id' | 'url' | 'mimeType'> | null
+    needsImage: boolean
+  }
+}
+
+export type WorksheetSection =
+  | CharacterWorksheetSection
+  | WordWorksheetSection
+  | SentenceWorksheetSection
+  | PictureWorksheetSection
+
 export interface WorksheetPage {
   pageNumber: number
   blocks: WorksheetBlock[]
+  sections: WorksheetSection[]
+}
+
+export interface BuildWorksheetOptions {
+  title?: string
+  images?: readonly ImageResult[]
 }
 
 export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
+  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '綜合'
   status: 'draft' | 'ready'
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult

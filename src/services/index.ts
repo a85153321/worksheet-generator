@@ -1,9 +1,9 @@
 export {
   analyzeMaterial,
-  buildWorksheet,
   getCachedAnalysis,
   updateAnalysisResult,
 } from './use-cases'
+export { buildWorksheet } from './worksheet-builder'
 export {
   buildStandardizedImagePrompt,
   createGenerateSelectedImageUseCase,
@@ -18,13 +18,19 @@ export {
 } from './material-processing'
 export type {
   AnalyzeMaterialInput,
+  BuildWorksheetOptions,
+  CharacterWorksheetSection,
   ImageResult,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,
+  PictureWorksheetSection,
+  SentenceWorksheetSection,
+  WordWorksheetSection,
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
+  WorksheetSection,
   WorksheetTemplate,
 } from './contracts'
 export type {

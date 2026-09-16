@@ -12,8 +12,6 @@ import {
 } from '../infrastructure'
 import type {
   AnalyzeMaterialInput,
-  WorksheetDoc,
-  WorksheetTemplate,
 } from './contracts'
 
 export async function analyzeMaterial(
@@ -91,45 +89,4 @@ export async function updateAnalysisResult(
   }
 
   return { ok: true, value: applyAnalysisReviewRules(parsed.data) }
-}
-
-export async function buildWorksheet(
-  analysis: AnalysisResult,
-  template: WorksheetTemplate,
-): Promise<Result<WorksheetDoc, AppError>> {
-  if (analysis.characters.length === 0) {
-    return {
-      ok: false,
-      error: {
-        type: 'validation',
-        message: '至少需要一個生字才能建立學習單。',
-        retryable: false,
-      },
-    }
-  }
-
-  return {
-    ok: true,
-    value: {
-      id: `worksheet-${Date.now()}`,
-      title: '生字學習單',
-      template,
-      status: 'draft',
-      pages: [
-        {
-          pageNumber: 1,
-          blocks: analysis.characters.map(
-            ({ character, zhuyin, words, exampleSentences }) => ({
-              character,
-              zhuyin,
-              words,
-              exampleSentences,
-            }),
-          ),
-        },
-      ],
-      sourceAnalysis: analysis,
-      createdAt: new Date().toISOString(),
-    },
-  }
 }
