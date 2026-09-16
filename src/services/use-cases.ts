@@ -3,7 +3,6 @@ import {
   applyAnalysisReviewRules,
   type AnalysisResult,
   type AppError,
-  type CharacterAnalysis,
   type Result,
 } from '../domain'
 import {
