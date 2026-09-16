@@ -86,6 +86,9 @@ src/
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
 - 將相關資料合併成單一高品質請求，避免「生字、注音、詞語」分開呼叫。
 - 低信心、歧義 OCR、筆畫或部首不確定時標示 `needsReview`，不可偽裝成確定答案。
+- `confidence < 0.8` 時由 domain 規則自動加入 `low-confidence`；OCR、部首或筆畫
+  不確定性分別以 `reviewReasons` 的 `ambiguous-ocr`、`uncertain-radical`、
+  `uncertain-stroke-count` 表示。只有教師設為 `confirmed` 後才清除審核提示。
 - 圖片生成只處理具體、確實有教學價值且被教師勾選的項目。
 - 顯示本次動作的預估處理範圍（頁數、選取項目數）；不承諾或猜測實際費用。
 

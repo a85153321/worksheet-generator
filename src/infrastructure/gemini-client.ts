@@ -34,6 +34,18 @@ const analysisJsonSchema = {
           words: { type: 'array', items: { type: 'string' } },
           exampleSentences: { type: 'array', items: { type: 'string' } },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
+          reviewReasons: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: [
+                'low-confidence',
+                'ambiguous-ocr',
+                'uncertain-radical',
+                'uncertain-stroke-count',
+              ],
+            },
+          },
           source: {
             type: 'object',
             required: ['page', 'block'],
@@ -119,6 +131,14 @@ function classifyHttpError(status: number, body: string): AppError {
   if (status === 429) {
     return { type: 'quota', message: 'Gemini 配額或速率限制已達上限。', retryable: false }
   }
+  if (status === 408 || status >= 500) {
+    return {
+      type: 'network',
+      message: 'Gemini 服務暫時無法使用。',
+      retryable: true,
+      statusCode: status,
+    }
+  }
   if (status >= 400 && status < 500) {
     return {
       type: 'validation',
@@ -126,7 +146,12 @@ function classifyHttpError(status: number, body: string): AppError {
       retryable: false,
     }
   }
-  return { type: 'network', message: 'Gemini 服務暫時無法使用。', retryable: true, statusCode: status }
+  return {
+    type: 'network',
+    message: 'Gemini 服務暫時無法使用。',
+    retryable: true,
+    statusCode: status,
+  }
 }
 
 export function createGeminiClient(options: GeminiClientOptions) {
@@ -183,7 +208,7 @@ export function createGeminiClient(options: GeminiClientOptions) {
       const context = `年級：${input.grade ?? '未指定'}；語言：${input.language ?? 'zh-TW'}；檔名：${input.fileName}；頁面：${input.selectedPages?.join(', ') || '整份'}`
       const initialBody = {
         systemInstruction: {
-          parts: [{ text: '你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料；不確定時降低 confidence 並將 needsReview 設為 true。' }],
+          parts: [{ text: '你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。' }],
         },
         contents: [
           {

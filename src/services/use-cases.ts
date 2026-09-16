@@ -1,3 +1,7 @@
+import {
+  analysisResultSchema,
+  applyAnalysisReviewRules,
+} from '../domain'
 import type { AnalysisResult, AppError, CharacterAnalysis, Result } from '../domain'
 import {
   calculateInputHash,
@@ -29,7 +33,12 @@ export async function analyzeMaterial(
 
   const hash = input.contentHash ?? (await calculateInputHash(input.data))
   const cached = await getAnalysisCache(hash)
-  if (cached) return { ok: true, value: cached }
+  if (cached) {
+    const parsedCached = analysisResultSchema.safeParse(cached)
+    if (parsedCached.success) {
+      return { ok: true, value: applyAnalysisReviewRules(parsedCached.data) }
+    }
+  }
 
   const apiKey = getGeminiApiKey()
   if (!apiKey) {
@@ -52,12 +61,37 @@ export async function analyzeMaterial(
     language: input.context?.language,
   })
 
-  if (result.ok) await putAnalysisCache(hash, result.value)
-  return result
+  if (!result.ok) return result
+
+  const reviewedResult = applyAnalysisReviewRules(result.value)
+  await putAnalysisCache(hash, reviewedResult)
+  return { ok: true, value: reviewedResult }
 }
 
 export async function getCachedAnalysis(hash: string): Promise<AnalysisResult | null> {
-  return getAnalysisCache(hash)
+  const cached = await getAnalysisCache(hash)
+  if (!cached) return null
+  const parsed = analysisResultSchema.safeParse(cached)
+  return parsed.success ? applyAnalysisReviewRules(parsed.data) : null
+}
+
+export async function updateAnalysisResult(
+  teacherEditedResult: unknown,
+): Promise<Result<AnalysisResult, AppError>> {
+  const parsed = analysisResultSchema.safeParse(teacherEditedResult)
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: '教師修改後的分析資料格式不正確，請檢查欄位內容。',
+        retryable: false,
+        details: { issues: parsed.error.issues },
+      },
+    }
+  }
+
+  return { ok: true, value: applyAnalysisReviewRules(parsed.data) }
 }
 
 export async function generateSelectedImage(

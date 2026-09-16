@@ -3,6 +3,7 @@ export {
   characterAnalysisSchema,
   editableStateSchema,
   imageSuggestionSchema,
+  reviewReasonSchema,
   sourceLocationSchema,
 } from './analysis-result'
 export type {
@@ -10,8 +11,14 @@ export type {
   CharacterAnalysis,
   EditableState,
   ImageSuggestion,
+  ReviewReason,
   SourceLocation,
 } from './analysis-result'
+export {
+  applyAnalysisReviewRules,
+  applyCharacterReviewRules,
+  LOW_CONFIDENCE_THRESHOLD,
+} from './analysis-review'
 
 export {
   appErrorSchema,
