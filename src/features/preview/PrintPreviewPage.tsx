@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useApp } from '../../app/index'
 import type { CharacterAnalysis } from '../../domain'
 import {
@@ -8,6 +8,8 @@ import {
   type CharacterWorksheetSection,
   type WordWorksheetSection,
   type SentenceWorksheetSection,
+  type PictureWorksheetSection,
+  type WorksheetPage,
   type WorksheetTemplate,
 } from '../../services'
 
@@ -20,6 +22,11 @@ export const PrintPreviewPage: React.FC = () => {
     selectedTemplate,
     navigate,
   } = useApp()
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null)
+  const sheetsContainerRef = useRef<HTMLDivElement>(null)
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
 
@@ -49,8 +56,67 @@ export const PrintPreviewPage: React.FC = () => {
     window.print()
   }
 
+  // 純前端瀏覽器端 PDF 匯出 (完全在用戶端執行，不呼叫任何外部 API 或雲端服務)
+  const handleExportPdf = async () => {
+    if (!sheetsContainerRef.current) return
+    const sheetElements = sheetsContainerRef.current.querySelectorAll<HTMLElement>('.a4-sheet')
+    if (sheetElements.length === 0) return
+
+    setIsExportingPdf(true)
+    setExportError(null)
+    setExportSuccess(null)
+
+    try {
+      // 動態引入 jspdf 與 html2canvas (純前端瀏覽器端編譯，符合 BYOK 與 Local-First 原則)
+      const { jsPDF } = await import('jspdf')
+      const html2canvasModule = await import('html2canvas')
+      const html2canvas = html2canvasModule.default || html2canvasModule
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      })
+
+      for (let i = 0; i < sheetElements.length; i++) {
+        const sheetEl = sheetElements[i]
+        // 擷取高解析度 canvas (scale: 2)
+        const canvas = await html2canvas(sheetEl, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: sheetEl.scrollWidth || 794,
+        })
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        if (i > 0) {
+          pdf.addPage('a4', 'portrait')
+        }
+        // A4 標準規格為 210mm x 297mm
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST')
+      }
+
+      const cleanTitle = (worksheetDoc?.title || templateNameMap[activeTemplate] || '學習單').replace(/[\\/:*?"<>|]/g, '_')
+      const fileName = `${cleanTitle}.pdf`
+      pdf.save(fileName)
+
+      setExportSuccess(`✅ 已成功於瀏覽器端生成「${fileName}」並開始下載！（純本機運算，未傳輸至任何外部伺服器）`)
+      setTimeout(() => setExportSuccess(null), 6000)
+    } catch (err) {
+      console.error('PDF export error:', err)
+      setExportError('匯出 PDF 時發生錯誤，請確認瀏覽器支援或改用「🖨️ 瀏覽器列印」另存 PDF。')
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
+
   const activeTitle = worksheetDoc?.title || templateNameMap[activeTemplate] || '學習單'
-  const sections: WorksheetSection[] = worksheetDoc?.pages[0]?.sections || []
+
+  // 取得 WorksheetDoc 中組裝之頁面陣列（支援多頁），若為空則預設 1 頁
+  const pages: WorksheetPage[] = worksheetDoc?.pages && worksheetDoc.pages.length > 0
+    ? worksheetDoc.pages
+    : [{ pageNumber: 1, blocks: [], sections: [] }]
 
   // 備用 characters（若 sections 尚未建立或非同步中）
   const fallbackCharacters: CharacterAnalysis[] = analysisResult?.characters || [
@@ -86,8 +152,8 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 1. 渲染生字田字格練習單 (character-practice)
-  const renderCharacterPractice = () => {
-    const charSections = sections.filter((s): s is CharacterWorksheetSection => s.kind === 'character')
+  const renderCharacterPractice = (pageSections: WorksheetSection[]) => {
+    const charSections = pageSections.filter((s): s is CharacterWorksheetSection => s.kind === 'character')
     const items = charSections.length > 0
       ? charSections.map((s) => {
           const detail = findCharacterData(s.item.character)
@@ -176,8 +242,8 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 2. 渲染詞語積木擴展單 (word-practice)
-  const renderWordPractice = () => {
-    const wordSections = sections.filter((s): s is WordWorksheetSection => s.kind === 'word')
+  const renderWordPractice = (pageSections: WorksheetSection[]) => {
+    const wordSections = pageSections.filter((s): s is WordWorksheetSection => s.kind === 'word')
     const items = wordSections.length > 0
       ? wordSections.map((s) => {
           const detail = findCharacterData(s.item.character)
@@ -265,8 +331,8 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 3. 渲染句型仿寫應用單 (sentence-practice)
-  const renderSentencePractice = () => {
-    const sentenceSections = sections.filter((s): s is SentenceWorksheetSection => s.kind === 'sentence')
+  const renderSentencePractice = (pageSections: WorksheetSection[]) => {
+    const sentenceSections = pageSections.filter((s): s is SentenceWorksheetSection => s.kind === 'sentence')
     const items = sentenceSections.length > 0
       ? sentenceSections.map((s) => ({
           character: s.item.character,
@@ -321,14 +387,15 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 4. 渲染生字語文綜合單 (mixed)
-  const renderMixedPractice = () => {
-    const blocks: WorksheetBlock[] = worksheetDoc?.pages[0]?.blocks ||
-      fallbackCharacters.map((c) => ({
-        character: c.character,
-        zhuyin: c.zhuyin,
-        words: c.words,
-        exampleSentences: c.exampleSentences,
-      }))
+  const renderMixedPractice = (_pageSections: WorksheetSection[], pageBlocks: WorksheetBlock[]) => {
+    const blocks: WorksheetBlock[] = pageBlocks.length > 0
+      ? pageBlocks
+      : fallbackCharacters.map((c) => ({
+          character: c.character,
+          zhuyin: c.zhuyin,
+          words: c.words,
+          exampleSentences: c.exampleSentences,
+        }))
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -423,15 +490,26 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 5. 渲染看圖識字練習單 (picture-practice)
-  const renderPicturePractice = () => {
+  const renderPicturePractice = (pageSections: WorksheetSection[]) => {
+    const picSections = pageSections.filter((s): s is PictureWorksheetSection => s.kind === 'picture')
+    const displayList = picSections.length > 0
+      ? picSections.map((s) => ({
+          character: s.item.character,
+          img: s.item.image,
+        }))
+      : fallbackCharacters.map((c) => ({
+          character: c.character,
+          img: generatedImages[c.character],
+        }))
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div className="sheet-instruction-banner">
           <strong>【伍、看圖識字與表達】</strong> 觀察圖片中的情境，寫出對應的生字，並造出一個完整的句子。
         </div>
 
-        {fallbackCharacters.map((c, idx) => {
-          const img = generatedImages[c.character]
+        {displayList.map((c, idx) => {
+          const img = c.img || generatedImages[c.character]
 
           return (
             <section
@@ -492,20 +570,20 @@ export const PrintPreviewPage: React.FC = () => {
     )
   }
 
-  // 根據模板分流渲染內容
-  const renderContentByTemplate = () => {
+  // 根據模板分流渲染當前頁面內容
+  const renderContentByTemplate = (pageSections: WorksheetSection[], pageBlocks: WorksheetBlock[]) => {
     switch (activeTemplate) {
       case 'character-practice':
-        return renderCharacterPractice()
+        return renderCharacterPractice(pageSections)
       case 'word-practice':
-        return renderWordPractice()
+        return renderWordPractice(pageSections)
       case 'sentence-practice':
-        return renderSentencePractice()
+        return renderSentencePractice(pageSections)
       case 'picture-practice':
-        return renderPicturePractice()
+        return renderPicturePractice(pageSections)
       case 'mixed':
       default:
-        return renderMixedPractice()
+        return renderMixedPractice(pageSections, pageBlocks)
     }
   }
 
@@ -515,20 +593,37 @@ export const PrintPreviewPage: React.FC = () => {
       <div className="card no-print" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽與列印</h1>
+            <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
             <p className="card-subtitle">
-              已套用「{templateNameMap[activeTemplate] || '標準模板'}」；本步驟由本機排版引擎執行，不消耗任何 AI Quota
+              已套用「{templateNameMap[activeTemplate] || '標準模板'}」；本步驟由純前端引擎執行，不經任何外部 AI 後端
             </p>
           </div>
           <div className="btn-group">
             <button
               type="button"
               className="btn btn-primary"
-              style={{ padding: '0.65rem 1.4rem', fontSize: '1rem' }}
+              style={{ padding: '0.65rem 1.35rem', fontSize: '1rem' }}
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              aria-label="在瀏覽器端本機生成並下載 PDF 檔案"
+            >
+              {isExportingPdf ? (
+                <>
+                  <span className="spinner-sm" aria-hidden="true"></span>
+                  <span>正在生成 PDF（本機運算中）...</span>
+                </>
+              ) : (
+                '📥 下載 PDF 學習單'
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ padding: '0.65rem 1.2rem', fontSize: '1rem' }}
               onClick={handlePrint}
               aria-label="開啟系統列印視窗，可直接列印或另存為 PDF"
             >
-              🖨️ 列印 / 另存為 PDF
+              🖨️ 瀏覽器列印
             </button>
             <button
               type="button"
@@ -546,45 +641,76 @@ export const PrintPreviewPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* 狀態反饋提示 */}
+        {exportSuccess && (
+          <div
+            className="callout callout-success"
+            style={{
+              borderColor: 'var(--color-success)',
+              backgroundColor: 'var(--color-success-light)',
+              color: '#065f46',
+              marginTop: '1rem',
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            {exportSuccess}
+          </div>
+        )}
+
+        {exportError && (
+          <div
+            className="callout callout-warning"
+            style={{
+              borderColor: 'var(--color-danger)',
+              backgroundColor: 'var(--color-danger-light)',
+              color: '#7f1d1d',
+              marginTop: '1rem',
+            }}
+            role="alert"
+          >
+            ❌ {exportError}
+          </div>
+        )}
       </div>
 
-      {/* A4 紙張預覽區 */}
-      <div className="a4-preview-container">
-        <article className="a4-sheet" role="region" aria-label="A4 學習單紙張預覽">
-          <header className="sheet-header">
-            <div>
-              <h2 className="sheet-title">{activeTitle}</h2>
-              <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
-                國小國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
-              </p>
-            </div>
-            <div className="sheet-info-row">
-              <span>____ 年 ____ 班</span>
-              <span>座號：____</span>
-              <span>姓名：____________</span>
-              <span>得分：______</span>
-            </div>
-          </header>
-
-          <main className="sheet-content">
-            {renderContentByTemplate()}
-          </main>
-
-          <footer
-            style={{
-              borderTop: '1px solid #cbd5e1',
-              paddingTop: '6px',
-              fontSize: '11px',
-              color: '#94a3b8',
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}
+      {/* A4 紙張預覽區 (支援多頁依序呈現) */}
+      <div ref={sheetsContainerRef} className="a4-preview-container">
+        {pages.map((page) => (
+          <article
+            key={page.pageNumber}
+            className="a4-sheet"
+            role="region"
+            aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
           >
-            <span>國小 AI 學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
-            <span>第 1 頁 / 共 1 頁</span>
-          </footer>
-        </article>
+            <header className="sheet-header">
+              <div>
+                <h2 className="sheet-title">{activeTitle}</h2>
+                <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
+                  國小國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
+                </p>
+              </div>
+              <div className="sheet-info-row">
+                <span>____ 年 ____ 班</span>
+                <span>座號：____</span>
+                <span>姓名：____________</span>
+                <span>得分：______</span>
+              </div>
+            </header>
+
+            <main className="sheet-content">
+              {renderContentByTemplate(page.sections, page.blocks)}
+            </main>
+
+            <footer className="sheet-footer">
+              <span>國小 AI 學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
+              <span>第 {page.pageNumber} 頁 / 共 {pages.length} 頁</span>
+            </footer>
+          </article>
+        ))}
       </div>
     </div>
   )
 }
+

@@ -524,25 +524,50 @@ textarea:focus-visible {
   width: 100%;
 }
 
-/* A4 紙張列印預覽 */
+/* A4 紙張預覽容器 (支援多頁、桌機置中與平板橫向捲動/彈性縮放) */
 .a4-preview-container {
   display: flex;
-  justify-content: center;
-  padding: 1rem 0 3rem;
-  background-color: #64748b20;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 1.5rem 1rem 3.5rem;
+  background-color: #f1f5f9;
   border-radius: var(--radius-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .a4-sheet {
   width: 210mm;
   min-height: 297mm;
   background-color: #ffffff;
-  padding: 18mm 20mm;
-  box-shadow: var(--shadow-lg);
+  padding: 16mm 18mm;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   color: #000000;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.sheet-footer {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+@media (max-width: 860px) {
+  .a4-preview-container {
+    padding: 1rem 0.5rem 2rem;
+    align-items: flex-start;
+  }
 }
 
 .sheet-header {
@@ -954,6 +979,8 @@ textarea:focus-visible {
   font-size: 0.82rem;
   margin-top: 0.25rem;
   font-weight: 600;
+}
+
 /* 預估處理範圍卡片 (Scope Card) - 依 PROJECT.md 第 6 節規範 */
 .scope-card {
   background-color: #f0fdfa;
@@ -1121,52 +1148,86 @@ textarea:focus-visible {
   color: var(--color-text-main);
 }
 
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-  line-height: 1;
-}
+/* ==========================================================================
+   A4 列印專屬 CSS (A4 尺寸 210mm x 297mm、邊界、分頁控制)
+   註：@page 規則定義於 index.html <style> 中以相容 CSS minifier
+   ========================================================================== */
 
-.modal-close-btn:hover {
-  background-color: #f1f5f9;
-  color: var(--color-text-main);
-}
-
-/* 列印專屬 CSS */
 @media print {
+  html,
   body {
-    background-color: #ffffff;
-    color: #000000;
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
+  /* 隱藏所有非列印介面 chrome */
   .app-header,
   .steps-nav,
   .no-print,
-  .btn-group {
+  .btn-group,
+  .modal-overlay,
+  .callout,
+  .tag {
     display: none !important;
   }
 
   .main-content {
-    margin: 0;
-    padding: 0;
-    max-width: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
   }
 
   .a4-preview-container {
-    background: none;
-    padding: 0;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
   }
 
   .a4-sheet {
-    box-shadow: none;
-    margin: 0;
-    width: 100%;
-    min-height: auto;
-    page-break-after: always;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    height: 297mm !important;
+    padding: 16mm 18mm !important;
+    box-sizing: border-box !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    background-color: #ffffff !important;
+  }
+
+  .a4-sheet:last-of-type {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 題目卡片避免跨頁斷開 */
+  .sheet-char-card,
+  .sheet-word-card,
+  .sheet-sentence-card,
+  .sheet-char-row {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .sheet-header {
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  .sheet-footer {
+    border-top: 1px solid #cbd5e1 !important;
   }
 }
+
