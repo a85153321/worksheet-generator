@@ -79,16 +79,24 @@ export const TemplateSelectionPage: React.FC = () => {
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const generatedCount = Object.keys(generatedImages).length
 
-  // ESC 鍵關閉放大預覽彈窗
+  // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowEnlargedPreview(false)
       }
     }
+    if (showEnlargedPreview) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showEnlargedPreview])
 
   // 串接 buildWorksheet use case (Requirement 2)
   const handleCreateWorksheet = async () => {
@@ -265,7 +273,7 @@ export const TemplateSelectionPage: React.FC = () => {
   }
 
   // 渲染選中模板的即時排版結構預覽 (Requirement 1: 教師可預覽學習單模板)
-  const renderLivePreviewContent = () => {
+  const renderLivePreviewContent = (isEnlarged = false) => {
     const previewChars = characters.length > 0
       ? characters
       : [
@@ -285,29 +293,67 @@ export const TemplateSelectionPage: React.FC = () => {
 
     return (
       <div
-        style={{
-          backgroundColor: '#ffffff',
-          border: '1px solid #cbd5e1',
-          borderRadius: '4px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-          padding: '1.25rem 1.5rem',
-          maxWidth: '560px',
-          margin: '0 auto',
-          fontSize: '13px',
-          color: '#1e293b',
-        }}
+        className={isEnlarged ? 'enlarged-sheet-container' : undefined}
+        style={
+          isEnlarged
+            ? {
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                padding: '2rem 2.2rem',
+                width: '100%',
+                boxSizing: 'border-box',
+                fontSize: '15px',
+                color: '#1e293b',
+              }
+            : {
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '4px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                padding: '1.25rem 1.5rem',
+                maxWidth: '560px',
+                margin: '0 auto',
+                fontSize: '13px',
+                color: '#1e293b',
+              }
+        }
       >
         {/* 紙頭區域 */}
-        <div style={{ borderBottom: '2px solid #000000', paddingBottom: '6px', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#000000' }}>
+        <div
+          style={{
+            borderBottom: isEnlarged ? '3px solid #000000' : '2px solid #000000',
+            paddingBottom: isEnlarged ? '10px' : '6px',
+            marginBottom: isEnlarged ? '16px' : '12px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h4
+              style={{
+                margin: 0,
+                fontSize: isEnlarged ? '22px' : '15px',
+                fontWeight: 700,
+                color: '#000000',
+              }}
+            >
               國小國語單元評量學習單
             </h4>
-            <span style={{ fontSize: '11px', color: '#64748b' }}>
+            <span style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#64748b' }}>
               版型：{currentOption.title}
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#475569' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: isEnlarged ? '10px' : '6px',
+              fontSize: isEnlarged ? '14px' : '11px',
+              color: '#475569',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+            }}
+          >
             <span>____年____班</span>
             <span>座號：____</span>
             <span>姓名：____________</span>
@@ -316,7 +362,7 @@ export const TemplateSelectionPage: React.FC = () => {
         </div>
 
         {/* 依模板樣式呈現排版模擬 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isEnlarged ? '16px' : '10px' }}>
           {previewChars.slice(0, 2).map((item, idx) => {
             const img = generatedImages[item.character]
 
@@ -325,22 +371,23 @@ export const TemplateSelectionPage: React.FC = () => {
                 key={`${item.character}-${idx}`}
                 style={{
                   border: '1px solid #e2e8f0',
-                  borderRadius: '4px',
-                  padding: '8px 10px',
+                  borderRadius: isEnlarged ? '8px' : '4px',
+                  padding: isEnlarged ? '14px 18px' : '8px 10px',
                   display: 'flex',
-                  gap: '12px',
+                  gap: isEnlarged ? '20px' : '12px',
                   alignItems: 'center',
                   backgroundColor: '#fafafa',
+                  flexWrap: 'wrap',
                 }}
               >
                 {/* 綜合模板特有：插圖預覽 */}
                 {selectedTemplate === 'mixed' && (
                   <div
                     style={{
-                      width: '64px',
-                      height: '46px',
+                      width: isEnlarged ? '110px' : '64px',
+                      height: isEnlarged ? '80px' : '46px',
                       border: '1px dashed #94a3b8',
-                      borderRadius: '3px',
+                      borderRadius: '4px',
                       overflow: 'hidden',
                       display: 'flex',
                       alignItems: 'center',
@@ -352,27 +399,28 @@ export const TemplateSelectionPage: React.FC = () => {
                     {img ? (
                       <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <span style={{ fontSize: '18px' }} aria-hidden="true">🖼️</span>
+                      <span style={{ fontSize: isEnlarged ? '28px' : '18px' }} aria-hidden="true">🖼️</span>
                     )}
                   </div>
                 )}
 
                 {/* 生字田字格 */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{item.zhuyin}</div>
+                  <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#64748b' }}>{item.zhuyin}</div>
                   <div
                     style={{
-                      width: '38px',
-                      height: '38px',
-                      border: '1px solid #ef4444',
+                      width: isEnlarged ? '58px' : '38px',
+                      height: isEnlarged ? '58px' : '38px',
+                      border: isEnlarged ? '2px solid #ef4444' : '1px solid #ef4444',
                       color: '#b91c1c',
-                      fontSize: '22px',
+                      fontSize: isEnlarged ? '36px' : '22px',
                       fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
                       backgroundColor: '#fff',
+                      borderRadius: '3px',
                     }}
                   >
                     {item.character}
@@ -380,29 +428,50 @@ export const TemplateSelectionPage: React.FC = () => {
                 </div>
 
                 {/* 模板特有內容區 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: '220px' }}>
                   {selectedTemplate === 'character-practice' && (
                     <div>
-                      <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
-                        <div style={{ width: '28px', height: '28px', border: '1px dashed #ef4444', opacity: 0.35, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', color: '#b91c1c' }}>{item.character}</div>
-                        <div style={{ width: '28px', height: '28px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
-                        <div style={{ width: '28px', height: '28px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
+                      <div style={{ display: 'flex', gap: isEnlarged ? '8px' : '4px', marginBottom: isEnlarged ? '8px' : '4px', flexWrap: 'wrap' }}>
+                        <div
+                          style={{
+                            width: isEnlarged ? '44px' : '28px',
+                            height: isEnlarged ? '44px' : '28px',
+                            border: '1px dashed #ef4444',
+                            opacity: 0.35,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: isEnlarged ? '26px' : '16px',
+                            color: '#b91c1c',
+                            fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
+                          }}
+                        >
+                          {item.character}
+                        </div>
+                        <div style={{ width: isEnlarged ? '44px' : '28px', height: isEnlarged ? '44px' : '28px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
+                        <div style={{ width: isEnlarged ? '44px' : '28px', height: isEnlarged ? '44px' : '28px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
+                        {isEnlarged && (
+                          <>
+                            <div style={{ width: '44px', height: '44px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
+                            <div style={{ width: '44px', height: '44px', border: '1px dashed #ef4444', backgroundColor: '#fff' }}></div>
+                          </>
+                        )}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#475569' }}>
-                        生詞造詞：{item.words?.slice(0, 2).join('、') || '______、______'}
+                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#475569' }}>
+                        生詞造詞：{item.words?.slice(0, 3).join('、') || '______、______'}
                       </div>
                     </div>
                   )}
 
                   {selectedTemplate === 'word-practice' && (
                     <div>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>【詞語積木延伸】</div>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '3px' }}>
-                        <span style={{ border: '1px solid #cbd5e1', padding: '1px 6px', borderRadius: '2px', backgroundColor: '#fff', fontSize: '11px' }}>
+                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600, color: '#334155' }}>【詞語積木延伸】</div>
+                      <div style={{ display: 'flex', gap: isEnlarged ? '10px' : '6px', marginTop: isEnlarged ? '6px' : '3px', flexWrap: 'wrap' }}>
+                        <span style={{ border: '1px solid #cbd5e1', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600 }}>
                           {item.words?.[0] || '詞語一'}
                         </span>
-                        <span style={{ border: '1px dashed #94a3b8', padding: '1px 6px', borderRadius: '2px', backgroundColor: '#fff', fontSize: '11px', color: '#94a3b8' }}>
-                          [ 造詞填空 ]
+                        <span style={{ border: '1px dashed #94a3b8', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', color: '#94a3b8' }}>
+                          [ 造詞填空：__________________ ]
                         </span>
                       </div>
                     </div>
@@ -410,20 +479,34 @@ export const TemplateSelectionPage: React.FC = () => {
 
                   {selectedTemplate === 'sentence-practice' && (
                     <div>
-                      <div style={{ fontSize: '11px', color: '#0369a1' }}>
+                      <div
+                        style={{
+                          fontSize: isEnlarged ? '14px' : '11px',
+                          color: '#0369a1',
+                          backgroundColor: isEnlarged ? '#f0f9ff' : 'transparent',
+                          padding: isEnlarged ? '6px 10px' : '0',
+                          borderRadius: '4px',
+                        }}
+                      >
                         <strong>例：</strong>{item.exampleSentences?.[0] || '我在學校快樂地學習國語。'}
                       </div>
-                      <div style={{ borderBottom: '1px dashed #94a3b8', height: '14px', marginTop: '2px' }}></div>
+                      <div
+                        style={{
+                          borderBottom: '1px dashed #94a3b8',
+                          height: isEnlarged ? '22px' : '14px',
+                          marginTop: isEnlarged ? '6px' : '2px',
+                        }}
+                      ></div>
                     </div>
                   )}
 
                   {selectedTemplate === 'mixed' && (
                     <div>
-                      <div style={{ fontSize: '11px', color: '#334155' }}>
-                        <strong>造詞：</strong>{item.words?.slice(0, 2).join('、')}
+                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#334155' }}>
+                        <strong>造詞：</strong>{item.words?.slice(0, 3).join('、')}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        <strong>造句：</strong>{item.exampleSentences?.[0]?.slice(0, 18)}...
+                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#64748b', marginTop: isEnlarged ? '6px' : '2px' }}>
+                        <strong>造句：</strong>{item.exampleSentences?.[0] || '請用生詞練習造句。'}
                       </div>
                     </div>
                   )}
@@ -434,7 +517,16 @@ export const TemplateSelectionPage: React.FC = () => {
         </div>
 
         {/* 頁面註腳 */}
-        <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: isEnlarged ? '18px' : '12px',
+            fontSize: isEnlarged ? '13px' : '10px',
+            color: '#94a3b8',
+            borderTop: '1px solid #f1f5f9',
+            paddingTop: isEnlarged ? '8px' : '6px',
+          }}
+        >
           第 1 頁 ／ 共 1 頁（A4 格式）
         </div>
       </div>
@@ -693,7 +785,6 @@ export const TemplateSelectionPage: React.FC = () => {
         >
           <div
             className="modal-content"
-            style={{ maxWidth: '680px' }}
             onClick={(e) => e.stopPropagation()}
             role="document"
           >
@@ -706,26 +797,48 @@ export const TemplateSelectionPage: React.FC = () => {
                 className="modal-close-btn"
                 onClick={() => setShowEnlargedPreview(false)}
                 aria-label="關閉放大預覽"
+                title="關閉放大預覽 (Esc)"
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ padding: '0.5rem 0', maxHeight: '70vh', overflowY: 'auto' }}>
-              {renderLivePreviewContent()}
+            <div className="modal-body">
+              {renderLivePreviewContent(true)}
             </div>
 
-            <div className="btn-group" style={{ marginTop: '1.25rem', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', alignSelf: 'center' }}>
-                {currentOption.targetGrade} ｜ {currentOption.badge}
-              </span>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => setShowEnlargedPreview(false)}
-              >
-                關閉預覽
-              </button>
+            <div className="modal-footer">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <span className="tag tag-info">
+                  {currentOption.targetGrade}
+                </span>
+                <span className="tag tag-success">
+                  {currentOption.badge}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  A4 等比例放大模擬檢視（按 Esc 鍵亦可關閉）
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowEnlargedPreview(false)}
+                >
+                  關閉預覽
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowEnlargedPreview(false)
+                    handleCreateWorksheet()
+                  }}
+                  disabled={isBuilding || isEmpty}
+                >
+                  🚀 套用此模板並建立學習單
+                </button>
+              </div>
             </div>
           </div>
         </div>
