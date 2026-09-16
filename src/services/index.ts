@@ -1,10 +1,15 @@
 export {
   analyzeMaterial,
   buildWorksheet,
-  generateSelectedImage,
   getCachedAnalysis,
   updateAnalysisResult,
 } from './use-cases'
+export {
+  buildStandardizedImagePrompt,
+  createGenerateSelectedImageUseCase,
+  generateSelectedImage,
+  WORKSHEET_IMAGE_STYLE,
+} from './image-generation'
 export { clearApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
 export {
   inspectUploadedPdf,

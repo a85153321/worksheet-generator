@@ -15,7 +15,6 @@ import {
 } from '../infrastructure'
 import type {
   AnalyzeMaterialInput,
-  ImageResult,
   WorksheetDoc,
   WorksheetTemplate,
 } from './contracts'
@@ -98,37 +97,6 @@ export async function updateAnalysisResult(
   const reviewedResult = applyAnalysisReviewRules(parsed.data)
   if (contentHash) await putAnalysisCache(contentHash, reviewedResult)
   return { ok: true, value: reviewedResult }
-}
-
-export async function generateSelectedImage(
-  item: CharacterAnalysis,
-): Promise<Result<ImageResult, AppError>> {
-  const suggestion = item.imageSuggestion
-  if (!suggestion?.selected) {
-    return {
-      ok: false,
-      error: {
-        type: 'validation',
-        message: '必須先勾選圖片建議才能生成圖片。',
-        retryable: false,
-      },
-    }
-  }
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="100%" height="100%" fill="#f4ead7"/><text x="50%" y="48%" text-anchor="middle" font-size="120" fill="#315b52">${item.character}</text><text x="50%" y="70%" text-anchor="middle" font-size="28" fill="#315b52">圖片預覽（Mock）</text></svg>`
-
-  return {
-    ok: true,
-    value: {
-      id: `mock-image-${encodeURIComponent(item.character)}`,
-      character: item.character,
-      prompt: suggestion.prompt,
-      url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
-      mimeType: 'image/svg+xml',
-      source: 'mock',
-      createdAt: new Date().toISOString(),
-    },
-  }
 }
 
 export async function buildWorksheet(

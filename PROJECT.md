@@ -90,6 +90,8 @@ src/
   不確定性分別以 `reviewReasons` 的 `ambiguous-ocr`、`uncertain-radical`、
   `uncertain-stroke-count` 表示。只有教師設為 `confirmed` 後才清除審核提示。
 - 圖片生成只處理具體、確實有教學價值且被教師勾選的項目。
+- 圖片 prompt 需先套用固定教材風格並正規化；以 prompt 與風格版本的 hash 查詢
+  IndexedDB 圖片快取，未命中時才可呼叫 Gemini 圖片模型。
 - 顯示本次動作的預估處理範圍（頁數、選取項目數）；不承諾或猜測實際費用。
 
 ## 7. 開發里程碑
