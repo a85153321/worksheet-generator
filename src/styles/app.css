@@ -536,6 +536,66 @@ textarea:focus-visible {
   position: relative;
   background: linear-gradient(to right, transparent 49%, #e2e8f0 50%, transparent 51%),
               linear-gradient(to bottom, transparent 49%, #e2e8f0 50%, transparent 51%);
+/* 空狀態 (Empty State) */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.empty-state-icon {
+  font-size: 3.5rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-desc {
+  font-size: 0.95rem;
+  max-width: 480px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+/* 摘要狀態條 (Summary Bar) */
+.summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* 小型旋轉載入指示器 */
+.spinner-sm {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+/* 欄位錯誤提示 */
+.form-error {
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+  font-weight: 600;
 }
 
 /* 列印專屬 CSS */

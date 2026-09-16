@@ -1,89 +1,191 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useApp } from '../../app/index'
-import { analyzeMaterial } from '../../services'
 
 export const AnalyzingPage: React.FC = () => {
-  const { uploadedFile, setAnalysisResult, navigate } = useApp()
+  const {
+    uploadedFile,
+    analysisResult,
+    analysisError,
+    runAnalysis,
+    navigate,
+  } = useApp()
+
   const [currentStage, setCurrentStage] = useState(1)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isCompleted, setIsCompleted] = useState(false)
+  const [stageDesc, setStageDesc] = useState('正在計算檔案特徵雜湊值...')
+  const [hasStarted, setHasStarted] = useState(false)
+  const hasTriggeredRef = useRef(false)
+
+  // 空狀態判斷：如果連 uploadedFile 都沒有
+  const isEmpty = !uploadedFile && !analysisResult
 
   useEffect(() => {
-    let isMounted = true
+    if (isEmpty || hasTriggeredRef.current) return
+    hasTriggeredRef.current = true
+    setHasStarted(true)
 
-    const runAnalysis = async () => {
-      // 階段 1: 預處理與快取檢查
+    let isCancelled = false
+
+    const execute = async () => {
+      // 階段 1: 影像預處理與特徵雜湊
       setCurrentStage(1)
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      if (!isMounted) return
+      setStageDesc('正在進行教材影像預處理並計算特徵雜湊值...')
+      await new Promise((r) => setTimeout(r, 450))
+      if (isCancelled) return
 
-      // 階段 2: 呼叫 service use case (Codex 交付之契約)
+      // 階段 2: 快取比對
       setCurrentStage(2)
-      const inputBlob =
-        uploadedFile?.blob ||
-        new Blob(['國語教材課文範例：學無止境，勤加練習。'], {
-          type: 'text/plain;charset=utf-8',
-        })
+      setStageDesc('比對本機 IndexedDB 快取記錄...')
+      await new Promise((r) => setTimeout(r, 400))
+      if (isCancelled) return
 
-      const res = await analyzeMaterial({
-        data: inputBlob,
-        fileName: uploadedFile?.name || '國語教材範例.png',
-        mimeType: uploadedFile?.mimeType || 'image/png',
-        contentHash: 'hash-mock-sample-001',
-        context: { grade: 3, language: 'zh-TW' },
-      })
-
-      if (!isMounted) return
-
-      // 階段 3: Zod Schema 驗證與結果收錄
+      // 階段 3: 呼叫 analyzeMaterial use case
       setCurrentStage(3)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      if (!isMounted) return
+      setStageDesc('呼叫多模態結構化分析服務，提取生字、注音、部首、筆畫與詞句...')
+      const success = await runAnalysis()
+      if (isCancelled) return
 
-      if (res.ok) {
-        setAnalysisResult(res.value)
-        setIsCompleted(true)
+      // 階段 4: 驗證完成
+      if (success) {
         setCurrentStage(4)
-      } else {
-        setErrorMessage(res.error.message)
+        setStageDesc('Zod Schema 結構驗證通過，生字教材資料結構化收錄完成！')
       }
     }
 
-    runAnalysis()
+    execute()
 
     return () => {
-      isMounted = false
+      isCancelled = true
     }
-  }, [uploadedFile, setAnalysisResult])
+  }, [isEmpty, runAnalysis])
 
+  const handleRetry = async () => {
+    setCurrentStage(1)
+    setStageDesc('重新發起分析流程...')
+    await runAnalysis()
+  }
+
+  // 1. 空狀態 (Empty State)
+  if (isEmpty) {
+    return (
+      <div className="card">
+        <div className="empty-state">
+          <div className="empty-state-icon" aria-hidden="true">
+            📂
+          </div>
+          <h2 className="empty-state-title">尚未選取任何教材檔案</h2>
+          <p className="empty-state-desc">
+            分析引擎需要教材圖片或 PDF 文件才能進行結構化解析。請先返回上傳頁面選取課文或載入示範教材。
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate('upload')}
+          >
+            ← 返回教材上傳頁面
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 2. 錯誤狀態 (Error State)
+  if (analysisError) {
+    return (
+      <div className="card">
+        <div className="card-header" style={{ textAlign: 'center' }}>
+          <h1 className="card-title" style={{ justifyContent: 'center', color: 'var(--color-danger)' }}>
+            ⚠️ 教材分析遇到問題
+          </h1>
+          <p className="card-subtitle">
+            錯誤類型：{analysisError.type} ｜ 請根據下方訊息修正後重新嘗試
+          </p>
+        </div>
+
+        <div
+          className="callout callout-warning"
+          style={{
+            maxWidth: '560px',
+            margin: '1rem auto 2rem',
+            borderColor: 'var(--color-danger)',
+            backgroundColor: 'var(--color-danger-light)',
+          }}
+          role="alert"
+        >
+          <div className="callout-title" style={{ color: 'var(--color-danger)' }}>
+            {analysisError.message}
+          </div>
+          {analysisError.details && (
+            <pre style={{ fontSize: '0.8rem', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>
+              {JSON.stringify(analysisError.details, null, 2)}
+            </pre>
+          )}
+        </div>
+
+        <div className="btn-group" style={{ justifyContent: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate('upload')}
+          >
+            ← 返回重新選擇檔案
+          </button>
+          {analysisError.retryable ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleRetry}
+            >
+              🔄 再次重試分析
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                navigate('upload')
+              }}
+            >
+              更換檔案並重新分析
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const isCompleted = currentStage === 4 && Boolean(analysisResult)
+
+  // 3. 正常分析／完成狀態 (Loading & Success State)
   return (
     <div className="card">
       <div className="card-header" style={{ textAlign: 'center' }}>
         <h1 className="card-title" style={{ justifyContent: 'center' }}>
-          ⚙️ 步驟 2：AI 結構化教材分析中
+          {isCompleted ? '🎉 AI 結構化教材分析完成！' : '⚙️ 步驟 2：AI 結構化教材分析中'}
         </h1>
         <p className="card-subtitle">
-          正在從教材提取國小生字、注音符號、部首、筆畫與教學例句
+          {stageDesc}
         </p>
       </div>
 
       <div className="progress-container">
-        {!isCompleted && !errorMessage && <div className="spinner" aria-hidden="true"></div>}
+        {!isCompleted && (
+          <div className="spinner" aria-hidden="true" role="status"></div>
+        )}
 
         {isCompleted && (
           <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} aria-hidden="true">
-            🎉
+            ✨
           </div>
         )}
 
         <ul className="step-checklist" role="list" aria-label="分析進度項目">
           <li
             className={`step-checklist-item ${
-              currentStage > 1 ? 'done' : currentStage === 1 ? 'current' : ''
+              currentStage > 1 ? 'done' : currentStage === 1 && hasStarted ? 'current' : ''
             }`}
           >
             <span>{currentStage > 1 ? '✓' : '●'}</span>
-            <span>1. 預處理教材影像並比對本機 IndexedDB 快取</span>
+            <span>1. 預處理教材影像並計算特徵雜湊值</span>
           </li>
           <li
             className={`step-checklist-item ${
@@ -91,7 +193,7 @@ export const AnalyzingPage: React.FC = () => {
             }`}
           >
             <span>{currentStage > 2 ? '✓' : '●'}</span>
-            <span>2. 發送多模態分析請求（抽取生字、詞語、例句）</span>
+            <span>2. 查詢 IndexedDB 快取記錄</span>
           </li>
           <li
             className={`step-checklist-item ${
@@ -99,7 +201,7 @@ export const AnalyzingPage: React.FC = () => {
             }`}
           >
             <span>{currentStage > 3 ? '✓' : '●'}</span>
-            <span>3. 執行嚴格 Zod Schema 驗證與年級語境確認</span>
+            <span>3. 呼叫 analyzeMaterial 提取生字、詞語與例句</span>
           </li>
           <li
             className={`step-checklist-item ${
@@ -107,20 +209,9 @@ export const AnalyzingPage: React.FC = () => {
             }`}
           >
             <span>{isCompleted ? '✓' : '○'}</span>
-            <span>4. 分析成果就緒，可進行教師審核</span>
+            <span>4. Zod Schema 驗證通過，產出結構化草稿</span>
           </li>
         </ul>
-
-        {errorMessage && (
-          <div
-            className="callout callout-warning"
-            style={{ maxWidth: '480px', margin: '1.5rem auto' }}
-            role="alert"
-          >
-            <div className="callout-title">分析過程發生問題</div>
-            <p>{errorMessage}</p>
-          </div>
-        )}
 
         <div
           className="btn-group"
@@ -130,11 +221,11 @@ export const AnalyzingPage: React.FC = () => {
             <button
               type="button"
               className="btn btn-primary"
-              style={{ padding: '0.75rem 2rem', fontSize: '1.05rem' }}
+              style={{ padding: '0.75rem 2.25rem', fontSize: '1.05rem' }}
               onClick={() => navigate('review')}
               autoFocus
             >
-              前往審核與編輯成果 →
+              前往審核與編輯成果 ({analysisResult?.characters.length} 個生字) →
             </button>
           ) : (
             <>
@@ -147,10 +238,11 @@ export const AnalyzingPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 onClick={() => navigate('review')}
+                title="若快取或先期已有結果，可直接跳轉審核"
               >
-                直接跳轉審核（使用範例資料） →
+                直接查看目前結果 →
               </button>
             </>
           )}

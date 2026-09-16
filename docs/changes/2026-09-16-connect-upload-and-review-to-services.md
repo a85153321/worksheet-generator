@@ -1,0 +1,22 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 將「教材上傳頁」與「分析結果審核頁」串接 `src/services/` 中的 `analyzeMaterial` 及快取查詢 use case，確保完整資料流動與 loading / empty / error 狀態呈現。
+- Changed files:
+  - `src/app/app-context.ts`
+  - `src/app/AppContext.tsx`
+  - `src/features/upload/UploadPage.tsx`
+  - `src/features/analyzing/AnalyzingPage.tsx`
+  - `src/features/review/ReviewPage.tsx`
+  - `src/styles/app.css`
+  - `docs/changes/2026-09-16-connect-upload-and-review-to-services.md`
+- Contract change: none（嚴格遵循 Codex 交付之 `analyzeMaterial`、`getCachedAnalysis` 與 `AppError` 契約）
+- Verified:
+  - `npm.cmd run lint`（ESLint 零錯誤零警告）
+  - `npm.cmd run build`（TypeScript 與 Vite 打包成功）
+  - 狀態流轉驗證：
+    - **Loading**：上傳發起中按鈕 spinner、分析進度 4 階段檢核動畫。
+    - **Empty**：未選取檔案時之拖曳空狀態、生字清單為空時之空箱提示與引導。
+    - **Error**：0-byte 無效檔案驗證失敗呈現（含重試機制與 AppError 類別標示）、審核編輯欄位前端校驗（單字元、正整數筆畫等）。
+    - **Data flow**：從教材選擇／示範教材載入 -> 雜湊快取比對 -> 多模態分析 mock -> 審核編輯（含教師新增／修改／確認）-> 連貫至後續配圖與學習單產出。
+- Risks / open questions: none
+- Next owner action: Codex 可依據已通暢之 UI 資料流，推進真實多模態 Gemini Client 與 IndexedDB 持久化存儲。
