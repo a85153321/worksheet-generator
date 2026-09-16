@@ -58,10 +58,13 @@ src/
 
 任何跨層資料都以 Zod schema 驗證。分析結果至少包含：`characters`、注音、部首、筆畫、詞語、例句、信心值、來源頁面／區塊、圖片建議與可編輯狀態。
 
-目前共用分析契約由 `src/domain/` 定義；`src/services/` 對 UI 提供
-`analyzeMaterial`、`getCachedAnalysis`、`generateSelectedImage` 與
-`buildWorksheet`。服務回傳的失敗結果使用 `Result<T, AppError>`，錯誤類別包含
-`validation`、`network`、`authentication` 與 `quota`。
+
+目前共用契約由 `src/domain/analysis-result.ts` 定義：頂層 `AnalysisResult` 包含
+`characters: CharacterAnalysis[]`；每個項目使用 `zhuyin`、`radical`、
+`strokeCount`、`words`、`exampleSentences`、`confidence`、`source`、
+`imageSuggestion` 與 `editableState`。跨層操作以 `Result<T, AppError>` 回傳，
+錯誤類別包含 `validation`、`network`、`authentication` 與 `quota`。
+
 
 ## 5. Quota-aware 流程
 
