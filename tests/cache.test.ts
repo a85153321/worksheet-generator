@@ -1,7 +1,14 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AnalysisResult } from '../src/domain'
-import { clearAnalysisCache, putAnalysisCache } from '../src/infrastructure'
+import {
+  clearAnalysisCache,
+  clearImageCache,
+  deleteImageCache,
+  getImageCache,
+  putAnalysisCache,
+  putImageCache,
+} from '../src/infrastructure'
 import { analyzeMaterial, getCachedAnalysis } from '../src/services'
 
 const cachedAnalysis: AnalysisResult = {
@@ -23,6 +30,22 @@ const cachedAnalysis: AnalysisResult = {
 
 beforeEach(async () => {
   await clearAnalysisCache()
+  await clearImageCache()
+})
+
+describe('image cache', () => {
+  it('can delete a cached generated image', async () => {
+    await putImageCache({
+      key: 'prompt-style-hash',
+      data: new Blob(['image'], { type: 'image/png' }),
+      mimeType: 'image/png',
+      createdAt: '2026-09-16T00:00:00.000Z',
+    })
+
+    expect(await getImageCache('prompt-style-hash')).not.toBeNull()
+    await deleteImageCache('prompt-style-hash')
+    expect(await getImageCache('prompt-style-hash')).toBeNull()
+  })
 })
 
 describe('analysis cache', () => {

@@ -2,7 +2,7 @@ import {
   analysisResultSchema,
   applyAnalysisReviewRules,
 } from '../domain'
-import type { AnalysisResult, AppError, CharacterAnalysis, Result } from '../domain'
+import type { AnalysisResult, AppError, Result } from '../domain'
 import {
   calculateInputHash,
   createGeminiClient,
@@ -12,7 +12,6 @@ import {
 } from '../infrastructure'
 import type {
   AnalyzeMaterialInput,
-  ImageResult,
   WorksheetDoc,
   WorksheetTemplate,
 } from './contracts'
@@ -92,31 +91,6 @@ export async function updateAnalysisResult(
   }
 
   return { ok: true, value: applyAnalysisReviewRules(parsed.data) }
-}
-
-export async function generateSelectedImage(
-  item: CharacterAnalysis,
-): Promise<Result<ImageResult, AppError>> {
-  const suggestion = item.imageSuggestion
-  if (!suggestion?.selected) {
-    return {
-      ok: false,
-      error: {
-        type: 'validation',
-        message: '必須先勾選圖片建議才能生成圖片。',
-        retryable: false,
-      },
-    }
-  }
-
-  return {
-    ok: false,
-    error: {
-      type: 'validation',
-      message: '圖片生成 client 尚未實作。',
-      retryable: false,
-    },
-  }
 }
 
 export async function buildWorksheet(

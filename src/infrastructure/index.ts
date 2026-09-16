@@ -6,6 +6,8 @@ export {
 } from './api-key-store'
 export { createGeminiClient } from './gemini-client'
 export type { GeminiAnalysisInput, GeminiClientOptions } from './gemini-client'
+export { createGeminiImageClient } from './gemini-image-client'
+export type { GeneratedImageData, GeminiImageClientOptions } from './gemini-image-client'
 export { calculateInputHash } from './hash'
 export type { HashInput } from './hash'
 export {
