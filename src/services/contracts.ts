@@ -6,10 +6,7 @@ export interface AnalyzeMaterialInput {
   mimeType: string
   contentHash?: string
   selectedPages?: readonly number[]
-  context?: {
-    grade?: number
-    language?: 'zh-TW'
-  }
+  context?: { grade?: number; language?: 'zh-TW' }
 }
 
 export interface ImageResult {
@@ -28,24 +25,15 @@ export type WorksheetTemplate =
   | 'sentence-practice'
   | 'mixed'
 
-export interface WorksheetBlock {
-  character: CharacterAnalysis['character']
-  zhuyin: CharacterAnalysis['zhuyin']
-  words: CharacterAnalysis['words']
-  exampleSentences: CharacterAnalysis['exampleSentences']
-}
-
-export interface WorksheetPage {
-  pageNumber: number
-  blocks: WorksheetBlock[]
-}
-
 export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
   status: 'draft' | 'ready'
-  pages: WorksheetPage[]
+  pages: Array<{
+    pageNumber: number
+    blocks: Array<Pick<CharacterAnalysis, 'character' | 'zhuyin' | 'words' | 'exampleSentences'>>
+  }>
   sourceAnalysis: AnalysisResult
   createdAt: string
 }

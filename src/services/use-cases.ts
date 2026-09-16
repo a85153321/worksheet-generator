@@ -1,9 +1,11 @@
-import type {
-  AnalysisResult,
-  AppError,
-  CharacterAnalysis,
-  Result,
-} from '../domain'
+import type { AnalysisResult, AppError, CharacterAnalysis, Result } from '../domain'
+import {
+  calculateInputHash,
+  createGeminiClient,
+  getAnalysisCache,
+  getGeminiApiKey,
+  putAnalysisCache,
+} from '../infrastructure'
 import type {
   AnalyzeMaterialInput,
   ImageResult,
@@ -11,53 +13,10 @@ import type {
   WorksheetTemplate,
 } from './contracts'
 
-const analysisCache = new Map<string, AnalysisResult>()
-
-const mockAnalysis: AnalysisResult = {
-  characters: [
-    {
-      character: '學',
-      zhuyin: 'ㄒㄩㄝˊ',
-      radical: '子',
-      strokeCount: 16,
-      words: ['學校', '學習'],
-      exampleSentences: ['我每天到學校學習新知識。'],
-      confidence: 0.96,
-      source: { page: 1, block: '第一段' },
-      imageSuggestion: {
-        prompt: '小學生在明亮的教室裡專心學習，兒童教材插畫風格',
-        rationale: '用熟悉的校園情境幫助理解「學」。',
-        selected: false,
-      },
-      editableState: {
-        status: 'draft',
-        isEditable: true,
-        needsReview: false,
-      },
-    },
-    {
-      character: '習',
-      zhuyin: 'ㄒㄧˊ',
-      radical: '羽',
-      strokeCount: 11,
-      words: ['學習', '練習'],
-      exampleSentences: ['多練習可以讓生字寫得更漂亮。'],
-      confidence: 0.88,
-      source: { page: 1, block: '第一段' },
-      imageSuggestion: null,
-      editableState: {
-        status: 'draft',
-        isEditable: true,
-        needsReview: true,
-      },
-    },
-  ],
-}
-
 export async function analyzeMaterial(
   input: AnalyzeMaterialInput,
 ): Promise<Result<AnalysisResult, AppError>> {
-  if (input.data.size === 0 || input.fileName.trim() === '' || input.mimeType.trim() === '') {
+  if (input.data.size === 0 || !input.fileName.trim() || !input.mimeType.trim()) {
     return {
       ok: false,
       error: {
@@ -68,15 +27,37 @@ export async function analyzeMaterial(
     }
   }
 
-  const result = structuredClone(mockAnalysis)
-  if (input.contentHash) analysisCache.set(input.contentHash, result)
+  const hash = input.contentHash ?? (await calculateInputHash(input.data))
+  const cached = await getAnalysisCache(hash)
+  if (cached) return { ok: true, value: cached }
 
-  return { ok: true, value: result }
+  const apiKey = getGeminiApiKey()
+  if (!apiKey) {
+    return {
+      ok: false,
+      error: {
+        type: 'authentication',
+        message: '請先設定 Gemini API Key。',
+        retryable: false,
+      },
+    }
+  }
+
+  const result = await createGeminiClient({ apiKey }).analyzeMaterial({
+    data: input.data,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    selectedPages: input.selectedPages,
+    grade: input.context?.grade,
+    language: input.context?.language,
+  })
+
+  if (result.ok) await putAnalysisCache(hash, result.value)
+  return result
 }
 
 export async function getCachedAnalysis(hash: string): Promise<AnalysisResult | null> {
-  const cached = analysisCache.get(hash)
-  return cached ? structuredClone(cached) : null
+  return getAnalysisCache(hash)
 }
 
 export async function generateSelectedImage(
@@ -128,22 +109,24 @@ export async function buildWorksheet(
   return {
     ok: true,
     value: {
-      id: `mock-worksheet-${Date.now()}`,
+      id: `worksheet-${Date.now()}`,
       title: '生字學習單',
       template,
       status: 'draft',
       pages: [
         {
           pageNumber: 1,
-          blocks: analysis.characters.map((item) => ({
-            character: item.character,
-            zhuyin: item.zhuyin,
-            words: [...item.words],
-            exampleSentences: [...item.exampleSentences],
-          })),
+          blocks: analysis.characters.map(
+            ({ character, zhuyin, words, exampleSentences }) => ({
+              character,
+              zhuyin,
+              words,
+              exampleSentences,
+            }),
+          ),
         },
       ],
-      sourceAnalysis: structuredClone(analysis),
+      sourceAnalysis: analysis,
       createdAt: new Date().toISOString(),
     },
   }
