@@ -1,0 +1,122 @@
+# 國小 AI 學習單生成器：專案藍圖
+
+## 1. 產品定位
+
+一個給教師使用的 Local-First 學習單工具：上傳教材後，協助整理生字、注音、部首、筆畫、詞語、例句與配圖建議；教師確認與編輯後，輸出可列印的 A4 學習單與 PDF。
+
+第一版採 **BYOK（Bring Your Own Key）**：每位使用者自行提供 Gemini API Key，瀏覽器直接呼叫 Gemini。網站與任何自有後端都不得接收、轉送、紀錄或儲存該 Key。
+
+## 2. 不變的產品原則
+
+- 教師擁有最終編輯權；AI 僅提供可驗證、可修改的草稿。
+- 品質優先，但以減少不必要請求、快取與明確確認來節省 quota。
+- 所有教材、分析結果與生成圖片優先留在使用者裝置。
+- 無 AI 也必須能完成排版、預覽、列印、PDF 與手動編輯。
+- 每項昂貴操作必須有明確的使用者觸發與費用／quota 提示。
+
+## 3. 目標架構
+
+```text
+Browser (React + TypeScript)
+├─ UI / worksheet preview / editor
+├─ local settings (API Key only)
+├─ IndexedDB (document, result and image cache)
+├─ Gemini client ────────────────────> Gemini API
+└─ local worksheet / print / PDF engine
+
+Optional static host
+└─ only serves application files; never proxies Gemini requests or API Keys
+```
+
+### 儲存界線
+
+| 資料 | 位置 | 備註 |
+| --- | --- | --- |
+| Gemini API Key | 本機設定儲存 | 預設不顯示完整值；可測試與清除 |
+| 教材檔案、分析結果、圖片快取 | IndexedDB | 使用者可刪除；不可自動上傳 |
+| 畫面狀態 | React state | 不含 Key |
+| Log / analytics | 不得含 Key、教材原檔或完整模型回覆 | 預設關閉或匿名化 |
+
+## 4. 技術邊界與介面契約
+
+資料與領域邏輯是 UI 的唯一資料來源；UI 不自行推測生字資料、直接讀取 API Key，或直接呼叫 Gemini。
+
+```text
+UI → use cases / services → domain schemas → storage or Gemini client
+```
+
+核心 TypeScript 模組建議：
+
+```text
+src/
+  domain/        # Zod schemas、types、純規則
+  services/      # 分析、快取、圖片生成、worksheet use cases
+  infrastructure/ # Gemini client、IndexedDB、hash、檔案預處理
+  features/      # UI 功能模組與 components
+  app/           # routing、providers、application composition
+```
+
+任何跨層資料都以 Zod schema 驗證。分析結果至少包含：`characters`、注音、部首、筆畫、詞語、例句、信心值、來源頁面／區塊、圖片建議與可編輯狀態。
+
+## 5. Quota-aware 流程
+
+1. 使用者選擇圖片或 PDF 頁面。
+2. 瀏覽器旋轉、裁切、縮放與壓縮；PDF 必須先選頁。
+3. 對已處理輸入計算 hash，先查詢 IndexedDB 分析快取。
+4. 未命中時，發出 **一次** 多模態結構化分析請求，取得完整教材草稿。
+5. Zod 驗證；格式錯誤最多一次受控修復。網路暫時錯誤最多一次重試；認證、配額與 4xx 不重試。
+6. 教師審核／修改結果。
+7. 只在教師勾選後才生成圖片；先依標準化 prompt 與風格查圖片快取。
+8. 用本機模板產生 A4 預覽、列印與 PDF，這一步不呼叫 AI。
+
+## 6. AI 呼叫規範
+
+- 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
+- 將相關資料合併成單一高品質請求，避免「生字、注音、詞語」分開呼叫。
+- 低信心、歧義 OCR、筆畫或部首不確定時標示 `needsReview`，不可偽裝成確定答案。
+- 圖片生成只處理具體、確實有教學價值且被教師勾選的項目。
+- 顯示本次動作的預估處理範圍（頁數、選取項目數）；不承諾或猜測實際費用。
+
+## 7. 開發里程碑
+
+| Phase | 可驗收成果 |
+| --- | --- |
+| 0：規格與契約 | schema、資料流、錯誤策略、協作規約完成 |
+| 1：Local AI Core | 本機 Key 設定／清除／測試、圖片分析、驗證結果顯示 |
+| 2：教材輸入 | 圖片預處理、PDF 選頁與結構化教材資料 |
+| 3：快取與韌性 | hash、IndexedDB、受控 retry、可刪除快取 |
+| 4：教師工作流 | 結果審核、低信心標示、編輯與版本狀態 |
+| 5：選擇性配圖 | 圖片建議、確認、快取、替換／刪除 |
+| 6：學習單引擎 | 生字、詞語、句子、看圖與綜合模板 |
+| 7：輸出 | A4 預覽、列印 CSS、PDF 匯出與測試 |
+
+## 7a. Phase 0 起手式（具體步驟）
+
+在請 Codex／Antigravity 開始寫功能程式碼之前，先手動（或請其中一個 agent）完成以下骨架，讓兩邊都有一致的起點：
+
+```bash
+# 建立 Vite + React + TypeScript 專案
+npm create vite@latest worksheet-generator -- --template react-ts
+cd worksheet-generator
+
+# 安裝 domain 驗證與常用工具
+npm install zod
+npm install -D typescript
+
+# 建立目錄骨架
+mkdir -p src/domain src/services src/infrastructure src/features src/app
+
+# 建立 .gitignore（若 Vite 模板未附上完整版本，補上這些）
+cat >> .gitignore << 'EOF'
+node_modules
+dist
+.env
+.env.local
+EOF
+```
+
+完成後把 `PROJECT.md`、`AGENT_COLLABORATION.md`（以及之後會建立的 `AGENTS.md`）放在 repo 根目錄，再進行第一次 commit。這一步結束後才算真正進入 Phase 0 的「契約完成」狀態。
+
+## 8. 完成定義
+
+第一個端到端版本必須讓使用者能：輸入自己的 Key、上傳一張教材圖片、取得可驗證的結構化草稿、手動修正、選擇一種學習單模板，並在不經自有 AI 後端的前提下完成 A4 預覽與列印／PDF。
