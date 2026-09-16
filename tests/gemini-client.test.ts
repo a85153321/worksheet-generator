@@ -43,14 +43,58 @@ describe('Gemini client retry policy', () => {
     expect(request).toHaveBeenCalledTimes(2)
   })
 
-  it('does not retry authentication, quota, or other 4xx responses', async () => {
-    for (const status of [400, 401, 403, 429]) {
-      const request = vi.fn<typeof fetch>().mockResolvedValue(
-        new Response('{"error":{"status":"API_KEY_INVALID"}}', { status }),
-      )
-      await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
-      expect(request).toHaveBeenCalledTimes(1)
-    }
+  it('stops after one retry when the network remains unavailable', async () => {
+    const request = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('offline'))
+
+    const result = await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(result).toMatchObject({ ok: false, error: { type: 'network' } })
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([408, 500, 503])('retries transient HTTP %i at most once', async (status) => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('temporary', { status }))
+      .mockResolvedValueOnce(geminiResponse(validAnalysis))
+
+    const result = await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(result.ok).toBe(true)
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([401, 403])('never retries authentication HTTP %i', async (status) => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response('{"error":{"status":"UNAUTHENTICATED"}}', { status }),
+    )
+
+    const result = await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(result).toMatchObject({ ok: false, error: { type: 'authentication' } })
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('never retries quota errors', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response('{"error":{"status":"RESOURCE_EXHAUSTED"}}', { status: 429 }),
+    )
+
+    const result = await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(result).toMatchObject({ ok: false, error: { type: 'quota' } })
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry other 4xx errors', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response('{"error":{"status":"INVALID_ARGUMENT"}}', { status: 400 }),
+    )
+
+    const result = await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(result).toMatchObject({ ok: false, error: { type: 'validation' } })
+    expect(request).toHaveBeenCalledTimes(1)
   })
 
   it('performs only one controlled format repair', async () => {

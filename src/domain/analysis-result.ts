@@ -21,6 +21,13 @@ export const editableStateSchema = z.object({
   needsReview: z.boolean(),
 })
 
+export const reviewReasonSchema = z.enum([
+  'low-confidence',
+  'ambiguous-ocr',
+  'uncertain-radical',
+  'uncertain-stroke-count',
+])
+
 export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
@@ -31,6 +38,7 @@ export const characterAnalysisSchema = z.object({
   words: z.array(z.string().trim().min(1)),
   exampleSentences: z.array(z.string().trim().min(1)),
   confidence: z.number().min(0).max(1),
+  reviewReasons: z.array(reviewReasonSchema).optional(),
   source: sourceLocationSchema,
   imageSuggestion: imageSuggestionSchema.nullable(),
   editableState: editableStateSchema,
@@ -43,5 +51,6 @@ export const analysisResultSchema = z.object({
 export type SourceLocation = z.infer<typeof sourceLocationSchema>
 export type ImageSuggestion = z.infer<typeof imageSuggestionSchema>
 export type EditableState = z.infer<typeof editableStateSchema>
+export type ReviewReason = z.infer<typeof reviewReasonSchema>
 export type CharacterAnalysis = z.infer<typeof characterAnalysisSchema>
 export type AnalysisResult = z.infer<typeof analysisResultSchema>
