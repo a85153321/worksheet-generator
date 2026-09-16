@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AnalysisResult } from '../src/domain'
 import type { ImageResult, WorksheetSection, WorksheetTemplate } from '../src/services'
-import { buildWorksheet } from '../src/services/worksheet-builder'
+import {
+  buildWorksheet,
+  findCharacterPaginationIssues,
+} from '../src/services/worksheet-builder'
 
 const analysis: AnalysisResult = {
   characters: [
@@ -83,5 +86,41 @@ describe('buildWorksheet', () => {
     const result = await buildWorksheet(noWords, 'word-practice')
 
     expect(result).toMatchObject({ ok: false, error: { type: 'validation' } })
+  })
+
+  it('paginates 12 mixed-template characters without duplicates or omissions', async () => {
+    const characters = Array.from({ length: 12 }, (_, index) => ({
+      ...analysis.characters[0],
+      character: String.fromCodePoint(0x4e00 + index),
+      imageSuggestion: {
+        ...analysis.characters[0].imageSuggestion!,
+        selected: false,
+      },
+    }))
+    const twelveCharacterAnalysis: AnalysisResult = { characters }
+
+    const result = await buildWorksheet(twelveCharacterAnalysis, 'mixed')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.pages.map((page) => page.blocks.length)).toEqual([8, 4])
+      expect(result.value.pages.flatMap((page) => page.blocks.map((block) => block.character)))
+        .toEqual(characters.map((item) => item.character))
+      expect(findCharacterPaginationIssues(characters, result.value.pages)).toEqual([])
+    }
+  })
+
+  it('detects duplicated or omitted characters in assembled pages', () => {
+    const duplicatedPage = {
+      pageNumber: 1,
+      blocks: [
+        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', words: [], exampleSentences: [] },
+        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', words: [], exampleSentences: [] },
+      ],
+      sections: [],
+    }
+
+    expect(findCharacterPaginationIssues(analysis.characters, [duplicatedPage])).toEqual(['鳥'])
+    expect(findCharacterPaginationIssues(analysis.characters, [])).toEqual(['鳥'])
   })
 })

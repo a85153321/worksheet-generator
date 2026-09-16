@@ -10,6 +10,7 @@ import type {
 } from './contracts'
 
 const SECTIONS_PER_PAGE = 6
+const MIXED_CHARACTERS_PER_PAGE = 8
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
   'character-practice': '生字',
@@ -118,6 +119,15 @@ function sectionCharacter(section: WorksheetSection): string {
   return section.item.character
 }
 
+function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
+  return {
+    character: item.character,
+    zhuyin: item.zhuyin,
+    words: [...item.words],
+    exampleSentences: [...item.exampleSentences],
+  }
+}
+
 function buildPages(
   sections: WorksheetSection[],
   analysis: AnalysisResult,
@@ -133,16 +143,68 @@ function buildPages(
       const source = characterMap.get(character)
       if (!source || seen.has(character)) continue
       seen.add(character)
-      blocks.push({
-        character: source.character,
-        zhuyin: source.zhuyin,
-        words: [...source.words],
-        exampleSentences: [...source.exampleSentences],
-      })
+      blocks.push(worksheetBlock(source))
     }
     pages.push({ pageNumber: pages.length + 1, blocks, sections: pageSections })
   }
   return pages
+}
+
+function buildMixedPages(
+  analysis: AnalysisResult,
+  images: ReadonlyMap<string, ImageResult>,
+): WorksheetPage[] {
+  const pages: WorksheetPage[] = []
+  for (let start = 0; start < analysis.characters.length; start += MIXED_CHARACTERS_PER_PAGE) {
+    const pageCharacters = analysis.characters.slice(start, start + MIXED_CHARACTERS_PER_PAGE)
+    const sections = pageCharacters.flatMap((item, offset) => {
+      const index = start + offset
+      return [
+        characterSection(item, index),
+        wordSection(item, index),
+        sentenceSection(item, index),
+        pictureSection(item, index, images),
+      ].filter((section): section is WorksheetSection => section !== null)
+    })
+    pages.push({
+      pageNumber: pages.length + 1,
+      blocks: pageCharacters.map(worksheetBlock),
+      sections,
+    })
+  }
+  return pages
+}
+
+export function findCharacterPaginationIssues(
+  expectedCharacters: readonly CharacterAnalysis[],
+  pages: readonly WorksheetPage[],
+): string[] {
+  const expected = new Map<string, number>()
+  const actual = new Map<string, number>()
+  for (const item of expectedCharacters) {
+    expected.set(item.character, (expected.get(item.character) ?? 0) + 1)
+  }
+  for (const block of pages.flatMap((page) => page.blocks)) {
+    actual.set(block.character, (actual.get(block.character) ?? 0) + 1)
+  }
+
+  const characters = new Set([...expected.keys(), ...actual.keys()])
+  return [...characters].filter(
+    (character) => (expected.get(character) ?? 0) !== (actual.get(character) ?? 0),
+  )
+}
+
+function warnAboutCharacterPagination(
+  analysis: AnalysisResult,
+  pages: readonly WorksheetPage[],
+): void {
+  if (!import.meta.env.DEV) return
+  const issues = findCharacterPaginationIssues(analysis.characters, pages)
+  if (issues.length > 0) {
+    console.warn(
+      `[buildWorksheet] 分頁後的生字有重複或遺漏：${issues.join('、')}`,
+    )
+  }
 }
 
 export async function buildWorksheet(
@@ -174,6 +236,11 @@ export async function buildWorksheet(
     }
   }
 
+  const pages = template === 'mixed'
+    ? buildMixedPages(analysis, images)
+    : buildPages(sections, analysis)
+  if (template === 'mixed') warnAboutCharacterPagination(analysis, pages)
+
   return {
     ok: true,
     value: {
@@ -182,7 +249,7 @@ export async function buildWorksheet(
       template,
       templateLabel: TEMPLATE_LABELS[template],
       status: 'draft',
-      pages: buildPages(sections, analysis),
+      pages,
       sourceAnalysis: structuredClone(analysis),
       createdAt: new Date().toISOString(),
     },
