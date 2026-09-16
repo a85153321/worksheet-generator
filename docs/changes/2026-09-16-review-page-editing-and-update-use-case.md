@@ -1,0 +1,25 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 完成分析結果審核／編輯頁（ReviewPage.tsx）：逐字呈現生字、注音、部首、筆畫、詞語、例句；清晰標示 needsReview 待審核項目（琥珀色邊框、背景色、⚠️ 待審核標籤與上方提示橫幅）；支援教師直接編輯各欄位並呼叫 updateAnalysisResult use case 即時儲存；完整呈現空狀態（Empty）、錯誤狀態（Error）與儲存中狀態（Saving）。
+- Changed files:
+  - `src/services/use-cases.ts`（依使用者需求新增實作 `updateAnalysisResult`，基於 `analysisResultSchema` 進行 Zod 驗證與快取同步）
+  - `src/services/index.ts`（匯出 `updateAnalysisResult` 供前端消費）
+  - `src/features/review/ReviewPage.tsx`（重構審核與編輯頁面，支援卡片展示、needsReview 提示、單字/全部確認、直接表單編輯、手動自訂生字、刪除生字、空狀態導引、錯誤警示框與儲存中按鈕防重提交）
+  - `docs/changes/2026-09-16-review-page-editing-and-update-use-case.md`
+- Contract change:
+  - 新增 `updateAnalysisResult(updated: AnalysisResult, contentHash?: string): Promise<Result<AnalysisResult, AppError>>` 於 `src/services/use-cases.ts` 與 `src/services/index.ts`。採用領域層原生 `analysisResultSchema.safeParse` 驗證，不改動原有 `AnalysisResult` 與 `CharacterAnalysis` 領域結構。
+- Verified:
+  - `npm.cmd run lint`：0 error, 0 warning，全部通過。
+  - `npm.cmd run build`：TypeScript 與 Vite 生產環境編譯打包 100% 成功。
+  - 自動化 Headless 測試（`test_review_page.mjs`，透過 Microsoft Edge CDP）：
+    - 測試 1（空狀態）：無分析資料時呈現 📭 空狀態卡片、說明與返回上傳/載入三上示範生字按鈕。
+    - 測試 2（示範生字載入）：成功載入「學」與「習」生字卡片，通過 Zod schema 驗證並儲存進快取。
+    - 測試 3（needsReview 標示）：信心值 88% 的「習」字呈現琥珀色高亮邊框 (`#f59e0b`)、淡黃背景 (`#fffbeb`)、`⚠️ 待審核` 標籤與頂部待確認提示橫幅。
+    - 測試 4（欄位完整呈現）：卡片逐字完整呈現生字、注音、部首、筆畫、詞語、例句、教材頁碼區塊來源與信心度。
+    - 測試 5（欄位編輯與儲存）：點選「✏️ 編輯」展開表單，修改詞語與例句後點擊「💾 儲存修改」，驗證觸發 `updateAnalysisResult`，呈現「儲存中...」與「✅ 生字資料已成功通過驗證並儲存！」，卡片內容即時更新。
+    - 測試 6（單字確認與一鍵全確認）：點選「✓ 全部標記為已確認」，狀態標籤轉為「✓ 已確認」，頂部 `needsReview` 警示橫幅自動隱藏。
+    - 測試 7（手動自訂新增生字）：點選「➕ 手動新增生字」，填寫「春」字相關欄位並儲存，清單成功擴充為 3 個生字。
+    - 測試 8（刪除生字）：點選「🗑️ 刪除」生字「春」，清單正常還原為 2 個生字。
+- Risks / open questions: none
+- Next owner action:
+  - Codex 可依 `ReviewPage` 確認後的生字清單，推進下一步驟「圖片選擇（ImagesPage）」之建議配圖與生成流程（`generateSelectedImage`）。
