@@ -7,13 +7,26 @@
   font-display: swap;
 }
 
+/* 針對全形標點符號指定標準穩定字體 (微軟正黑體 / 蘋方 / Noto Sans TC)，確保冒號、頓號、逗號等垂直置中對齊 */
+@font-face {
+  font-family: 'WorksheetPunct';
+  src: local('Microsoft JhengHei'), local('PingFang TC'), local('Noto Sans TC');
+  unicode-range: U+FF1A, U+3001, U+FF0C, U+3002, U+FF1B, U+FF01, U+FF1F, U+3010, U+3011, U+300C, U+300D, U+FF08, U+FF09, U+2014, U+FF5C;
+}
+
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC',
     'PingFang TC', 'Microsoft JhengHei', sans-serif;
 
-  /* 學習單字型堆疊：全站以標楷體為標準，一二年級優先套用芫荽注音，具備合理 fallback */
-  --font-worksheet-standard: '標楷體', 'DFKai-SB', 'BiauKai', serif;
-  --font-worksheet-bopomofo: 'BpmfIansui', '標楷體', 'DFKai-SB', 'BiauKai', serif;
+  /* 學習單字型堆疊：
+     - 全形標點符號優先透過 WorksheetPunct 採用穩定置中對齊之 CJK 標點
+     - 全站以標楷體為標準字體，一二年級優先套用芫荽注音
+     - 具備健壯的跨平台 CJK 系統字體 fallback 堆疊（Mac/Windows/Linux），絕不依賴會造成排版錯位的 Western serif */
+  --font-worksheet-punct: 'WorksheetPunct', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  --font-worksheet-standard: 'WorksheetPunct', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'STKaiti',
+    'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  --font-worksheet-bopomofo: 'WorksheetPunct', 'BpmfIansui', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC',
+    'STKaiti', 'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
 
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
@@ -439,7 +452,7 @@ textarea:focus-visible {
   font-weight: 700;
   line-height: 1;
   color: var(--color-primary-dark);
-  font-family: 'DFKai-SB', 'BiauKai', 'KaiTi', serif;
+  font-family: var(--font-worksheet-standard);
 }
 
 .char-meta-row {
@@ -553,6 +566,9 @@ textarea:focus-visible {
 
 .a4-sheet {
   font-family: var(--font-worksheet-standard);
+  font-feature-settings: "pwid" 0, "palt" 0;
+  font-variant-east-asian: normal;
+  text-rendering: optimizeLegibility;
   width: 210mm;
   min-height: 297mm;
   background-color: #ffffff;
@@ -597,23 +613,72 @@ textarea:focus-visible {
   }
 }
 
+/* 學習單標題列排版：彈性雙層 flexbox + gap 控制，避免欄位相互擠壓與多行折損 */
 .sheet-header {
   border-bottom: 2px solid #000000;
   padding-bottom: 8px;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-header-top {
+  display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
 .sheet-title {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sheet-header-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sheet-header-meta-sep {
+  color: #94a3b8;
+  font-family: var(--font-worksheet-punct);
+  user-select: none;
+}
+
+.sheet-header-badge {
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.sheet-header-badge.muted {
+  color: #64748b;
 }
 
 .sheet-info-row {
   display: flex;
-  gap: 20px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 16px;
   font-size: 14px;
+  color: #1e293b;
+}
+
+.sheet-info-item {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
 }
 
 .sheet-content {
@@ -880,7 +945,7 @@ textarea:focus-visible {
   font-weight: 700;
   color: #1e293b;
   min-width: 90px;
-  font-family: 'DFKai-SB', 'BiauKai', 'KaiTi', serif;
+  font-family: inherit;
 }
 
 .sheet-word-boxes {

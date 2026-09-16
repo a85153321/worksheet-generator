@@ -290,7 +290,7 @@ export const PrintPreviewPage: React.FC = () => {
                   justifyContent: 'center',
                   fontSize: '22px',
                   fontWeight: 700,
-                  fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
+                  fontFamily: 'inherit',
                 }}
               >
                 {item.character}
@@ -769,28 +769,28 @@ export const PrintPreviewPage: React.FC = () => {
             aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
           >
             <header className="sheet-header">
-              <div>
+              <div className="sheet-header-top">
                 <h2 className="sheet-title">{activeTitle}</h2>
-                <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
-                  國小 {selectedGrade} 年級 ｜ 國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
+                <div className="sheet-header-meta">
+                  <span>國小 {selectedGrade} 年級</span>
+                  <span className="sheet-header-meta-sep">｜</span>
+                  <span>國語單元評量</span>
+                  <span className="sheet-header-meta-sep">｜</span>
+                  <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
                   {includeZhuyin ? (
                     isLowerGrade ? (
-                      <span style={{ marginLeft: '6px', color: '#0d9488', fontWeight: 600 }}>
-                        （芫荽注音）
-                      </span>
+                      <span className="sheet-header-badge">（芫荽注音）</span>
                     ) : null
                   ) : (
-                    <span style={{ marginLeft: '6px', color: '#64748b', fontWeight: 600 }}>
-                      （無注音版）
-                    </span>
+                    <span className="sheet-header-badge muted">（無注音版）</span>
                   )}
-                </p>
+                </div>
               </div>
               <div className="sheet-info-row">
-                <span>____ 年 ____ 班</span>
-                <span>座號：____</span>
-                <span>姓名：____________</span>
-                <span>得分：______</span>
+                <span className="sheet-info-item">____ 年 ____ 班</span>
+                <span className="sheet-info-item">座號：____</span>
+                <span className="sheet-info-item">姓名：____________</span>
+                <span className="sheet-info-item">得分：______</span>
               </div>
             </header>
 

@@ -347,17 +347,18 @@ export const TemplateSelectionPage: React.FC = () => {
             style={{
               display: 'flex',
               justifyContent: 'space-between',
+              alignItems: 'center',
               marginTop: isEnlarged ? '10px' : '6px',
               fontSize: isEnlarged ? '14px' : '11px',
               color: '#475569',
               flexWrap: 'wrap',
-              gap: '0.5rem',
+              gap: '0.5rem 1rem',
             }}
           >
-            <span>____年____班</span>
-            <span>座號：____</span>
-            <span>姓名：____________</span>
-            <span>得分：______</span>
+            <span style={{ whiteSpace: 'nowrap' }}>____ 年 ____ 班</span>
+            <span style={{ whiteSpace: 'nowrap' }}>座號：____</span>
+            <span style={{ whiteSpace: 'nowrap' }}>姓名：____________</span>
+            <span style={{ whiteSpace: 'nowrap' }}>得分：______</span>
           </div>
         </div>
 
