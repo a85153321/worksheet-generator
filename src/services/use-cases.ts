@@ -1,8 +1,9 @@
-import type {
-  AnalysisResult,
-  AppError,
-  CharacterAnalysis,
-  Result,
+import {
+  analysisResultSchema,
+  type AnalysisResult,
+  type AppError,
+  type CharacterAnalysis,
+  type Result,
 } from '../domain'
 import type {
   AnalyzeMaterialInput,
@@ -77,6 +78,31 @@ export async function analyzeMaterial(
 export async function getCachedAnalysis(hash: string): Promise<AnalysisResult | null> {
   const cached = analysisCache.get(hash)
   return cached ? structuredClone(cached) : null
+}
+
+export async function updateAnalysisResult(
+  updated: AnalysisResult,
+  contentHash?: string,
+): Promise<Result<AnalysisResult, AppError>> {
+  const parseResult = analysisResultSchema.safeParse(updated)
+  if (!parseResult.success) {
+    const errorDetails = parseResult.error.issues.map((i) => i.message).join('、')
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: `儲存失敗，資料格式未通過驗證：${errorDetails}`,
+        retryable: false,
+      },
+    }
+  }
+
+  const validated = parseResult.data
+  if (contentHash) {
+    analysisCache.set(contentHash, structuredClone(validated))
+  }
+
+  return { ok: true, value: structuredClone(validated) }
 }
 
 export async function generateSelectedImage(

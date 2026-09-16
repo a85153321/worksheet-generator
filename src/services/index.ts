@@ -3,6 +3,7 @@ export {
   buildWorksheet,
   generateSelectedImage,
   getCachedAnalysis,
+  updateAnalysisResult,
 } from './use-cases'
 export type {
   AnalyzeMaterialInput,
