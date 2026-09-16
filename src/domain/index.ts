@@ -21,3 +21,25 @@ export {
   validationErrorSchema,
 } from './app-error'
 export type { AppError, Result } from './app-error'
+
+export {
+  cropRectSchema,
+  imageProcessingOptionsSchema,
+  pdfDocumentInfoSchema,
+  pdfPageInfoSchema,
+  processedImageSchema,
+  processedPdfPageSchema,
+  processedPdfSelectionSchema,
+  supportedImageMimeTypeSchema,
+} from './processed-material'
+export type {
+  CropRect,
+  ImageProcessingOptions,
+  NormalizedImageProcessingOptions,
+  PdfDocumentInfo,
+  PdfPageInfo,
+  ProcessedImage,
+  ProcessedPdfPage,
+  ProcessedPdfSelection,
+  SupportedImageMimeType,
+} from './processed-material'

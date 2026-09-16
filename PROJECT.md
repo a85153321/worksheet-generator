@@ -58,6 +58,11 @@ src/
 
 任何跨層資料都以 Zod schema 驗證。分析結果至少包含：`characters`、注音、部首、筆畫、詞語、例句、信心值、來源頁面／區塊、圖片建議與可編輯狀態。
 
+教材輸入契約由 `src/domain/processed-material.ts` 定義。UI 透過 services 的
+`processUploadedImage` 處理單張圖片；PDF 則先呼叫 `inspectUploadedPdf` 取得頁面清單，
+待使用者選頁後再呼叫 `processSelectedPdfPages`。兩條流程共用旋轉、裁切、縮放與壓縮設定。
+
+
 目前共用契約由 `src/domain/analysis-result.ts` 定義：頂層 `AnalysisResult` 包含
 `characters: CharacterAnalysis[]`；每個項目使用 `zhuyin`、`radical`、
 `strokeCount`、`words`、`exampleSentences`、`confidence`、`source`、
