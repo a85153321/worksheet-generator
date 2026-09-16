@@ -1,7 +1,16 @@
 import type { AppError, Result } from '../domain'
 
-const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
-const DEFAULT_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models'
+export const DEFAULT_GEMINI_IMAGE_MODEL = 'gemini-3.1-flash-image'
+export const GEMINI_IMAGE_GENERATE_CONTENT_ENDPOINT =
+  'https://generativelanguage.googleapis.com/v1/models'
+
+export function buildGeminiImageGenerateContentUrl(
+  model = DEFAULT_GEMINI_IMAGE_MODEL,
+  endpoint = GEMINI_IMAGE_GENERATE_CONTENT_ENDPOINT,
+): string {
+  const modelId = model.replace(/^models\//, '')
+  return `${endpoint.replace(/\/+$/, '')}/${modelId}:generateContent`
+}
 
 interface GeminiImageResponse {
   candidates?: Array<{
@@ -79,14 +88,15 @@ function decodeBase64Image(
 
 export function createGeminiImageClient(options: GeminiImageClientOptions) {
   const request = options.fetch ?? globalThis.fetch
-  const model = options.model ?? DEFAULT_IMAGE_MODEL
-  const endpoint = options.endpoint ?? DEFAULT_ENDPOINT
+  const model = options.model ?? DEFAULT_GEMINI_IMAGE_MODEL
+  const endpoint = options.endpoint ?? GEMINI_IMAGE_GENERATE_CONTENT_ENDPOINT
+  const generateContentUrl = buildGeminiImageGenerateContentUrl(model, endpoint)
 
   return {
     async generateImage(prompt: string): Promise<Result<GeneratedImageData, AppError>> {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const response = await request(`${endpoint}/${model}:generateContent`, {
+          const response = await request(generateContentUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -96,7 +106,6 @@ export function createGeminiImageClient(options: GeminiImageClientOptions) {
               contents: [{ role: 'user', parts: [{ text: prompt }] }],
               generationConfig: {
                 responseModalities: ['IMAGE'],
-                responseFormat: { image: { aspectRatio: '1:1' } },
               },
             }),
           })

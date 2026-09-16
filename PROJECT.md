@@ -84,12 +84,18 @@ src/
 ## 6. AI 呼叫規範
 
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
+- 教材分析預設使用 GA 穩定模型 `gemini-3.5-flash`，透過
+  `v1beta/models/gemini-3.5-flash:generateContent` 呼叫；模型與 endpoint 集中由
+  infrastructure 常數管理，不在 UI 或 service 重複寫死。
 - 將相關資料合併成單一高品質請求，避免「生字、注音、詞語」分開呼叫。
 - 低信心、歧義 OCR、筆畫或部首不確定時標示 `needsReview`，不可偽裝成確定答案。
 - `confidence < 0.8` 時由 domain 規則自動加入 `low-confidence`；OCR、部首或筆畫
   不確定性分別以 `reviewReasons` 的 `ambiguous-ocr`、`uncertain-radical`、
   `uncertain-stroke-count` 表示。只有教師設為 `confirmed` 後才清除審核提示。
 - 圖片生成只處理具體、確實有教學價值且被教師勾選的項目。
+- 圖片生成使用穩定圖片模型 `gemini-3.1-flash-image`，透過
+  `v1/models/gemini-3.1-flash-image:generateContent` 呼叫，並明確設定
+  `generationConfig.responseModalities: ["IMAGE"]`。
 - 圖片 prompt 需先套用固定教材風格並正規化；以 prompt 與風格版本的 hash 查詢
   IndexedDB 圖片快取，未命中時才可呼叫 Gemini 圖片模型。
 - 顯示本次動作的預估處理範圍（頁數、選取項目數）；不承諾或猜測實際費用。

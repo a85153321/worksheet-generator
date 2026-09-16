@@ -1,5 +1,6 @@
 import {
   clearGeminiApiKey,
+  getGeminiApiKey,
   hasGeminiApiKey,
   saveGeminiApiKey,
 } from '../infrastructure'
@@ -10,6 +11,10 @@ export function saveApiKey(apiKey: string): void {
 
 export function clearApiKey(): void {
   clearGeminiApiKey()
+}
+
+export function getApiKey(): string {
+  return getGeminiApiKey() ?? ''
 }
 
 export function isApiKeyConfigured(): boolean {

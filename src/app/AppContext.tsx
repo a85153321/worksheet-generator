@@ -2,15 +2,17 @@ import React, { useEffect, useState, useTransition, useMemo } from 'react'
 import type { AnalysisResult, AppError } from '../domain'
 import {
   analyzeMaterial,
+  clearApiKey as removeStoredApiKey,
+  getApiKey,
   getCachedAnalysis,
+  isApiKeyConfigured,
+  saveApiKey as persistApiKey,
   type ImageResult,
   type WorksheetDoc,
   type WorksheetTemplate,
 } from '../services'
 import { type AppRoute, ROUTE_METAS } from './routes'
 import { AppContext, type UploadedFileInfo, type AnalysisScope } from './app-context'
-
-const API_KEY_STORAGE_KEY = 'ws_gemini_api_key'
 
 function parseHash(hash: string): AppRoute {
   const clean = hash.replace(/^#\/?/, '').trim() as AppRoute
@@ -32,7 +34,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // 本機 API Key 儲存（BYOK 模式，僅存瀏覽器本機 localStorage）
   const [apiKey, setApiKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(API_KEY_STORAGE_KEY) || ''
+      return getApiKey()
     }
     return ''
   })
@@ -72,17 +74,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const saveApiKey = (key: string) => {
     const trimmed = key.trim()
-    setApiKey(trimmed)
     if (trimmed) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, trimmed)
+      persistApiKey(trimmed)
+      setApiKey(trimmed)
     } else {
-      localStorage.removeItem(API_KEY_STORAGE_KEY)
+      removeStoredApiKey()
+      setApiKey('')
     }
   }
 
   const clearApiKey = () => {
+    removeStoredApiKey()
     setApiKey('')
-    localStorage.removeItem(API_KEY_STORAGE_KEY)
   }
 
   // 設定已選頁碼
@@ -188,7 +191,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentRoute,
         navigate,
         apiKey,
-        hasApiKey: Boolean(apiKey && apiKey.length > 5),
+        hasApiKey: isApiKeyConfigured(),
         saveApiKey,
         clearApiKey,
         uploadedFile,

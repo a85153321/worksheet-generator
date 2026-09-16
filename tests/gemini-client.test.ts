@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createGeminiClient } from '../src/infrastructure/gemini-client'
+import {
+  buildGeminiGenerateContentUrl,
+  createGeminiClient,
+  DEFAULT_GEMINI_ANALYSIS_MODEL,
+} from '../src/infrastructure/gemini-client'
 
 const input = {
   data: new Blob(['processed material'], { type: 'image/png' }),
@@ -31,6 +35,18 @@ function geminiResponse(value: unknown): Response {
 }
 
 describe('Gemini client retry policy', () => {
+  it('uses the current stable analysis model and exact v1beta generateContent URL', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
+
+    await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
+
+    expect(DEFAULT_GEMINI_ANALYSIS_MODEL).toBe('gemini-3.5-flash')
+    expect(buildGeminiGenerateContentUrl()).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+    )
+    expect(request).toHaveBeenCalledWith(buildGeminiGenerateContentUrl(), expect.any(Object))
+  })
+
   it('retries a transient network failure at most once', async () => {
     const request = vi
       .fn<typeof fetch>()

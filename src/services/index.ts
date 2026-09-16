@@ -10,7 +10,7 @@ export {
   generateSelectedImage,
   WORKSHEET_IMAGE_STYLE,
 } from './image-generation'
-export { clearApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
+export { clearApiKey, getApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
 export {
   inspectUploadedPdf,
   processSelectedPdfPages,

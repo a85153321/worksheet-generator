@@ -1,8 +1,17 @@
 import { analysisResultSchema } from '../domain'
 import type { AnalysisResult, AppError, Result } from '../domain'
 
-const DEFAULT_MODEL = 'gemini-2.5-flash'
-const DEFAULT_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
+export const DEFAULT_GEMINI_ANALYSIS_MODEL = 'gemini-3.5-flash'
+export const GEMINI_GENERATE_CONTENT_ENDPOINT =
+  'https://generativelanguage.googleapis.com/v1beta/models'
+
+export function buildGeminiGenerateContentUrl(
+  model = DEFAULT_GEMINI_ANALYSIS_MODEL,
+  endpoint = GEMINI_GENERATE_CONTENT_ENDPOINT,
+): string {
+  const modelId = model.replace(/^models\//, '')
+  return `${endpoint.replace(/\/+$/, '')}/${modelId}:generateContent`
+}
 
 const analysisJsonSchema = {
   type: 'object',
@@ -156,13 +165,14 @@ function classifyHttpError(status: number, body: string): AppError {
 
 export function createGeminiClient(options: GeminiClientOptions) {
   const request = options.fetch ?? globalThis.fetch
-  const model = options.model ?? DEFAULT_MODEL
-  const endpoint = options.endpoint ?? DEFAULT_ENDPOINT
+  const model = options.model ?? DEFAULT_GEMINI_ANALYSIS_MODEL
+  const endpoint = options.endpoint ?? GEMINI_GENERATE_CONTENT_ENDPOINT
+  const generateContentUrl = buildGeminiGenerateContentUrl(model, endpoint)
 
   async function send(body: unknown): Promise<Result<GeminiResponse, AppError>> {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        const response = await request(`${endpoint}/${model}:generateContent`, {
+        const response = await request(generateContentUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
