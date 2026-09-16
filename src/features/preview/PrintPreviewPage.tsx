@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useApp } from '../../app/index'
 import type { CharacterAnalysis } from '../../domain'
+import { VerticalZhuyin, TianzigeWithZhuyin } from '../../components/VerticalZhuyin'
 import {
   buildWorksheet,
   type WorksheetBlock,
@@ -21,6 +22,8 @@ export const PrintPreviewPage: React.FC = () => {
     generatedImages,
     selectedTemplate,
     navigate,
+    selectedGrade,
+    setSelectedGrade,
   } = useApp()
 
   const [isExportingPdf, setIsExportingPdf] = useState(false)
@@ -193,37 +196,27 @@ export const PrintPreviewPage: React.FC = () => {
                   筆畫：{item.strokeCount || '—'} 畫
                 </span>
               </div>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>
-                讀音：<strong>{item.zhuyin}</strong>
+              <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>讀音：</span>
+                <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
               </div>
             </div>
 
             <div className="sheet-char-grid-row">
-              {/* 示範大格 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                <div style={{ fontSize: '11px', color: '#475569' }}>{item.zhuyin}</div>
-                <div className="sheet-tian-grid sm" style={{ borderColor: '#ef4444', color: '#b91c1c', fontWeight: 700 }}>
-                  {item.character}
-                </div>
-                <span style={{ fontSize: '9px', color: '#dc2626' }}>示範</span>
-              </div>
+              {/* 示範大格（國字在田字格內，標準直式注音位於右側注音欄） */}
+              <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isDemonstration />
 
               {/* 1 格描紅格 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                <div style={{ fontSize: '11px', color: 'transparent' }}>·</div>
-                <div className="sheet-tian-grid sm" style={{ opacity: 0.35 }} aria-label="描紅格">
-                  {item.character}
-                </div>
-                <span style={{ fontSize: '9px', color: '#94a3b8' }}>描紅</span>
-              </div>
+              <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isTracing />
 
               {/* 6 格空白田字格練習 */}
               {Array.from({ length: 6 }).map((_, boxIdx) => (
-                <div key={boxIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                  <div style={{ fontSize: '11px', color: 'transparent' }}>·</div>
-                  <div className="sheet-tian-grid sm" aria-label={`習寫格 ${boxIdx + 1}`}></div>
-                  <span style={{ fontSize: '9px', color: '#94a3b8' }}>{boxIdx + 1}</span>
-                </div>
+                <TianzigeWithZhuyin
+                  key={boxIdx}
+                  character=""
+                  zhuyin=""
+                  practiceNumber={boxIdx + 1}
+                />
               ))}
             </div>
 
@@ -409,24 +402,19 @@ export const PrintPreviewPage: React.FC = () => {
 
           return (
             <section key={`${item.character}-${idx}`} className="sheet-char-row">
-              {/* 田字格與注音 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  {item.zhuyin}
-                </div>
-                <div className="sheet-tian-grid sm">{item.character}</div>
+              {/* 示範田字格含直式注音 */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isDemonstration />
                 <div style={{ fontSize: '10px', color: '#64748b' }}>
                   部首：{charDetail?.radical || '—'}
                 </div>
               </div>
 
-              {/* 習寫田字格 (3格空白練習) */}
+              {/* 習寫田字格 (1格描紅 + 2格空白練習) */}
               <div style={{ display: 'flex', gap: '4px' }}>
-                <div className="sheet-tian-grid sm" style={{ opacity: 0.35 }} aria-label="描紅格">
-                  {item.character}
-                </div>
-                <div className="sheet-tian-grid sm" aria-label="練習格 1"></div>
-                <div className="sheet-tian-grid sm" aria-label="練習格 2"></div>
+                <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isTracing />
+                <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={1} />
+                <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={2} />
               </div>
 
               {/* 語詞與造句練習區 */}
@@ -587,6 +575,8 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }
 
+  const isLowerGrade = (selectedGrade ?? 3) <= 2
+
   return (
     <div>
       {/* 畫面控制列（列印時自動隱藏） */}
@@ -595,8 +585,41 @@ export const PrintPreviewPage: React.FC = () => {
           <div>
             <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
             <p className="card-subtitle">
-              已套用「{templateNameMap[activeTemplate] || '標準模板'}」；本步驟由純前端引擎執行，不經任何外部 AI 後端
+              已套用「{templateNameMap[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級
+              {isLowerGrade ? '（一、二年級：已套用「芫荽注音」直式注音字體）' : '（三至六年級：套用「標楷體」字體）'}
+              ；本步驟由純前端引擎執行，不經任何外部 AI 後端
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+              <label htmlFor="preview-grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
+                🎓 切換教材年級：
+              </label>
+              <select
+                id="preview-grade-select"
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(Number(e.target.value))}
+                style={{
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.88rem',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+                aria-label="選擇學習單適用國小年級"
+              >
+                <option value={1}>國小一年級（芫荽注音字體）</option>
+                <option value={2}>國小二年級（芫荽注音字體）</option>
+                <option value={3}>國小三年級（標楷體）</option>
+                <option value={4}>國小四年級（標楷體）</option>
+                <option value={5}>國小五年級（標楷體）</option>
+                <option value={6}>國小六年級（標楷體）</option>
+              </select>
+              <span style={{ fontSize: '0.82rem', color: isLowerGrade ? '#0d9488' : '#64748b', fontWeight: isLowerGrade ? 600 : 400 }}>
+                {isLowerGrade ? '✨ 一、二年級已啟用「芫荽注音」直式排版' : '📝 三至六年級標準標楷體'}
+              </span>
+            </div>
           </div>
           <div className="btn-group">
             <button
@@ -680,7 +703,7 @@ export const PrintPreviewPage: React.FC = () => {
         {pages.map((page) => (
           <article
             key={page.pageNumber}
-            className="a4-sheet"
+            className={`a4-sheet ${isLowerGrade ? 'worksheet-font-bopomofo worksheet-grade-1-2' : 'worksheet-font-standard worksheet-grade-3-6'}`}
             role="region"
             aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
           >
@@ -688,7 +711,12 @@ export const PrintPreviewPage: React.FC = () => {
               <div>
                 <h2 className="sheet-title">{activeTitle}</h2>
                 <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
-                  國小國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
+                  國小 {selectedGrade} 年級 ｜ 國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
+                  {isLowerGrade && (
+                    <span style={{ marginLeft: '6px', color: '#0d9488', fontWeight: 600 }}>
+                      （芫荽注音）
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="sheet-info-row">
