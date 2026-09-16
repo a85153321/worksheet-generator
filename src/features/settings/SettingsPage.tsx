@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useApp } from '../../app/index'
 
 // 暫時型別（依協作規約第 3 點：待 Codex 於 src/domain 定義正式型別後替換，不自行於 src/domain 建檔）
@@ -16,6 +16,15 @@ export const SettingsPage: React.FC = () => {
     message: '',
   })
   const inputRef = useRef<HTMLInputElement>(null)
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) {
+        clearTimeout(clearTimerRef.current)
+      }
+    }
+  }, [])
 
   // 遮罩函式：僅顯示前後幾碼，中段全數以 • 隱藏
   const getMaskedKey = (key: string): string => {
@@ -28,6 +37,9 @@ export const SettingsPage: React.FC = () => {
 
   // 儲存金鑰（本機設定儲存，不寫入任何 log）
   const handleSave = (e?: React.FormEvent) => {
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current)
+    }
     if (e) e.preventDefault()
     const trimmed = inputValue.trim()
     if (!trimmed) {
@@ -49,17 +61,30 @@ export const SettingsPage: React.FC = () => {
 
   // 清除金鑰
   const handleClear = () => {
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current)
+    }
     setInputValue('')
     clearApiKey()
     setTestStatus({
       state: 'idle',
-      message: 'API Key 已自本機設定儲存清除。',
+      message: 'API Key 已自動清除。',
     })
     inputRef.current?.focus()
+
+    // 於 3 秒後自動淡出訊息
+    clearTimerRef.current = setTimeout(() => {
+      setTestStatus((prev) =>
+        prev.message === 'API Key 已自動清除。' ? { state: 'idle', message: '' } : prev,
+      )
+    }, 3000)
   }
 
   // 測試連線（明確由使用者按鈕觸發，不可自動送出，不寫入 log）
   const handleTestKey = async () => {
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current)
+    }
     const targetKey = inputValue.trim() || apiKey.trim()
     if (!targetKey) {
       setTestStatus({
@@ -304,7 +329,9 @@ export const SettingsPage: React.FC = () => {
                 ? '❌ 錯誤'
                 : testStatus.state === 'testing'
                 ? '⏳ 測試中'
-                : '✅ 成功'}
+                : testStatus.state === 'success'
+                ? '✅ 成功'
+                : 'ℹ️ 提示'}
             </div>
             <p
               style={{
