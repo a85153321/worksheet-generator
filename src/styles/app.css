@@ -1017,6 +1017,347 @@ textarea:focus-visible {
   color: #475569;
 }
 
+.sheet-sub-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+/* 字音字形辨析單專用 */
+.sheet-discrimination-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #ffffff;
+}
+
+.sheet-discrimination-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 8px;
+}
+
+.sheet-discrimination-char-badge {
+  width: 42px;
+  height: 42px;
+  background-color: #b91c1c;
+  color: #ffffff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.sheet-lookalike-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sheet-lookalike-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-lookalike-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+.sheet-lookalike-item.target {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.sheet-lookalike-char-box {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid #ef4444;
+  background-color: #ffffff;
+  color: #b91c1c;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.sheet-lookalike-char-box.candidate {
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+.sheet-lookalike-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  min-width: 170px;
+}
+
+.sheet-lookalike-tag {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sheet-lookalike-tag.target {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.sheet-lookalike-tag.candidate {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.sheet-lookalike-write {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.sheet-multipron-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sheet-multipron-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-multipron-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.sheet-multipron-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 65px;
+  background-color: #ffffff;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.sheet-multipron-label {
+  font-size: 10px;
+  color: #166534;
+  font-weight: 600;
+}
+
+.sheet-multipron-sound {
+  font-size: 14px;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.sheet-multipron-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sheet-multipron-word {
+  font-size: 13px;
+  color: #1e293b;
+  min-width: 140px;
+}
+
+.sheet-multipron-word-text {
+  font-weight: 700;
+  color: #0f172a;
+  margin-left: 4px;
+}
+
+.sheet-multipron-sentence {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.sheet-discrimination-writing {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 閱讀理解評量單專用 */
+.sheet-passage-box {
+  background-color: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 14px 18px;
+}
+
+.sheet-passage-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sheet-passage-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #1e293b;
+  text-indent: 2em;
+  letter-spacing: 0.04em;
+}
+
+.sheet-reading-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheet-mc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheet-mc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: #fafafa;
+  border: 1px solid #f1f5f9;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.sheet-mc-prompt {
+  font-size: 13.5px;
+  color: #0f172a;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  line-height: 1.4;
+}
+
+.sheet-mc-bracket {
+  font-weight: 700;
+  color: #0284c7;
+  font-family: inherit;
+}
+
+.sheet-mc-num {
+  font-weight: 700;
+  color: #334155;
+}
+
+.sheet-mc-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-left: 28px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.sheet-mc-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sheet-mc-opt-label {
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.sheet-open-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheet-open-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sheet-open-prompt {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sheet-open-num {
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.sheet-open-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* 模板推薦反白與高亮樣式 */
+.template-card.recommended {
+  border-color: #86efac;
+  box-shadow: 0 0 0 1px #86efac;
+}
+
+.template-card.recommended.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
 /* ==========================================================================
    Modal / Lightbox Overlay 系統
    ========================================================================== */
@@ -1461,7 +1802,10 @@ textarea:focus-visible {
   .sheet-char-card,
   .sheet-word-card,
   .sheet-sentence-card,
-  .sheet-char-row {
+  .sheet-char-row,
+  .sheet-discrimination-card,
+  .sheet-reading-card,
+  .sheet-passage-box {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

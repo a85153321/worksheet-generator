@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useApp } from '../../app/index'
 import { buildWorksheet, type WorksheetTemplate } from '../../services'
-import type { CharacterAnalysis } from '../../domain'
+import type { CharacterAnalysis, AnalysisSkillTag } from '../../domain'
 
 interface TemplateOption {
   id: WorksheetTemplate
@@ -11,7 +11,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'character' | 'word' | 'sentence' | 'mixed'
+  wireframeType: 'character' | 'word' | 'sentence' | 'mixed' | 'discrimination' | 'reading'
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -46,6 +46,26 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     wireframeType: 'sentence',
   },
   {
+    id: 'character-discrimination',
+    title: '字音字形辨析單',
+    badge: '辨析精熟',
+    targetGrade: '適合國小三至六年級',
+    description: '比較形近字字形特徵與多音字讀音用法，培養字形辨別與正確讀音能力',
+    features: ['形近字部件結構比較', '多音字語境破音辨析', '手寫辨析習寫練習格'],
+    icon: '🔍',
+    wireframeType: 'discrimination',
+  },
+  {
+    id: 'reading-comprehension',
+    title: '閱讀理解評量單',
+    badge: '閱讀思維',
+    targetGrade: '適合國小二至六年級',
+    description: '依教材短文與例句設計文意理解選擇題與開放式問答，深化閱讀素養',
+    features: ['情境短文閱讀文本', '生字詞義理解選擇題', '文意深究開放式問答'],
+    icon: '📖',
+    wireframeType: 'reading',
+  },
+  {
     id: 'mixed',
     title: '生字語文綜合單',
     badge: '全方位評量',
@@ -57,6 +77,51 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
   },
 ]
 
+/**
+ * 判斷指定模板是否受當前勾選之功能標籤推薦
+ * 依據專案規範：
+ * - 勾選「字音字形」時，優先推薦「字音字形辨析單」
+ * - 勾選「閱讀理解」時，優先推薦「閱讀理解評量單」
+ * - 其餘標籤沿用既有三個模板的推薦邏輯不變
+ */
+function isTemplateRecommendedByTags(
+  templateId: WorksheetTemplate,
+  tags: readonly AnalysisSkillTag[]
+): boolean {
+  if (!tags || tags.length === 0) return false
+  switch (templateId) {
+    case 'character-discrimination':
+      return tags.includes('字音字形')
+    case 'reading-comprehension':
+      return tags.includes('閱讀理解')
+    case 'character-practice':
+      return tags.includes('生字練習')
+    case 'word-practice':
+      return tags.includes('語詞練習')
+    case 'sentence-practice':
+      return tags.includes('句型練習') || tags.includes('造句練習')
+    case 'mixed':
+      return tags.length >= 3
+    default:
+      return false
+  }
+}
+
+/**
+ * 取得當前標籤中最高優先級的推薦模板
+ */
+function getPrioritizedTemplateByTags(
+  tags: readonly AnalysisSkillTag[]
+): WorksheetTemplate | null {
+  if (!tags || tags.length === 0) return null
+  if (tags.includes('字音字形')) return 'character-discrimination'
+  if (tags.includes('閱讀理解')) return 'reading-comprehension'
+  if (tags.includes('生字練習')) return 'character-practice'
+  if (tags.includes('語詞練習')) return 'word-practice'
+  if (tags.includes('句型練習') || tags.includes('造句練習')) return 'sentence-practice'
+  return null
+}
+
 export const TemplateSelectionPage: React.FC = () => {
   const {
     analysisResult,
@@ -67,17 +132,31 @@ export const TemplateSelectionPage: React.FC = () => {
     setWorksheetDoc,
     generatedImages,
     navigate,
+    skillTags,
   } = useApp()
 
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildError, setBuildError] = useState<string | null>(null)
   const [successNotice, setSuccessNotice] = useState<string | null>(null)
   const [showEnlargedPreview, setShowEnlargedPreview] = useState(false)
+  const [hasUserManuallySelected, setHasUserManuallySelected] = useState(false)
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const generatedCount = Object.keys(generatedImages).length
+
+  // 當有勾選功能標籤，且使用者尚未手動切換模板時，優先預設選取推薦之模板
+  useEffect(() => {
+    if (!hasUserManuallySelected && skillTags && skillTags.length > 0) {
+      const recommended = getPrioritizedTemplateByTags(skillTags)
+      if (recommended && selectedTemplate !== recommended) {
+        if (selectedTemplate === 'character-practice' || !isTemplateRecommendedByTags(selectedTemplate, skillTags)) {
+          setSelectedTemplate(recommended)
+        }
+      }
+    }
+  }, [skillTags, selectedTemplate, setSelectedTemplate, hasUserManuallySelected])
 
   // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
@@ -120,7 +199,14 @@ export const TemplateSelectionPage: React.FC = () => {
         // 立即導航至 A4 預覽
         navigate('preview')
       } else {
-        setBuildError(res.error.message)
+        if (res.error.type === 'no-eligible-characters') {
+          // 清除舊文件並導航至 preview 頁，呈現專屬空狀態引導畫面
+          setWorksheetDoc(null)
+          setBuildError(`⚠️ 資料不足無法建立：${res.error.message}`)
+          navigate('preview')
+        } else {
+          setBuildError(res.error.message)
+        }
       }
     } catch {
       setBuildError('建立學習單文件時發生非預期錯誤。')
@@ -129,7 +215,7 @@ export const TemplateSelectionPage: React.FC = () => {
     }
   }
 
-  // 快速載入三上示範生字（供測試與無生字時快速恢復體驗）
+  // 快速載入三上完整示範生字（含形近字、多音字與完整例句短文）
   const handleLoadSampleData = () => {
     setAnalysisResult({
       characters: [
@@ -139,7 +225,7 @@ export const TemplateSelectionPage: React.FC = () => {
           radical: '子',
           strokeCount: 16,
           words: ['學校', '學習', '學生'],
-          exampleSentences: ['我每天到學校學習新知識。'],
+          exampleSentences: ['我每天到學校學習新知識。', '在明亮的教室裡認真讀書。'],
           confidence: 0.96,
           source: { page: 1, block: '第一段' },
           imageSuggestion: {
@@ -147,6 +233,14 @@ export const TemplateSelectionPage: React.FC = () => {
             rationale: '用熟悉的校園情境幫助理解「學」。',
             selected: true,
           },
+          lookalikeCandidates: [
+            { character: '字', radical: '子', strokeCount: 6 },
+            { character: '斈', radical: '子', strokeCount: 7 },
+          ],
+          multiPronunciations: [
+            { pronunciation: 'ㄒㄩㄝˊ', word: '學校' },
+            { pronunciation: 'ㄒㄧㄠˋ', word: '學術（校讀音）' },
+          ],
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -159,7 +253,7 @@ export const TemplateSelectionPage: React.FC = () => {
           radical: '羽',
           strokeCount: 11,
           words: ['學習', '練習', '習慣'],
-          exampleSentences: ['多練習可以讓生字寫得更漂亮。'],
+          exampleSentences: ['多練習可以讓生字寫得更漂亮。', '養成良好的讀書與習字習慣。'],
           confidence: 0.88,
           source: { page: 1, block: '第一段' },
           imageSuggestion: {
@@ -167,6 +261,40 @@ export const TemplateSelectionPage: React.FC = () => {
             rationale: '對應習字、練習的生活經驗。',
             selected: true,
           },
+          lookalikeCandidates: [
+            { character: '羽', radical: '羽', strokeCount: 6 },
+            { character: '摺', radical: '手', strokeCount: 14 },
+          ],
+          multiPronunciations: [
+            { pronunciation: 'ㄒㄧˊ', word: '練習' },
+          ],
+          editableState: {
+            status: 'confirmed',
+            isEditable: true,
+            needsReview: false,
+          },
+        },
+      ],
+    })
+    setBuildError(null)
+  }
+
+  // 載入缺少形近字與多音字之生字（供測試 no-eligible-characters 空狀態）
+  const handleLoadIneligibleSampleData = () => {
+    setAnalysisResult({
+      characters: [
+        {
+          character: '一',
+          zhuyin: 'ㄧ',
+          radical: '一',
+          strokeCount: 1,
+          words: [],
+          exampleSentences: [],
+          confidence: 0.98,
+          source: { page: 1, block: '第一段' },
+          imageSuggestion: null,
+          lookalikeCandidates: [],
+          multiPronunciations: [],
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -244,6 +372,44 @@ export const TemplateSelectionPage: React.FC = () => {
                 <div className="wireframe-line-sm" style={{ backgroundColor: '#94a3b8' }}></div>
                 <div className="wireframe-line-sm" style={{ borderBottom: '1px dashed #94a3b8', height: '1px', backgroundColor: 'transparent' }}></div>
               </div>
+            </div>
+          </div>
+        )
+      case 'discrimination':
+        return (
+          <div className="template-wireframe" aria-hidden="true">
+            <div className="wireframe-header-line" style={{ width: '50%' }}></div>
+            <div className="wireframe-row">
+              <div className="wireframe-box" style={{ fontWeight: 700, color: '#b91c1c' }}>字</div>
+              <span style={{ fontSize: '9px', color: '#64748b' }}>vs</span>
+              <div className="wireframe-box" style={{ fontWeight: 700, color: '#0284c7' }}>形</div>
+              <div className="wireframe-lines">
+                <div className="wireframe-line-sm" style={{ width: '85%' }}></div>
+                <div className="wireframe-line-sm" style={{ width: '50%' }}></div>
+              </div>
+            </div>
+            <div className="wireframe-row">
+              <div style={{ height: '16px', border: '1px solid #cbd5e1', borderRadius: '2px', padding: '0 3px', fontSize: '8px', display: 'flex', alignItems: 'center', backgroundColor: '#fff' }}>音一</div>
+              <div style={{ height: '16px', border: '1px solid #cbd5e1', borderRadius: '2px', padding: '0 3px', fontSize: '8px', display: 'flex', alignItems: 'center', backgroundColor: '#fff' }}>音二</div>
+              <div className="wireframe-lines">
+                <div className="wireframe-line-sm" style={{ width: '65%' }}></div>
+              </div>
+            </div>
+          </div>
+        )
+      case 'reading':
+        return (
+          <div className="template-wireframe" aria-hidden="true">
+            <div className="wireframe-header-line" style={{ width: '60%' }}></div>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '2px', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div className="wireframe-line-sm" style={{ width: '95%' }}></div>
+              <div className="wireframe-line-sm" style={{ width: '80%' }}></div>
+            </div>
+            <div className="wireframe-row" style={{ marginTop: '2px' }}>
+              <span style={{ fontSize: '8px', fontWeight: 700, color: '#0284c7' }}>①</span>
+              <div className="wireframe-line-sm" style={{ width: '38%' }}></div>
+              <span style={{ fontSize: '8px', fontWeight: 700, color: '#0284c7' }}>②</span>
+              <div className="wireframe-line-sm" style={{ width: '38%' }}></div>
             </div>
           </div>
         )
@@ -501,6 +667,48 @@ export const TemplateSelectionPage: React.FC = () => {
                     </div>
                   )}
 
+                  {selectedTemplate === 'character-discrimination' && (
+                    <div>
+                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#b45309', marginBottom: isEnlarged ? '6px' : '3px' }}>
+                        🔍 形近字辨析：
+                      </div>
+                      <div style={{ display: 'flex', gap: isEnlarged ? '10px' : '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ border: '1px solid #b91c1c', padding: isEnlarged ? '2px 8px' : '1px 5px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#b91c1c' }}>
+                          目標字：{item.character}
+                        </span>
+                        <span style={{ border: '1px solid #0284c7', padding: isEnlarged ? '2px 8px' : '1px 5px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0284c7' }}>
+                          形近字：{item.character === '學' ? '字' : '羽'}
+                        </span>
+                        <span style={{ fontSize: isEnlarged ? '12px' : '11px', color: '#64748b' }}>
+                          造詞填空：________________
+                        </span>
+                      </div>
+                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0369a1', marginTop: isEnlarged ? '8px' : '4px' }}>
+                        🔊 多音字辨析：
+                      </div>
+                      <div style={{ fontSize: isEnlarged ? '12px' : '11px', color: '#475569' }}>
+                        常用讀音：{item.zhuyin || '—'} ｜ 語境搭配：{item.words?.[0] || '生詞例詞'}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTemplate === 'reading-comprehension' && (
+                    <div>
+                      <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: isEnlarged ? '6px 10px' : '4px 6px', marginBottom: isEnlarged ? '6px' : '4px' }}>
+                        <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0f172a' }}>📖 【短文閱讀理解】</div>
+                        <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#334155', lineHeight: 1.4 }}>
+                          {item.exampleSentences?.[0] || '我在學校快樂地學習國語，認真練習寫字。'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#0369a1' }}>
+                        <strong>選擇題：</strong>下列哪一個詞語是「{item.character}」的正確造詞？ ① {item.words?.[0] || '詞語一'} ② ...
+                      </div>
+                      <div style={{ fontSize: isEnlarged ? '12px' : '10px', color: '#64748b', marginTop: isEnlarged ? '4px' : '2px' }}>
+                        <strong>問答題：</strong>讀完句子後，請說明其主要意旨：____________________
+                      </div>
+                    </div>
+                  )}
+
                   {selectedTemplate === 'mixed' && (
                     <div>
                       <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#334155' }}>
@@ -545,6 +753,15 @@ export const TemplateSelectionPage: React.FC = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
+              onClick={handleLoadIneligibleSampleData}
+              title="載入無形近字/多音字候選的生字資料，供測試 Codex no-eligible-characters 空狀態"
+            >
+              ⚡ 載入無辨析生字（測試空狀態）
+            </button>
             <div className="tag tag-info" style={{ fontSize: '0.85rem', padding: '0.35rem 0.75rem' }}>
               目前生字庫：{characters.length} 個字 ｜ 已生成插圖：{generatedCount} 張
             </div>
@@ -566,14 +783,22 @@ export const TemplateSelectionPage: React.FC = () => {
           <p style={{ marginTop: '0.3rem' }}>
             依據系統規則，建立學習單至少需要 1 個生字。您可以返回教材上傳選頁分析，或直接點擊下方按鈕載入三上國語示範生字資料以進行模板排版測試。
           </p>
-          <div className="btn-group" style={{ marginTop: '0.75rem' }}>
+          <div className="btn-group" style={{ marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <button
               type="button"
               className="btn btn-primary"
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
               onClick={handleLoadSampleData}
             >
-              ✨ 立即載入三上示範生字（學、習）
+              ✨ 立即載入完整示範生字（學、習）
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
+              onClick={handleLoadIneligibleSampleData}
+            >
+              ⚡ 載入無辨析生字（測試空狀態）
             </button>
             <button
               type="button"
@@ -624,18 +849,21 @@ export const TemplateSelectionPage: React.FC = () => {
       <div className="template-grid" role="radiogroup" aria-label="學習單模板選項">
         {TEMPLATE_OPTIONS.map((tpl) => {
           const isSelected = selectedTemplate === tpl.id
+          const isRecommended = isTemplateRecommendedByTags(tpl.id, skillTags)
 
           return (
             <div
               key={tpl.id}
-              className={`template-card ${isSelected ? 'selected' : ''}`}
+              className={`template-card ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}`}
               onClick={() => {
+                setHasUserManuallySelected(true)
                 setSelectedTemplate(tpl.id)
                 setBuildError(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
+                  setHasUserManuallySelected(true)
                   setSelectedTemplate(tpl.id)
                   setBuildError(null)
                 }
@@ -643,7 +871,7 @@ export const TemplateSelectionPage: React.FC = () => {
               role="radio"
               aria-checked={isSelected}
               tabIndex={0}
-              aria-label={`學習單模板：${tpl.title}，${isSelected ? '已選取' : '點選套用'}`}
+              aria-label={`學習單模板：${tpl.title}，${isSelected ? '已選取' : '點選套用'}${isRecommended ? '（標籤推薦）' : ''}`}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -652,9 +880,26 @@ export const TemplateSelectionPage: React.FC = () => {
               }}
             >
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '2rem' }} aria-hidden="true">{tpl.icon}</span>
-                  <span className="tag tag-info">{tpl.badge}</span>
+                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {isRecommended && (
+                      <span
+                        className="tag tag-success"
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '0.74rem',
+                          padding: '0.15rem 0.45rem',
+                          backgroundColor: '#dcfce7',
+                          color: '#15803d',
+                          border: '1px solid #86efac',
+                        }}
+                      >
+                        🎯 推薦
+                      </span>
+                    )}
+                    <span className="tag tag-info">{tpl.badge}</span>
+                  </div>
                 </div>
 
                 <h3 style={{ fontSize: '1.15rem', marginTop: '0.65rem', marginBottom: '0.2rem', color: isSelected ? 'var(--color-primary-dark)' : 'inherit' }}>

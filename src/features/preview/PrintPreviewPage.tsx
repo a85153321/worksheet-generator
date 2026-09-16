@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useApp } from '../../app/index'
-import type { CharacterAnalysis } from '../../domain'
+import type { CharacterAnalysis, AppError } from '../../domain'
 import { VerticalZhuyin, TianzigeWithZhuyin } from '../../components/VerticalZhuyin'
 import {
   buildWorksheet,
@@ -10,6 +10,8 @@ import {
   type WordWorksheetSection,
   type SentenceWorksheetSection,
   type PictureWorksheetSection,
+  type CharacterDiscriminationWorksheetSection,
+  type ReadingComprehensionWorksheetSection,
   type WorksheetPage,
   type WorksheetTemplate,
 } from '../../services'
@@ -31,6 +33,10 @@ export const PrintPreviewPage: React.FC = () => {
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
+  const [emptyStateError, setEmptyStateError] = useState<Extract<
+    AppError,
+    { type: 'no-eligible-characters' }
+  > | null>(null)
   const sheetsContainerRef = useRef<HTMLDivElement>(null)
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
@@ -46,6 +52,7 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 自動同步：若尚未由 buildWorksheet 組裝，或當前 worksheetDoc 與已選 selectedTemplate 不一致時，自動呼叫 buildWorksheet
+  // 嚴格規範：空狀態判定只能依據 Codex 回傳的 error.type === 'no-eligible-characters'，不自行計算 length 或推測
   useEffect(() => {
     if (analysisResult && analysisResult.characters.length > 0) {
       if (!worksheetDoc || worksheetDoc.template !== selectedTemplate) {
@@ -53,6 +60,15 @@ export const PrintPreviewPage: React.FC = () => {
         buildWorksheet(analysisResult, selectedTemplate, { images: imageList }).then((res) => {
           if (res.ok) {
             setWorksheetDoc(res.value)
+            setEmptyStateError(null)
+          } else {
+            if (res.error.type === 'no-eligible-characters') {
+              setEmptyStateError(res.error)
+              setWorksheetDoc(null)
+            } else {
+              setEmptyStateError(null)
+              setExportError(res.error.message)
+            }
           }
         })
       }
@@ -587,6 +603,301 @@ export const PrintPreviewPage: React.FC = () => {
     )
   }
 
+  // 6. 渲染字音字形辨析單 (character-discrimination)
+  // 嚴格落實形近字／多音字獨立呈現 fallback：有資料才顯示，無資料完全不渲染 DOM，絕不使用 display: none
+  const renderCharacterDiscrimination = (pageSections: WorksheetSection[]) => {
+    const discrimSections = pageSections.filter(
+      (s): s is CharacterDiscriminationWorksheetSection => s.kind === 'character-discrimination'
+    )
+
+    const items = discrimSections.length > 0
+      ? discrimSections.map((s) => ({
+          character: s.item.character,
+          zhuyin: s.item.zhuyin,
+          lookalikeCandidates: s.item.lookalikeCandidates || [],
+          multiPronunciations: s.item.multiPronunciations || [],
+          handwritingLineCount: s.item.handwritingLineCount || 3,
+        }))
+      : fallbackCharacters.map((c) => ({
+          character: c.character,
+          zhuyin: c.zhuyin,
+          lookalikeCandidates: c.lookalikeCandidates || [
+            { character: c.character === '學' ? '字' : '羽', radical: '子', strokeCount: 6 },
+          ],
+          multiPronunciations: c.multiPronunciations || [
+            { pronunciation: c.zhuyin, word: c.words[0] || '常用詞' },
+          ],
+          handwritingLineCount: 3,
+        }))
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="sheet-instruction-banner">
+          <strong>【字音字形辨析評量】</strong> 仔細觀察生字之形近字與多音字特徵，辨別字形差異與破音用法，並完成習寫與造詞。
+        </div>
+
+        {items.map((item, idx) => {
+          const charDetail = findCharacterData(item.character)
+          const hasLookalikes = item.lookalikeCandidates && item.lookalikeCandidates.length > 0
+          const hasMultiPron = item.multiPronunciations && item.multiPronunciations.length > 0
+
+          return (
+            <section key={`${item.character}-${idx}`} className="sheet-discrimination-card">
+              {/* 生字核心標題列 */}
+              <div className="sheet-discrimination-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="sheet-discrimination-char-badge">
+                    {item.character}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                      辨析核心：【 {item.character} 】
+                      {includeZhuyin && Boolean(item.zhuyin && item.zhuyin.trim()) && (
+                        <span style={{ marginLeft: '8px', fontSize: '13px', color: '#475569', fontWeight: 500 }}>
+                          標準讀音：{item.zhuyin}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      部首：{charDetail?.radical || '—'} ｜ 筆畫：{charDetail?.strokeCount || '—'} 畫
+                    </div>
+                  </div>
+                </div>
+                <span className="sheet-score-box">教師評閱：[ 優 ． 良 ． 可 ]</span>
+              </div>
+
+              {/* 1. 形近字辨析區塊 (有資料才渲染，無資料完全不渲染 DOM，不留空白或節點) */}
+              {hasLookalikes && (
+                <div className="sheet-lookalike-block">
+                  <div className="sheet-sub-section-title">
+                    <span>🔍 形近字字形辨析（比一比部首與筆畫差異，並完成造詞）：</span>
+                  </div>
+                  <div className="sheet-lookalike-list">
+                    {/* 本字基準項目 */}
+                    <div className="sheet-lookalike-item target">
+                      <div className="sheet-lookalike-char-box">{item.character}</div>
+                      <div className="sheet-lookalike-meta">
+                        <span className="sheet-lookalike-tag target">目標字</span>
+                        <span>部首：{charDetail?.radical || '—'}</span>
+                        <span>筆畫：{charDetail?.strokeCount || '—'} 畫</span>
+                      </div>
+                      <div className="sheet-lookalike-write">
+                        <span>造詞：</span>
+                        <div className="sheet-writing-rule"></div>
+                      </div>
+                    </div>
+
+                    {/* 各形近字候選對照 */}
+                    {item.lookalikeCandidates.map((c, cIdx) => (
+                      <div key={cIdx} className="sheet-lookalike-item">
+                        <div className="sheet-lookalike-char-box candidate">{c.character}</div>
+                        <div className="sheet-lookalike-meta">
+                          <span className="sheet-lookalike-tag candidate">形近字</span>
+                          <span>部首：{c.radical || '—'}</span>
+                          <span>筆畫：{c.strokeCount || '—'} 畫</span>
+                        </div>
+                        <div className="sheet-lookalike-write">
+                          <span>造詞：</span>
+                          <div className="sheet-writing-rule"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. 多音字辨析區塊 (有資料才渲染，無資料完全不渲染 DOM，不留空白或節點) */}
+              {hasMultiPron && (
+                <div className="sheet-multipron-block">
+                  <div className="sheet-sub-section-title">
+                    <span>🔊 多音字語境破音辨析（讀出不同讀音，觀察詞語搭配並練習造句）：</span>
+                  </div>
+                  <div className="sheet-multipron-list">
+                    {item.multiPronunciations.map((p, pIdx) => (
+                      <div key={pIdx} className="sheet-multipron-item">
+                        <div className="sheet-multipron-badge">
+                          <span className="sheet-multipron-label">讀音 {pIdx + 1}</span>
+                          <span className="sheet-multipron-sound">{p.pronunciation}</span>
+                        </div>
+                        <div className="sheet-multipron-content">
+                          <div className="sheet-multipron-word">
+                            <strong>詞語搭配：</strong>
+                            <span className="sheet-multipron-word-text">{p.word}</span>
+                          </div>
+                          <div className="sheet-multipron-sentence">
+                            <span>造句運用：</span>
+                            <div className="sheet-writing-rule"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. 手寫辨析習寫橫線 (依 handwritingLineCount 渲染) */}
+              {item.handwritingLineCount > 0 && (
+                <div className="sheet-discrimination-writing">
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                    ✍️ 綜合字音字形筆記與辨析習寫：
+                  </div>
+                  {Array.from({ length: item.handwritingLineCount }).map((_, lIdx) => (
+                    <div key={lIdx} className="sheet-writing-line">
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>
+                        {lIdx === 0 ? '①' : lIdx === 1 ? '②' : '③'}
+                      </span>
+                      <div className="sheet-writing-rule"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // 7. 渲染閱讀理解評量單 (reading-comprehension)
+  // 嚴格落實短文／選擇題／問答題獨立呈現 fallback：有資料才顯示，無資料完全不渲染 DOM，絕不使用 display: none
+  const renderReadingComprehension = (pageSections: WorksheetSection[]) => {
+    const readingSections = pageSections.filter(
+      (s): s is ReadingComprehensionWorksheetSection => s.kind === 'reading-comprehension'
+    )
+
+    const sectionsToRender = readingSections.length > 0
+      ? readingSections
+      : [
+          {
+            kind: 'reading-comprehension' as const,
+            id: 'reading-comprehension-default',
+            instructions: '閱讀短文或例句後，完成可用的選擇題與問答題。',
+            item: {
+              passage: {
+                title: '教材情境短文',
+                text: '我每天到學校學習新知識，在明亮的教室裡認真讀書。多練習可以讓生字寫得更漂亮，讓我們一起快樂成長。',
+                sentences: [
+                  '我每天到學校學習新知識，在明亮的教室裡認真讀書。',
+                  '多練習可以讓生字寫得更漂亮，讓我們一起快樂成長。',
+                ],
+              },
+              multipleChoiceQuestions: [
+                {
+                  id: 'default-mc-1',
+                  character: '學',
+                  prompt: '下列哪一個詞語是教材中「學」的造詞？',
+                  options: ['學校', '習慣', '羽毛', '飛翔'],
+                  correctAnswer: '學校',
+                },
+                {
+                  id: 'default-mc-2',
+                  character: '習',
+                  prompt: '下列哪一個詞語是教材中「習」的造詞？',
+                  options: ['學習', '學生', '教室', '老師'],
+                  correctAnswer: '學習',
+                },
+              ],
+              openResponseQuestions: [
+                {
+                  id: 'default-open-1',
+                  prompt: '讀完短文後，請用自己的話說明為什麼要多練習寫生字？',
+                  sourceSentence: '多練習可以讓生字寫得更漂亮。',
+                  answerLineCount: 2,
+                },
+              ],
+            },
+          },
+        ]
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="sheet-instruction-banner">
+          <strong>【閱讀理解評量單】</strong> 請仔細閱讀以下短文或情境教學例句，再完成各項文意理解與造句題目。
+        </div>
+
+        {sectionsToRender.map((s, idx) => {
+          const passage = s.item.passage
+          const mcQuestions = s.item.multipleChoiceQuestions || []
+          const openQuestions = s.item.openResponseQuestions || []
+
+          return (
+            <div key={`${s.id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* 1. 情境短文區塊 (有短文才渲染，null 絕不渲染 DOM，不殘留空白節點) */}
+              {passage !== null && (
+                <section className="sheet-passage-box">
+                  <div className="sheet-passage-title">
+                    📖 【{passage.title || '教材情境短文'}】
+                  </div>
+                  <div className="sheet-passage-text">
+                    {passage.text}
+                  </div>
+                </section>
+              )}
+
+              {/* 2. 選擇題區塊 (有題目才渲染，空陣列絕不渲染 DOM) */}
+              {mcQuestions.length > 0 && (
+                <section className="sheet-reading-card">
+                  <div className="sheet-sub-section-title">
+                    <span>壹、文意與生詞理解選擇題（請將最適合的答案填入括號中）：</span>
+                  </div>
+                  <div className="sheet-mc-list">
+                    {mcQuestions.map((q, qIdx) => (
+                      <div key={q.id || qIdx} className="sheet-mc-item">
+                        <div className="sheet-mc-prompt">
+                          <span className="sheet-mc-bracket">（{'\u3000'}）</span>
+                          <span className="sheet-mc-num">{qIdx + 1}.</span>
+                          <span>{q.prompt}</span>
+                        </div>
+                        <div className="sheet-mc-options">
+                          {q.options.map((opt, optIdx) => {
+                            const optionLabels = ['①', '②', '③', '④']
+                            return (
+                              <div key={optIdx} className="sheet-mc-option">
+                                <span className="sheet-mc-opt-label">{optionLabels[optIdx] || `(${optIdx + 1})`}</span>
+                                <span>{opt}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 3. 開放式問答題區塊 (有題目才渲染，空陣列絕不渲染 DOM) */}
+              {openQuestions.length > 0 && (
+                <section className="sheet-reading-card">
+                  <div className="sheet-sub-section-title">
+                    <span>貳、文意深究與簡答題（請閱讀句子後，用完整通順的話回答）：</span>
+                  </div>
+                  <div className="sheet-open-list">
+                    {openQuestions.map((q, qIdx) => (
+                      <div key={q.id || qIdx} className="sheet-open-item">
+                        <div className="sheet-open-prompt">
+                          <span className="sheet-open-num">{qIdx + 1}.</span>
+                          <span>{q.prompt}</span>
+                        </div>
+                        <div className="sheet-open-lines">
+                          {Array.from({ length: q.answerLineCount || 2 }).map((_, lIdx) => (
+                            <div key={lIdx} className="sheet-writing-line">
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>答：</span>
+                              <div className="sheet-writing-rule"></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   // 根據模板分流渲染當前頁面內容
   const renderContentByTemplate = (pageSections: WorksheetSection[], pageBlocks: WorksheetBlock[]) => {
     switch (activeTemplate) {
@@ -596,6 +907,10 @@ export const PrintPreviewPage: React.FC = () => {
         return renderWordPractice(pageSections)
       case 'sentence-practice':
         return renderSentencePractice(pageSections)
+      case 'character-discrimination':
+        return renderCharacterDiscrimination(pageSections)
+      case 'reading-comprehension':
+        return renderReadingComprehension(pageSections)
       case 'picture-practice':
         return renderPicturePractice(pageSections)
       case 'mixed':
@@ -690,7 +1005,7 @@ export const PrintPreviewPage: React.FC = () => {
               className="btn btn-primary"
               style={{ padding: '0.65rem 1.35rem', fontSize: '1rem' }}
               onClick={handleExportPdf}
-              disabled={isExportingPdf}
+              disabled={isExportingPdf || Boolean(emptyStateError)}
               aria-label="在瀏覽器端本機生成並下載 PDF 檔案"
             >
               {isExportingPdf ? (
@@ -707,6 +1022,7 @@ export const PrintPreviewPage: React.FC = () => {
               className="btn btn-secondary"
               style={{ padding: '0.65rem 1.2rem', fontSize: '1rem' }}
               onClick={handlePrint}
+              disabled={Boolean(emptyStateError)}
               aria-label="開啟系統列印視窗，可直接列印或另存為 PDF"
             >
               🖨️ 瀏覽器列印
@@ -761,52 +1077,104 @@ export const PrintPreviewPage: React.FC = () => {
         )}
       </div>
 
-      {/* A4 紙張預覽區 (支援多頁依序呈現) */}
-      <div ref={sheetsContainerRef} className="a4-preview-container">
-        {pages.map((page) => (
-          <article
-            key={page.pageNumber}
-            className={`a4-sheet ${isLowerGrade ? 'worksheet-font-bopomofo worksheet-grade-1-2' : 'worksheet-font-standard worksheet-grade-3-6'}`}
-            role="region"
-            aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
-          >
-            <header className="sheet-header">
-              <div className="sheet-header-top">
-                <h2 className="sheet-title">{activeTitle}</h2>
-                <div className="sheet-header-meta">
-                  <span>國小 {selectedGrade} 年級</span>
-                  <span className="sheet-header-meta-sep">｜</span>
-                  <span>國語單元評量</span>
-                  <span className="sheet-header-meta-sep">｜</span>
-                  <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
-                  {includeZhuyin ? (
-                    isLowerGrade ? (
-                      <span className="sheet-header-badge">（芫荽注音）</span>
-                    ) : null
-                  ) : (
-                    <span className="sheet-header-badge muted">（無注音版）</span>
-                  )}
+      {/* 依據 Codex error.type === 'no-eligible-characters' 顯示專屬空狀態畫面 */}
+      {emptyStateError && emptyStateError.type === 'no-eligible-characters' ? (
+        <div className="card empty-state-card" role="region" aria-label="學習單資料不足提示">
+          <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} aria-hidden="true">
+              📑
+            </div>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>
+              教材資料不足，無法建立「{templateNameMap[emptyStateError.template] || '此模板'}」
+            </h2>
+            <div
+              className="callout callout-warning"
+              style={{
+                maxWidth: '640px',
+                margin: '0 auto 1.5rem',
+                textAlign: 'left',
+                backgroundColor: '#fffbeb',
+                borderColor: '#f59e0b',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#92400e', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⚠️</span> 學習單生成引擎判定結果：
+              </div>
+              <p style={{ margin: 0, color: '#b45309', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                {emptyStateError.message}
+              </p>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '0.92rem', maxWidth: '580px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+              {emptyStateError.template === 'character-discrimination'
+                ? '「字音字形辨析單」需要教材生字中包含「形近字」或「多音字」的分析資料。您可以返回教材審核編輯頁補充，或切換其他學習單模板。'
+                : '「閱讀理解評量單」需要教材提供至少 3 個完整例句以組裝短文，或至少 2 個生字造詞以設計選擇題。您可以返回教材審核補充例句，或切換其他學習單模板。'}
+            </p>
+            <div className="btn-group" style={{ justifyContent: 'center', gap: '1rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigate('templates')}
+              >
+                ← 更換其他學習單模板
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate('review')}
+              >
+                ✏️ 前往教材審核與補充
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* A4 紙張預覽區 (支援多頁依序呈現) */
+        <div ref={sheetsContainerRef} className="a4-preview-container">
+          {pages.map((page) => (
+            <article
+              key={page.pageNumber}
+              className={`a4-sheet ${isLowerGrade ? 'worksheet-font-bopomofo worksheet-grade-1-2' : 'worksheet-font-standard worksheet-grade-3-6'}`}
+              role="region"
+              aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
+            >
+              <header className="sheet-header">
+                <div className="sheet-header-top">
+                  <h2 className="sheet-title">{activeTitle}</h2>
+                  <div className="sheet-header-meta">
+                    <span>國小 {selectedGrade} 年級</span>
+                    <span className="sheet-header-meta-sep">｜</span>
+                    <span>國語單元評量</span>
+                    <span className="sheet-header-meta-sep">｜</span>
+                    <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
+                    {includeZhuyin ? (
+                      isLowerGrade ? (
+                        <span className="sheet-header-badge">（芫荽注音）</span>
+                      ) : null
+                    ) : (
+                      <span className="sheet-header-badge muted">（無注音版）</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="sheet-info-row">
-                <span className="sheet-info-item">____ 年 ____ 班</span>
-                <span className="sheet-info-item">座號：____</span>
-                <span className="sheet-info-item">姓名：____________</span>
-                <span className="sheet-info-item">得分：______</span>
-              </div>
-            </header>
+                <div className="sheet-info-row">
+                  <span className="sheet-info-item">____ 年 ____ 班</span>
+                  <span className="sheet-info-item">座號：____</span>
+                  <span className="sheet-info-item">姓名：____________</span>
+                  <span className="sheet-info-item">得分：______</span>
+                </div>
+              </header>
 
-            <main className="sheet-content">
-              {renderContentByTemplate(page.sections, page.blocks)}
-            </main>
+              <main className="sheet-content">
+                {renderContentByTemplate(page.sections, page.blocks)}
+              </main>
 
-            <footer className="sheet-footer">
-              <span>國小 AI 學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
-              <span>第 {page.pageNumber} 頁 / 共 {pages.length} 頁</span>
-            </footer>
-          </article>
-        ))}
-      </div>
+              <footer className="sheet-footer">
+                <span>國小 AI 學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
+                <span>第 {page.pageNumber} 頁 / 共 {pages.length} 頁</span>
+              </footer>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
