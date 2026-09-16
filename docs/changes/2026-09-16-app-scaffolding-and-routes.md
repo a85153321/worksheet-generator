@@ -1,0 +1,26 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 建立整體 App 的頁面骨架與路由（包含 API Key 設定、教材上傳、分析進度、結果審核／編輯、圖片選擇、學習單模板選擇、A4 預覽／列印等 7 大頁面與基本無障礙鍵盤操作）
+- Changed files:
+  - `src/app/routes.ts`
+  - `src/app/app-context.ts`
+  - `src/app/AppContext.tsx`
+  - `src/app/useApp.ts`
+  - `src/app/Layout.tsx`
+  - `src/app/index.ts`
+  - `src/components/Header.tsx`
+  - `src/components/StepNavigation.tsx`
+  - `src/features/settings/SettingsPage.tsx`
+  - `src/features/upload/UploadPage.tsx`
+  - `src/features/analyzing/AnalyzingPage.tsx`
+  - `src/features/review/ReviewPage.tsx`
+  - `src/features/images/ImageSelectionPage.tsx`
+  - `src/features/templates/TemplateSelectionPage.tsx`
+  - `src/features/preview/PrintPreviewPage.tsx`
+  - `src/styles/app.css`
+  - `src/App.tsx`
+  - `src/index.css`
+- Contract change: none（嚴格遵循 Codex 建立之 `src/domain` 與 `src/services` 契約，UI 透過 services 與 mock use cases 串接）
+- Verified: `npm.cmd run lint` (ESLint 通過)、`npm.cmd run build` (TypeScript 與 Vite 打包通過)
+- Risks / open questions: none；各頁面已串接 mock data 與各流程階段狀態轉換
+- Next owner action: Codex 可依據各頁面需求，推進 Phase 1 與 Phase 2 基礎建設（如 IndexedDB 快取實作、真實 Gemini client 調用與 PDF 頁面預處理）
