@@ -25,15 +25,22 @@ export type WorksheetTemplate =
   | 'sentence-practice'
   | 'mixed'
 
+export type WorksheetBlock = Pick<
+  CharacterAnalysis,
+  'character' | 'zhuyin' | 'words' | 'exampleSentences'
+>
+
+export interface WorksheetPage {
+  pageNumber: number
+  blocks: WorksheetBlock[]
+}
+
 export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
   status: 'draft' | 'ready'
-  pages: Array<{
-    pageNumber: number
-    blocks: Array<Pick<CharacterAnalysis, 'character' | 'zhuyin' | 'words' | 'exampleSentences'>>
-  }>
+  pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult
   createdAt: string
 }
