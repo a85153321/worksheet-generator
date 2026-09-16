@@ -145,7 +145,7 @@
 
 ```
 請先讀 PROJECT.md 和 AGENT_COLLABORATION.md。
-
+「generateSelectedImage 目前仍是佔位 mock，Round 5 請整個換成真正實作」
 任務：
 1. 完成 generateSelectedImage use case 的真正邏輯：只處理教師勾選
    的項目，依標準化 prompt 與風格先查圖片快取，未命中才呼叫 Gemini。
