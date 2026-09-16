@@ -102,16 +102,15 @@ export const TemplateSelectionPage: React.FC = () => {
     setSuccessNotice(null)
 
     try {
-      const res = await buildWorksheet(analysisResult, selectedTemplate)
+      const imageList = Object.values(generatedImages)
+      const res = await buildWorksheet(analysisResult, selectedTemplate, { images: imageList })
       if (res.ok) {
         setWorksheetDoc(res.value)
         setSuccessNotice(
-          `已成功由 buildWorksheet 組裝「${currentOption.title}」學習單（包含 ${res.value.pages[0]?.blocks.length || 0} 個生字區塊）！`
+          `已成功由 buildWorksheet 組裝「${currentOption.title}」學習單（包含 ${res.value.pages[0]?.sections?.length || res.value.pages[0]?.blocks.length || 0} 個項目）！`
         )
-        // 延遲 500ms 讓使用者看清成功狀態後平順進入 A4 預覽
-        setTimeout(() => {
-          navigate('preview')
-        }, 500)
+        // 立即導航至 A4 預覽
+        navigate('preview')
       } else {
         setBuildError(res.error.message)
       }
