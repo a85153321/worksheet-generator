@@ -1,0 +1,24 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 完成圖片選擇頁（ImageSelectionPage.tsx）：支援教師勾選需要配圖之生字、即時預覽與修改建議 Prompt、彈窗放大預覽已生成圖片、提供「🔄 重新生成」與「📁 本機自訂上傳」替換機制，以及「🗑️ 刪除圖片」功能；「生成圖片」動作完全由使用者手動明確按鈕觸發，嚴格只發送已勾選項目；並清楚呈現 loading 進度、error 警示與 quota 配額提示。
+- Changed files:
+  - `src/features/images/ImageSelectionPage.tsx`（重構圖片選擇頁：加入全選/全取消/僅選未生成、Prompt 自訂編輯、生成進度條、Lightbox 放大預覽、單張與批次生成、本機自訂圖片上傳替換、刪除確認、空狀態引導）
+  - `src/styles/app.css`（新增圖片預覽 Modal Lightbox 彈窗樣式）
+  - `docs/changes/2026-09-16-image-selection-page.md`
+- Contract change: none（嚴格遵循 Codex 交付之 `generateSelectedImage` use case 與 `ImageResult` / `CharacterAnalysis` 契約）
+- Verified:
+  - `npm.cmd run lint`：0 error, 0 warning，全部通過。
+  - `npm.cmd run build`：TypeScript 及 Vite 打包 100% 成功。
+  - 自動化 Headless 測試（`scratch/test_images_page.mjs`，透過 Microsoft Edge CDP）：
+    - 測試 1（空狀態）：無分析生字資料時呈現 📭 空狀態卡片與導引按鈕。
+    - 測試 2、3（載入資料）：自審核頁載入三上生字（學、習）後返回圖片選擇頁，卡片與資訊皆完整呈現。
+    - 測試 4（Quota 與費用提示）：清楚顯示「本次動作預估處理範圍：已勾選 N 個生字項目（預計送出 N 次圖片生成請求）」，並呈現符合 PROJECT.md 第 6 節之高耗能警示、未選配圖仍具備完整學習單功能之說明與不猜測費用聲明。
+    - 測試 5（勾選操作）：全選、全部取消、個別點選、未選時禁用批次按鈕與數量徽章更新皆正常。
+    - 測試 6（建議 Prompt 預覽與修改）：預覽 AI 生成指令與教學用意，點選修改 Prompt 並儲存後立即更新。
+    - 測試 7（明確按鈕批次生成）：點擊「批量生成已勾選配圖 (1 張)」手動觸發，僅針對勾選項目「學」送出請求，「習」維持未生成狀態。
+    - 測試 8（放大預覽 Lightbox）：點選「預覽」開啟彈窗，正確顯示大圖、Prompt、檔案格式與來源，支援按鍵或按鈕關閉。
+    - 測試 9（單張手動生成）：在未生成生字「習」卡片上點擊「單張生成」能手動觸發生成並正確掛載。
+    - 測試 10（刪除已生成圖片）：在生字「學」卡片點擊「刪除」後，圖片被成功移除並恢復為未生成狀態，跳出刪除成功提示。
+- Risks / open questions: none
+- Next owner action:
+  - Codex 可依 `generatedImages` 與 `AnalysisResult` 推進下一步驟「學習單模板選擇頁（TemplateSelectionPage）」與 `buildWorksheet` use case 串接。
