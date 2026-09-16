@@ -1,0 +1,17 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 完成 API Key 設定頁（BYOK 本機設定儲存、預設遮罩顯示、測試連線、清除功能、鍵盤無障礙與 Loading/Error/Success 狀態）
+- Changed files:
+  - `src/features/settings/SettingsPage.tsx`
+  - `docs/changes/2026-09-16-api-key-settings-page.md`
+- Contract change: none（依協作規約第 3 點使用局部暫時型別，未在 `src/domain/` 建立任何檔案，等待 Codex 合併正式契約）
+- Verified:
+  - `npm.cmd run lint`：0 error, 0 warning 通過。
+  - `npm.cmd run build`：TypeScript 與 Vite 打包成功。
+  - 儲存界線與隱私檢核：
+    - 嚴格僅儲存於瀏覽器本機 `localStorage`（`ws_gemini_api_key`）。
+    - 程式碼中 0 處 log，禁止將 Key 輸出至 console 或外部。
+    - 嚴禁自動發送，連線測試與儲存完全由使用者明確點擊觸發。
+    - Key 欄位預設 `type="password"` 遮罩，不顯示完整值；旁邊緊鄰放置測試按鈕與清除按鈕。
+- Risks / open questions: none
+- Next owner action: Codex 可在適當時機將 API Key 相關 domain schema/型別合併至 `src/domain/`。
