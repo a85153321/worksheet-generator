@@ -1,4 +1,8 @@
-import type { AnalysisResult, CharacterAnalysis } from '../domain'
+import type {
+  AnalysisResult,
+  CharacterAnalysis,
+  ImageProcessingOptions,
+} from '../domain'
 
 export interface AnalyzeMaterialInput {
   data: Blob
@@ -17,6 +21,22 @@ export interface ImageResult {
   mimeType: 'image/svg+xml' | 'image/png' | 'image/jpeg' | 'image/webp'
   source: 'mock' | 'generated' | 'cache'
   createdAt: string
+}
+
+export interface ProcessUploadedImageInput {
+  file: Blob
+  fileName: string
+  options?: ImageProcessingOptions
+}
+
+export interface InspectUploadedPdfInput {
+  file: Blob
+  fileName: string
+}
+
+export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
+  selectedPages: readonly number[]
+  options?: ImageProcessingOptions
 }
 
 export type WorksheetTemplate =

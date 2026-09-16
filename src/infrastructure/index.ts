@@ -19,3 +19,5 @@ export {
   putImageCache,
 } from './indexed-db'
 export type { CachedImage } from './indexed-db'
+export { calculateOutputDimensions, preprocessImage } from './image-processing'
+export { inspectPdf, renderSelectedPdfPages } from './pdf-processing'
