@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildGeminiGenerateContentUrl,
   buildGradeAdaptationInstruction,
+  buildSkillTagInstruction,
+  buildZhuyinInstruction,
   createGeminiClient,
   DEFAULT_GEMINI_ANALYSIS_MODEL,
 } from '../src/infrastructure/gemini-client'
@@ -36,6 +38,54 @@ function geminiResponse(value: unknown): Response {
 }
 
 describe('Gemini client retry policy', () => {
+  it('changes both prompt and observable output for different skill tags', async () => {
+    const request = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+      const prompt = String(init?.body)
+      return geminiResponse({
+        ...validAnalysis,
+        characters: [{
+          ...validAnalysis.characters[0],
+          words: prompt.includes('【成語運用】') ? ['學以致用'] : ['學習', '學生'],
+          exampleSentences: prompt.includes('【句型仿寫】')
+            ? ['因為我每天認真學習，所以進步很快。']
+            : ['我喜歡學習。'],
+        }],
+      })
+    })
+    const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })
+
+    const wordResult = await client.analyzeMaterial({ ...input, skillTags: ['造詞'] })
+    const advancedResult = await client.analyzeMaterial({
+      ...input,
+      skillTags: ['成語運用', '句型仿寫'],
+    })
+
+    expect(wordResult.ok && wordResult.value.characters[0].words).toEqual(['學習', '學生'])
+    expect(advancedResult.ok && advancedResult.value.characters[0].words).toEqual(['學以致用'])
+    expect(advancedResult.ok && advancedResult.value.characters[0].exampleSentences[0])
+      .toContain('因為')
+    expect(buildSkillTagInstruction(['造詞'])).toContain('符合語境的造詞')
+  })
+
+  it('requires populated zhuyin when enabled and accepts an empty field when disabled', async () => {
+    const request = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+      const includeZhuyin = String(init?.body).includes('zhuyin 必須填入')
+      return geminiResponse({
+        ...validAnalysis,
+        characters: [{ ...validAnalysis.characters[0], zhuyin: includeZhuyin ? 'ㄒㄩㄝˊ' : '' }],
+      })
+    })
+    const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })
+
+    const withZhuyin = await client.analyzeMaterial({ ...input, includeZhuyin: true })
+    const withoutZhuyin = await client.analyzeMaterial({ ...input, includeZhuyin: false })
+
+    expect(withZhuyin.ok && withZhuyin.value.characters[0].zhuyin).toBe('ㄒㄩㄝˊ')
+    expect(withoutZhuyin.ok && withoutZhuyin.value.characters[0].zhuyin).toBe('')
+    expect(buildZhuyinInstruction(true)).toContain('不可留空')
+    expect(buildZhuyinInstruction(false)).toContain('空字串')
+  })
+
   it('adds observably different vocabulary and sentence guidance for grades 1 and 6', async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
     const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })

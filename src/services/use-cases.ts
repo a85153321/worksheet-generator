@@ -20,7 +20,8 @@ export function buildAnalysisCacheKey(
   contentHash: string,
   context?: AnalyzeMaterialInput['context'],
 ): string {
-  return `analysis-v2:${contentHash}:grade=${context?.grade ?? 'unspecified'}:language=${context?.language ?? 'zh-TW'}`
+  const skillTags = [...new Set(context?.skillTags ?? [])].sort().join(',') || 'none'
+  return `analysis-v3:${contentHash}:grade=${context?.grade ?? 'unspecified'}:language=${context?.language ?? 'zh-TW'}:zhuyin=${context?.includeZhuyin ?? true}:skills=${encodeURIComponent(skillTags)}`
 }
 
 export async function analyzeMaterial(
@@ -66,6 +67,8 @@ export async function analyzeMaterial(
     selectedPages: input.selectedPages,
     grade: input.context?.grade,
     language: input.context?.language,
+    skillTags: input.context?.skillTags,
+    includeZhuyin: input.context?.includeZhuyin,
   })
 
   if (!result.ok) return result

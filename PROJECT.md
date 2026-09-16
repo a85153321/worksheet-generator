@@ -86,6 +86,8 @@ src/
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
 - 年級必須實際影響造詞範圍、詞語難度、例句長度與句型／修辭複雜度；分析快取 key
   必須包含年級與語言，避免切換年級時誤用其他年級的結果。
+- 分析 context 可帶入 `skillTags` 與 `includeZhuyin`；功能標籤必須逐項轉成具體 prompt
+  指令，注音關閉時保留 `zhuyin` 欄位但允許空字串。快取 key 必須同時包含這兩項設定。
 - 教材分析預設使用 GA 穩定模型 `gemini-3.5-flash`，透過
   `v1beta/models/gemini-3.5-flash:generateContent` 呼叫；模型與 endpoint 集中由
   infrastructure 常數管理，不在 UI 或 service 重複寫死。

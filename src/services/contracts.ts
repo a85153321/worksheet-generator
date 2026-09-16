@@ -1,5 +1,6 @@
 import type {
   AnalysisResult,
+  AnalysisContextInput,
   CharacterAnalysis,
   ImageProcessingOptions,
 } from '../domain'
@@ -10,7 +11,7 @@ export interface AnalyzeMaterialInput {
   mimeType: string
   contentHash?: string
   selectedPages?: readonly number[]
-  context?: { grade?: number; language?: 'zh-TW' }
+  context?: AnalysisContextInput
 }
 
 export interface ImageResult {

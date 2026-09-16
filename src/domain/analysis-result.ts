@@ -32,7 +32,8 @@ export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
   }),
-  zhuyin: z.string().trim().min(1),
+  // includeZhuyin=false 時保留跨層欄位結構，但允許以空字串節省模型輸出。
+  zhuyin: z.string().trim(),
   radical: z.string().trim().min(1),
   strokeCount: z.number().int().positive(),
   words: z.array(z.string().trim().min(1)),

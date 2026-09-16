@@ -1,5 +1,10 @@
 import { analysisResultSchema } from '../domain'
-import type { AnalysisResult, AppError, Result } from '../domain'
+import type {
+  AnalysisResult,
+  AnalysisSkillTag,
+  AppError,
+  Result,
+} from '../domain'
 
 export const DEFAULT_GEMINI_ANALYSIS_MODEL = 'gemini-3.5-flash'
 export const GEMINI_GENERATE_CONTENT_ENDPOINT =
@@ -103,6 +108,8 @@ export interface GeminiAnalysisInput {
   selectedPages?: readonly number[]
   grade?: number
   language?: 'zh-TW'
+  skillTags?: readonly AnalysisSkillTag[]
+  includeZhuyin?: boolean
 }
 
 export interface GeminiClientOptions {
@@ -132,6 +139,42 @@ export function buildGradeAdaptationInstruction(grade?: number): string {
     return '六年級：使用進階書面語、成語、同反義詞與合宜修辭，詞語可涵蓋抽象概念；例句可包含複句、轉折或因果，約 28～45 個中文字。'
   }
   return '年級未指定：使用臺灣國小中年級程度的常用詞語與清楚完整的例句。'
+}
+
+const SKILL_INSTRUCTIONS: Record<AnalysisSkillTag, string> = {
+  生字: '辨識教材中的核心生字，提供適合教學的字義線索。',
+  部件: '強調字形拆解、部件位置與部首關係。',
+  造詞: '每個生字提供具教學價值且符合語境的造詞。',
+  注音符號拼讀: '強調聲符、韻符、聲調與拼讀提示。',
+  筆順識字: '強調筆畫數、基本筆順與易錯字形。',
+  詞語搭配: '提供自然常用的詞語搭配與搭配限制。',
+  看圖造句: '例句需具體可視覺化，適合作為看圖造句題材。',
+  句型仿寫: '提供結構清楚、可替換關鍵成分的示範句型。',
+  段落寫作: '例句之間應能延伸成有開頭、發展與結尾的短段落。',
+  關聯詞運用: '使用並凸顯合宜的因果、轉折、條件或並列關聯詞。',
+  形音義辨析: '指出容易混淆的字形、字音或字義，避免混用。',
+  成語運用: '優先提供含目標字或語義相關的常用成語及正確語境。',
+  語病修改: '提供可用於辨識或修改語病的句子線索，注意搭配與語序。',
+  修辭技巧: '在例句中適度運用譬喻、擬人、排比等修辭。',
+  長文閱讀理解: '內容需能連結長文主旨、細節推論與篇章理解。',
+  摘要: '聚焦核心資訊與主旨，避免枝節，利於摘要練習。',
+  多元文本閱讀: '兼顧敘事、說明或應用文本的語境與閱讀目的。',
+  觀點思辨: '例句或問題情境需容納理由、證據與不同觀點。',
+  短文論述: '提供可延伸為主張、理由與例證的短文論述素材。',
+}
+
+export function buildSkillTagInstruction(tags: readonly AnalysisSkillTag[] = []): string {
+  const uniqueTags = [...new Set(tags)]
+  if (uniqueTags.length === 0) return '未勾選特定功能：只產出核心生字分析資料。'
+  return uniqueTags
+    .map((tag) => `【${tag}】${SKILL_INSTRUCTIONS[tag]}`)
+    .join(' ')
+}
+
+export function buildZhuyinInstruction(includeZhuyin = true): string {
+  return includeZhuyin
+    ? '需要注音：每個生字的 zhuyin 必須填入正確的臺灣注音符號，不可留空。'
+    : '不需要注音：不要花費 token 解說或產生注音；仍須保留 zhuyin 欄位，但一律回傳空字串 ""。'
 }
 
 function validationError(message: string): Result<never, AppError> {
@@ -239,15 +282,17 @@ export function createGeminiClient(options: GeminiClientOptions) {
       const encodedData = await blobToBase64(input.data)
       const context = `年級：${input.grade ?? '未指定'}；語言：${input.language ?? 'zh-TW'}；檔名：${input.fileName}；頁面：${input.selectedPages?.join(', ') || '整份'}`
       const gradeInstruction = buildGradeAdaptationInstruction(input.grade)
+      const skillInstruction = buildSkillTagInstruction(input.skillTags)
+      const zhuyinInstruction = buildZhuyinInstruction(input.includeZhuyin)
       const initialBody = {
         systemInstruction: {
-          parts: [{ text: `你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。必須依指定年級調整 words 的造詞選字範圍、詞語難度與 exampleSentences 的句型複雜度，不可對所有年級使用同一套內容。${gradeInstruction} 若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。` }],
+          parts: [{ text: `你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。必須依指定年級與勾選功能調整 words、exampleSentences、字形分析及圖片建議，不可忽略功能標籤。${gradeInstruction} ${skillInstruction} ${zhuyinInstruction} 若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。` }],
         },
         contents: [
           {
             role: 'user',
             parts: [
-              { text: `請用一次完整分析擷取生字、注音、部首、筆畫、詞語、例句、信心值、來源與圖片建議。${context} 教學分級要求：${gradeInstruction}` },
+              { text: `請用一次完整分析擷取生字、部首、筆畫、詞語、例句、信心值、來源與圖片建議。${context} 功能標籤：${input.skillTags?.join('、') || '無'}。功能要求：${skillInstruction} 注音要求：${zhuyinInstruction} 教學分級要求：${gradeInstruction}` },
               { inlineData: { mimeType: input.mimeType, data: encodedData } },
             ],
           },
