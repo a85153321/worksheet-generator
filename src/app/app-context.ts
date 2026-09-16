@@ -21,7 +21,7 @@ export interface AnalysisScope {
   selectedPages: number[]
   estimatedItemsMin: number
   estimatedItemsMax: number
-  grade: number
+  grade?: number
   skillTags?: AnalysisSkillTag[]
   includeZhuyin?: boolean
 }

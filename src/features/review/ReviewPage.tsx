@@ -62,7 +62,6 @@ export const ReviewPage: React.FC = () => {
     analysisResult,
     setAnalysisResult,
     uploadedFile,
-    selectedGrade,
     skillTags,
     includeZhuyin,
     navigate,
@@ -99,7 +98,7 @@ export const ReviewPage: React.FC = () => {
       const contentHash = uploadedFile
         ? buildAnalysisCacheKey(
             `hash-${encodeURIComponent(uploadedFile.name)}-${uploadedFile.size}-p${(uploadedFile.selectedPages ?? [1]).slice().sort((a, b) => a - b).join(',')}`,
-            { grade: selectedGrade, language: 'zh-TW', skillTags, includeZhuyin },
+            { language: 'zh-TW', skillTags, includeZhuyin },
           )
         : undefined
 

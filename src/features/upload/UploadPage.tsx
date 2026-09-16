@@ -34,8 +34,6 @@ export const UploadPage: React.FC = () => {
     analysisError,
     setAnalysisError,
     isAnalyzing,
-    selectedGrade,
-    setSelectedGrade,
     skillTags,
     setSkillTags,
     includeZhuyin,
@@ -574,52 +572,19 @@ export const UploadPage: React.FC = () => {
               })}
             </div>
 
-            {/* 年級情境與注音提示 */}
+            {/* 注音提示說明 */}
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
                 marginTop: '0.85rem',
                 paddingTop: '0.75rem',
                 borderTop: '1px dashed var(--color-border)',
+                fontSize: '0.82rem',
+                color: 'var(--color-text-muted)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <label htmlFor="grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                  🎓 教材分級語境：
-                </label>
-                <select
-                  id="grade-select"
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(Number(e.target.value))}
-                  disabled={isAnalyzing}
-                  style={{
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.88rem',
-                    backgroundColor: 'var(--color-surface)',
-                  }}
-                >
-                  <option value={1}>國小一年級（簡易字、拼音描紅）</option>
-                  <option value={2}>國小二年級（基礎部件、造詞）</option>
-                  <option value={3}>國小三年級（生字練習、例句仿寫）</option>
-                  <option value={4}>國小四年級（部首辨析、成語擴展）</option>
-                  <option value={5}>國小五年級（進階修辭、短文應用）</option>
-                  <option value={6}>國小六年級（深度鑑賞、閱讀素養）</option>
-                </select>
-              </div>
-
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                {includeZhuyin
-                  ? selectedGrade <= 2
-                    ? '💡 一、二年級已啟用注音，預覽列印將自動套用「芫荽注音」直式字體'
-                    : '💡 已開啟注音，將以標楷體呈現臺灣傳統直式注音'
-                  : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位'}
-              </div>
+              {includeZhuyin
+                ? '💡 已開啟注音，A4 學習單將以直式注音排版呈現於國字右側。'
+                : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位。'}
             </div>
           </div>
         </div>
@@ -649,13 +614,10 @@ export const UploadPage: React.FC = () => {
               <strong>預估提取項目：</strong> 約 {analysisScope.estimatedItemsMin} ~ {analysisScope.estimatedItemsMax} 個國語生字及詞句
             </div>
             <div>
-              <strong>語境目標：</strong> 國小 {selectedGrade} 年級
-            </div>
-            <div>
               <strong>注音模式：</strong>{' '}
               {includeZhuyin ? (
                 <span style={{ color: '#166534', fontWeight: 600 }}>
-                  顯示注音（{selectedGrade <= 2 ? '芫荽注音' : '標楷體'}）
+                  顯示注音（直式排版）
                 </span>
               ) : (
                 <span style={{ color: '#dc2626', fontWeight: 600 }}>

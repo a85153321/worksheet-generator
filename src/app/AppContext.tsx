@@ -117,11 +117,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedPages: pages,
       estimatedItemsMin: Math.max(1, pageCount * 2),
       estimatedItemsMax: pageCount * 4,
-      grade: selectedGrade,
       skillTags,
       includeZhuyin,
     }
-  }, [uploadedFile, selectedGrade, skillTags, includeZhuyin])
+  }, [uploadedFile, skillTags, includeZhuyin])
 
   /**
    * 執行教材分析 use case 流程：
@@ -155,7 +154,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const pagesKey = activePages.sort((a, b) => a - b).join(',')
       const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
       const analysisContext: AnalysisContextInput = {
-        grade: selectedGrade,
         language: 'zh-TW',
         skillTags,
         includeZhuyin,

@@ -81,4 +81,24 @@ describe('Skill Tags and Zhuyin Toggle Integration', () => {
     })
     expect(keyWithZhuyin).not.toEqual(keyDifferentSkills)
   })
+
+  it('supports analysis context and cache key without grade context', () => {
+    const contextWithoutGrade = analysisContextSchema.parse({
+      language: 'zh-TW',
+      skillTags: ['生字練習', '語詞練習'],
+      includeZhuyin: true,
+    })
+    expect(contextWithoutGrade.grade).toBeUndefined()
+    expect(contextWithoutGrade.skillTags).toEqual(['生字練習', '語詞練習'])
+    expect(contextWithoutGrade.includeZhuyin).toBe(true)
+
+    const keyWithoutGrade = buildAnalysisCacheKey('content-hash-2', {
+      language: 'zh-TW',
+      skillTags: ['生字練習', '語詞練習'],
+      includeZhuyin: true,
+    })
+    expect(keyWithoutGrade).toContain('grade=unspecified')
+    expect(keyWithoutGrade).toContain('zhuyin=true')
+    expect(keyWithoutGrade).toContain('skills=')
+  })
 })
