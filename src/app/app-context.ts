@@ -8,6 +8,18 @@ export interface UploadedFileInfo {
   size: number
   mimeType: string
   blob: Blob
+  previewUrl?: string
+  isPdf?: boolean
+  pageCount?: number
+  selectedPages?: number[]
+}
+
+export interface AnalysisScope {
+  pageCount: number
+  selectedPages: number[]
+  estimatedItemsMin: number
+  estimatedItemsMax: number
+  grade: number
 }
 
 export interface AppContextType {
@@ -19,6 +31,8 @@ export interface AppContextType {
   clearApiKey: () => void
   uploadedFile: UploadedFileInfo | null
   setUploadedFile: (file: UploadedFileInfo | null) => void
+  setSelectedPages: (pages: number[]) => void
+  analysisScope: AnalysisScope
   analysisResult: AnalysisResult | null
   setAnalysisResult: React.Dispatch<React.SetStateAction<AnalysisResult | null>>
   analysisError: AppError | null

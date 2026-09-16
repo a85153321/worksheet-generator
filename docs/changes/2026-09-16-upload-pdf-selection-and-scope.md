@@ -1,0 +1,23 @@
+## Handoff
+- Owner: Antigravity
+- Goal: 完成教材上傳頁（圖片與 PDF 上傳、PDF 頁面縮圖選頁網格）、預估處理範圍顯示（依 PROJECT.md 第 6 節規範）、明確按鈕觸發機制（防範 mount / input change 自動觸發），並維持 API Key 清除與 3 秒淡出機制。
+- Changed files:
+  - `src/app/app-context.ts`
+  - `src/app/AppContext.tsx`
+  - `src/features/upload/UploadPage.tsx`
+  - `src/features/analyzing/AnalyzingPage.tsx`
+  - `src/features/settings/SettingsPage.tsx`
+  - `src/styles/app.css`
+  - `docs/changes/2026-09-16-upload-pdf-selection-and-scope.md`
+- Contract change: none（嚴格遵循 Codex 交付之 `AnalyzeMaterialInput` 與 `analyzeMaterial` 契約，傳入 `selectedPages` 與 `grade`）
+- Verified:
+  - `npm.cmd run lint`：0 error, 0 warning 通過。
+  - `npm.cmd run build`：TypeScript 及 Vite 打包 100% 成功。
+  - 自動化 Headless 測試（`test_pdf_and_scope.mjs` & `test_clear_timeout.mjs`）：
+    - 圖片上傳顯示真實預覽縮圖。
+    - PDF 上傳顯示多頁縮圖選頁網格（可個別點選、全選、僅選第 1 頁、清空）。
+    - 顯示「本次動作預估處理範圍」（檔案、頁數、預估生字項目數、年級），並嚴格標註不猜測費用之聲明。
+    - 昂貴操作防範：直接訪問 `#/analyzing` 絕不自動在 mount 觸發分析，需點擊按鈕手動明確啟動。
+    - API Key 清除提示為「API Key 已自動清除。」並於 3 秒後平順自動淡出。
+- Risks / open questions: none
+- Next owner action: Codex 可串接真實 PDF 影像渲染與裁切管線。
