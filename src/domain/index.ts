@@ -14,6 +14,8 @@ export {
   characterAnalysisSchema,
   editableStateSchema,
   imageSuggestionSchema,
+  lookalikeCandidateSchema,
+  multiPronunciationSchema,
   reviewReasonSchema,
   sourceLocationSchema,
 } from './analysis-result'
@@ -22,6 +24,8 @@ export type {
   CharacterAnalysis,
   EditableState,
   ImageSuggestion,
+  LookalikeCandidate,
+  MultiPronunciation,
   ReviewReason,
   SourceLocation,
 } from './analysis-result'
@@ -35,6 +39,7 @@ export {
   appErrorSchema,
   authenticationErrorSchema,
   networkErrorSchema,
+  noEligibleCharactersErrorSchema,
   quotaErrorSchema,
   validationErrorSchema,
 } from './app-error'

@@ -28,6 +28,19 @@ export const reviewReasonSchema = z.enum([
   'uncertain-stroke-count',
 ])
 
+export const lookalikeCandidateSchema = z.object({
+  character: z.string().refine((value) => [...value].length === 1, {
+    message: 'character 必須是單一字元',
+  }),
+  radical: z.string().trim().min(1),
+  strokeCount: z.number().int().positive(),
+})
+
+export const multiPronunciationSchema = z.object({
+  pronunciation: z.string().trim().min(1),
+  word: z.string().trim().min(1),
+})
+
 export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
@@ -38,6 +51,8 @@ export const characterAnalysisSchema = z.object({
   strokeCount: z.number().int().positive(),
   words: z.array(z.string().trim().min(1)),
   exampleSentences: z.array(z.string().trim().min(1)),
+  lookalikeCandidates: z.array(lookalikeCandidateSchema).optional(),
+  multiPronunciations: z.array(multiPronunciationSchema).optional(),
   confidence: z.number().min(0).max(1),
   reviewReasons: z.array(reviewReasonSchema).optional(),
   source: sourceLocationSchema,
@@ -53,5 +68,7 @@ export type SourceLocation = z.infer<typeof sourceLocationSchema>
 export type ImageSuggestion = z.infer<typeof imageSuggestionSchema>
 export type EditableState = z.infer<typeof editableStateSchema>
 export type ReviewReason = z.infer<typeof reviewReasonSchema>
+export type LookalikeCandidate = z.infer<typeof lookalikeCandidateSchema>
+export type MultiPronunciation = z.infer<typeof multiPronunciationSchema>
 export type CharacterAnalysis = z.infer<typeof characterAnalysisSchema>
 export type AnalysisResult = z.infer<typeof analysisResultSchema>

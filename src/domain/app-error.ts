@@ -32,11 +32,20 @@ export const quotaErrorSchema = z.object({
   details: errorDetailsSchema,
 })
 
+export const noEligibleCharactersErrorSchema = z.object({
+  type: z.literal('no-eligible-characters'),
+  template: z.enum(['character-discrimination', 'reading-comprehension']),
+  message: z.string().min(1),
+  retryable: z.literal(false),
+  details: errorDetailsSchema,
+})
+
 export const appErrorSchema = z.discriminatedUnion('type', [
   validationErrorSchema,
   networkErrorSchema,
   authenticationErrorSchema,
   quotaErrorSchema,
+  noEligibleCharactersErrorSchema,
 ])
 
 export type AppError = z.infer<typeof appErrorSchema>

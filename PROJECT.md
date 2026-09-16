@@ -121,6 +121,10 @@ src/
 `character-practice`、`word-practice`、`sentence-practice`、`picture-practice`、`mixed`；
 每頁的 `sections` 是預覽／列印的主要資料來源，舊有 `blocks` 保留為相容索引。
 
+延伸模板另包含 `character-discrimination`（字音字形辨析）與
+`reading-comprehension`（閱讀理解）。兩者同樣只使用已驗證的 `AnalysisResult`
+在本機組裝；若資料未達題型門檻，只省略不足的部分，不呼叫 AI 補齊。
+
 ## 7a. Phase 0 起手式（具體步驟）
 
 在請 Codex／Antigravity 開始寫功能程式碼之前，先手動（或請其中一個 agent）完成以下骨架，讓兩邊都有一致的起點：

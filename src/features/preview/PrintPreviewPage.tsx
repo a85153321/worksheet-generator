@@ -41,6 +41,8 @@ export const PrintPreviewPage: React.FC = () => {
     'sentence-practice': '句型仿寫應用單',
     'picture-practice': '看圖識字練習單',
     mixed: '生字語文綜合單',
+    'character-discrimination': '字音字形辨析單',
+    'reading-comprehension': '閱讀理解評量單',
   }
 
   // 自動同步：若尚未由 buildWorksheet 組裝，或當前 worksheetDoc 與已選 selectedTemplate 不一致時，自動呼叫 buildWorksheet

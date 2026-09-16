@@ -47,6 +47,31 @@ const analysisJsonSchema = {
           strokeCount: { type: 'integer', minimum: 1 },
           words: { type: 'array', items: { type: 'string' } },
           exampleSentences: { type: 'array', items: { type: 'string' } },
+          lookalikeCandidates: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['character', 'radical', 'strokeCount'],
+              properties: {
+                character: { type: 'string' },
+                radical: { type: 'string' },
+                strokeCount: { type: 'integer', minimum: 1 },
+              },
+            },
+          },
+          multiPronunciations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['pronunciation', 'word'],
+              properties: {
+                pronunciation: { type: 'string' },
+                word: { type: 'string' },
+              },
+            },
+          },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
           reviewReasons: {
             type: 'array',

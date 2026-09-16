@@ -3,6 +3,8 @@ import type {
   AnalysisContextInput,
   CharacterAnalysis,
   ImageProcessingOptions,
+  LookalikeCandidate,
+  MultiPronunciation,
 } from '../domain'
 
 export interface AnalyzeMaterialInput {
@@ -46,6 +48,8 @@ export type WorksheetTemplate =
   | 'sentence-practice'
   | 'picture-practice'
   | 'mixed'
+  | 'character-discrimination'
+  | 'reading-comprehension'
 
 export type WorksheetBlock = Pick<
   CharacterAnalysis,
@@ -91,11 +95,54 @@ export interface PictureWorksheetSection extends WorksheetSectionBase {
   }
 }
 
+export interface CharacterDiscriminationWorksheetSection extends WorksheetSectionBase {
+  kind: 'character-discrimination'
+  item: {
+    character: CharacterAnalysis['character']
+    zhuyin: CharacterAnalysis['zhuyin']
+    lookalikeCandidates: LookalikeCandidate[]
+    multiPronunciations: MultiPronunciation[]
+    handwritingLineCount: number
+  }
+}
+
+export interface ReadingPassage {
+  title: string
+  text: string
+  sentences: string[]
+}
+
+export interface ReadingMultipleChoiceQuestion {
+  id: string
+  character: string
+  prompt: string
+  options: string[]
+  correctAnswer: string
+}
+
+export interface ReadingOpenResponseQuestion {
+  id: string
+  prompt: string
+  sourceSentence: string
+  answerLineCount: number
+}
+
+export interface ReadingComprehensionWorksheetSection extends WorksheetSectionBase {
+  kind: 'reading-comprehension'
+  item: {
+    passage: ReadingPassage | null
+    multipleChoiceQuestions: ReadingMultipleChoiceQuestion[]
+    openResponseQuestions: ReadingOpenResponseQuestion[]
+  }
+}
+
 export type WorksheetSection =
   | CharacterWorksheetSection
   | WordWorksheetSection
   | SentenceWorksheetSection
   | PictureWorksheetSection
+  | CharacterDiscriminationWorksheetSection
+  | ReadingComprehensionWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -112,7 +159,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '綜合'
+  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '綜合' | '字音字形辨析' | '閱讀理解'
   status: 'draft' | 'ready'
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult

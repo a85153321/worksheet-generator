@@ -5,6 +5,7 @@ import type {
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
+  ReadingComprehensionWorksheetSection,
   WorksheetSection,
   WorksheetTemplate,
 } from './contracts'
@@ -18,6 +19,8 @@ const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> 
   'sentence-practice': '句子',
   'picture-practice': '看圖',
   mixed: '綜合',
+  'character-discrimination': '字音字形辨析',
+  'reading-comprehension': '閱讀理解',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
@@ -88,6 +91,93 @@ function pictureSection(
   }
 }
 
+function characterDiscriminationSection(
+  item: CharacterAnalysis,
+  index: number,
+): WorksheetSection | null {
+  const lookalikeCandidates = item.lookalikeCandidates ?? []
+  const multiPronunciations = item.multiPronunciations ?? []
+  if (lookalikeCandidates.length === 0 && multiPronunciations.length === 0) return null
+
+  return {
+    kind: 'character-discrimination',
+    id: sectionId('character-discrimination', item.character, index),
+    instructions: '比較字形與讀音後，在空白處寫下你的辨析結果。',
+    item: {
+      character: item.character,
+      zhuyin: item.zhuyin,
+      lookalikeCandidates: structuredClone(lookalikeCandidates),
+      multiPronunciations: structuredClone(multiPronunciations),
+      handwritingLineCount: 3,
+    },
+  }
+}
+
+function isCompleteSentence(sentence: string): boolean {
+  return sentence.trim().length > 0
+}
+
+function readingComprehensionSection(
+  analysis: AnalysisResult,
+): ReadingComprehensionWorksheetSection | null {
+  const completeSentences = analysis.characters
+    .flatMap((item) => item.exampleSentences)
+    .map((sentence) => sentence.trim())
+    .filter(isCompleteSentence)
+  const wordCharacters = analysis.characters.filter((item) =>
+    item.words.some((word) => word.trim().length > 0),
+  )
+
+  const passageSentences = completeSentences.length >= 3
+    ? completeSentences.slice(0, 5)
+    : []
+  const passage = passageSentences.length > 0
+    ? {
+        title: '教材情境短文',
+        text: passageSentences.join(''),
+        sentences: passageSentences,
+      }
+    : null
+
+  const multipleChoiceQuestions = wordCharacters.length >= 2
+    ? wordCharacters.map((item, index) => {
+        const correctAnswer = item.words.find((word) => word.trim().length > 0)!.trim()
+        const distractors = wordCharacters
+          .filter((candidate) => candidate.character !== item.character)
+          .flatMap((candidate) => candidate.words)
+          .map((word) => word.trim())
+          .filter((word, wordIndex, words) =>
+            word.length > 0 && word !== correctAnswer && words.indexOf(word) === wordIndex,
+          )
+        return {
+          id: `reading-choice-${index + 1}`,
+          character: item.character,
+          prompt: `下列哪一個詞語是教材中「${item.character}」的造詞？`,
+          options: [correctAnswer, ...distractors].slice(0, 4),
+          correctAnswer,
+        }
+      })
+    : []
+
+  const openResponseQuestions = completeSentences.slice(0, 3).map((sentence, index) => ({
+    id: `reading-open-${index + 1}`,
+    prompt: `讀完例句後，請用自己的話說明句意：${sentence}`,
+    sourceSentence: sentence,
+    answerLineCount: 3,
+  }))
+
+  if (!passage && multipleChoiceQuestions.length === 0 && openResponseQuestions.length === 0) {
+    return null
+  }
+
+  return {
+    kind: 'reading-comprehension',
+    id: 'reading-comprehension-1',
+    instructions: '閱讀短文或例句後，完成可用的選擇題與問答題。',
+    item: { passage, multipleChoiceQuestions, openResponseQuestions },
+  }
+}
+
 function buildSections(
   analysis: AnalysisResult,
   template: WorksheetTemplate,
@@ -109,14 +199,18 @@ function buildSections(
             ? [wordSection(item, index)]
             : template === 'sentence-practice'
               ? [sentenceSection(item, index)]
-              : [pictureSection(item, index, images)]
+              : template === 'picture-practice'
+                ? [pictureSection(item, index, images)]
+                : template === 'character-discrimination'
+                  ? [characterDiscriminationSection(item, index)]
+                  : []
     sections.push(...candidates.filter((section): section is WorksheetSection => section !== null))
   })
   return sections
 }
 
-function sectionCharacter(section: WorksheetSection): string {
-  return section.item.character
+function sectionCharacter(section: WorksheetSection): string | null {
+  return section.kind === 'reading-comprehension' ? null : section.item.character
 }
 
 function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
@@ -140,6 +234,7 @@ function buildPages(
     const blocks: WorksheetBlock[] = []
     for (const section of pageSections) {
       const character = sectionCharacter(section)
+      if (character === null) continue
       const source = characterMap.get(character)
       if (!source || seen.has(character)) continue
       seen.add(character)
@@ -224,8 +319,22 @@ export async function buildWorksheet(
   }
 
   const images = new Map((options.images ?? []).map((image) => [image.character, image]))
-  const sections = buildSections(analysis, template, images)
+  const readingSection = template === 'reading-comprehension'
+    ? readingComprehensionSection(analysis)
+    : null
+  const sections = readingSection
+    ? [readingSection]
+    : buildSections(analysis, template, images)
   if (sections.length === 0) {
+    if (template === 'character-discrimination' || template === 'reading-comprehension') {
+      const message = template === 'character-discrimination'
+        ? '整份教材的生字都缺少形近字與多音字資料，無法建立字音字形辨析單。'
+        : '教材沒有足夠的完整例句或至少兩個含詞語的生字，無法建立閱讀理解評量單。'
+      return {
+        ok: false,
+        error: { type: 'no-eligible-characters', template, message, retryable: false },
+      }
+    }
     return {
       ok: false,
       error: {
@@ -238,7 +347,13 @@ export async function buildWorksheet(
 
   const pages = template === 'mixed'
     ? buildMixedPages(analysis, images)
-    : buildPages(sections, analysis)
+    : template === 'reading-comprehension'
+      ? [{
+          pageNumber: 1,
+          blocks: analysis.characters.map(worksheetBlock),
+          sections,
+        }]
+      : buildPages(sections, analysis)
   if (template === 'mixed') warnAboutCharacterPagination(analysis, pages)
 
   return {
