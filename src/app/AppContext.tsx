@@ -2,6 +2,7 @@ import React, { useEffect, useState, useTransition, useMemo } from 'react'
 import type { AnalysisResult, AppError } from '../domain'
 import {
   analyzeMaterial,
+  buildAnalysisCacheKey,
   clearApiKey as removeStoredApiKey,
   getApiKey,
   getCachedAnalysis,
@@ -139,9 +140,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 計算特徵雜湊值（包含所選頁碼以確保多頁 PDF 快取命中正確性）
       const pagesKey = activePages.sort((a, b) => a - b).join(',')
       const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
+      const analysisContext = { grade: selectedGrade, language: 'zh-TW' as const }
+      const cacheKey = buildAnalysisCacheKey(contentHash, analysisContext)
 
       // 檢查快取
-      const cached = await getCachedAnalysis(contentHash)
+      const cached = await getCachedAnalysis(cacheKey)
       if (cached) {
         setAnalysisResult(cached)
         setIsAnalyzing(false)
@@ -155,10 +158,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mimeType: targetFile.mimeType,
         contentHash,
         selectedPages: activePages,
-        context: {
-          grade: selectedGrade,
-          language: 'zh-TW',
-        },
+        context: analysisContext,
       })
 
       if (res.ok) {

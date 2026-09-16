@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   buildGeminiGenerateContentUrl,
+  buildGradeAdaptationInstruction,
   createGeminiClient,
   DEFAULT_GEMINI_ANALYSIS_MODEL,
 } from '../src/infrastructure/gemini-client'
@@ -35,6 +36,28 @@ function geminiResponse(value: unknown): Response {
 }
 
 describe('Gemini client retry policy', () => {
+  it('adds observably different vocabulary and sentence guidance for grades 1 and 6', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
+    const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })
+
+    await client.analyzeMaterial({ ...input, grade: 1 })
+    await client.analyzeMaterial({ ...input, grade: 6 })
+
+    const gradeOneBody = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+    const gradeSixBody = JSON.parse(String(request.mock.calls[1]?.[1]?.body))
+    const gradeOnePrompt = JSON.stringify(gradeOneBody)
+    const gradeSixPrompt = JSON.stringify(gradeSixBody)
+    expect(gradeOnePrompt).toContain('基礎二字詞')
+    expect(gradeOnePrompt).toContain('避免成語')
+    expect(gradeOnePrompt).toContain('8～12')
+    expect(gradeSixPrompt).toContain('進階書面語')
+    expect(gradeSixPrompt).toContain('成語')
+    expect(gradeSixPrompt).toContain('複句')
+    expect(gradeSixPrompt).toContain('28～45')
+    expect(gradeOneBody).not.toEqual(gradeSixBody)
+    expect(buildGradeAdaptationInstruction(1)).not.toBe(buildGradeAdaptationInstruction(6))
+  })
+
   it('uses the current stable analysis model and exact v1beta generateContent URL', async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
 

@@ -1,5 +1,6 @@
 export {
   analyzeMaterial,
+  buildAnalysisCacheKey,
   getCachedAnalysis,
   updateAnalysisResult,
 } from './use-cases'

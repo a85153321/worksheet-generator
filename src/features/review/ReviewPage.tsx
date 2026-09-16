@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
-import { updateAnalysisResult } from '../../services'
+import { buildAnalysisCacheKey, updateAnalysisResult } from '../../services'
 
 const defaultSampleAnalysis: AnalysisResult = {
   characters: [
@@ -58,7 +58,7 @@ interface EditFormState {
 }
 
 export const ReviewPage: React.FC = () => {
-  const { analysisResult, setAnalysisResult, uploadedFile, navigate } = useApp()
+  const { analysisResult, setAnalysisResult, uploadedFile, selectedGrade, navigate } = useApp()
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditFormState>({
@@ -89,7 +89,10 @@ export const ReviewPage: React.FC = () => {
     try {
       // 依快取特徵更新快取
       const contentHash = uploadedFile
-        ? `hash-${encodeURIComponent(uploadedFile.name)}-${uploadedFile.size}`
+        ? buildAnalysisCacheKey(
+            `hash-${encodeURIComponent(uploadedFile.name)}-${uploadedFile.size}-p${(uploadedFile.selectedPages ?? [1]).slice().sort((a, b) => a - b).join(',')}`,
+            { grade: selectedGrade, language: 'zh-TW' },
+          )
         : undefined
 
       // 呼叫 updateAnalysisResult use case

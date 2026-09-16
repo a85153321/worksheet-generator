@@ -112,6 +112,28 @@ export interface GeminiClientOptions {
   endpoint?: string
 }
 
+export function buildGradeAdaptationInstruction(grade?: number): string {
+  if (grade === 1) {
+    return '一年級：只使用日常生活中的基礎二字詞與常見部首；避免成語、抽象詞和修辭；例句使用單一主詞與動作，約 8～12 個中文字。'
+  }
+  if (grade === 2) {
+    return '二年級：使用常見生活詞語與基礎部件概念；避免艱深成語；例句採單一事件，約 10～16 個中文字。'
+  }
+  if (grade === 3) {
+    return '三年級：可使用課堂常見複合詞與簡單因果、轉折連接詞；例句約 15～22 個中文字。'
+  }
+  if (grade === 4) {
+    return '四年級：使用較完整的書面詞彙，可加入常用成語與簡單譬喻；例句約 18～28 個中文字。'
+  }
+  if (grade === 5) {
+    return '五年級：使用進階書面詞彙、常用成語與適量修辭，呈現較完整的情境和因果；例句約 22～35 個中文字。'
+  }
+  if (grade === 6) {
+    return '六年級：使用進階書面語、成語、同反義詞與合宜修辭，詞語可涵蓋抽象概念；例句可包含複句、轉折或因果，約 28～45 個中文字。'
+  }
+  return '年級未指定：使用臺灣國小中年級程度的常用詞語與清楚完整的例句。'
+}
+
 function validationError(message: string): Result<never, AppError> {
   return { ok: false, error: { type: 'validation', message, retryable: false } }
 }
@@ -216,15 +238,16 @@ export function createGeminiClient(options: GeminiClientOptions) {
     async analyzeMaterial(input: GeminiAnalysisInput): Promise<Result<AnalysisResult, AppError>> {
       const encodedData = await blobToBase64(input.data)
       const context = `年級：${input.grade ?? '未指定'}；語言：${input.language ?? 'zh-TW'}；檔名：${input.fileName}；頁面：${input.selectedPages?.join(', ') || '整份'}`
+      const gradeInstruction = buildGradeAdaptationInstruction(input.grade)
       const initialBody = {
         systemInstruction: {
-          parts: [{ text: '你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。' }],
+          parts: [{ text: `你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。必須依指定年級調整 words 的造詞選字範圍、詞語難度與 exampleSentences 的句型複雜度，不可對所有年級使用同一套內容。${gradeInstruction} 若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。` }],
         },
         contents: [
           {
             role: 'user',
             parts: [
-              { text: `請用一次完整分析擷取生字、注音、部首、筆畫、詞語、例句、信心值、來源與圖片建議。${context}` },
+              { text: `請用一次完整分析擷取生字、注音、部首、筆畫、詞語、例句、信心值、來源與圖片建議。${context} 教學分級要求：${gradeInstruction}` },
               { inlineData: { mimeType: input.mimeType, data: encodedData } },
             ],
           },

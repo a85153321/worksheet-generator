@@ -84,6 +84,8 @@ src/
 ## 6. AI 呼叫規範
 
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
+- 年級必須實際影響造詞範圍、詞語難度、例句長度與句型／修辭複雜度；分析快取 key
+  必須包含年級與語言，避免切換年級時誤用其他年級的結果。
 - 教材分析預設使用 GA 穩定模型 `gemini-3.5-flash`，透過
   `v1beta/models/gemini-3.5-flash:generateContent` 呼叫；模型與 endpoint 集中由
   infrastructure 常數管理，不在 UI 或 service 重複寫死。

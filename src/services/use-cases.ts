@@ -16,6 +16,13 @@ import type {
   AnalyzeMaterialInput,
 } from './contracts'
 
+export function buildAnalysisCacheKey(
+  contentHash: string,
+  context?: AnalyzeMaterialInput['context'],
+): string {
+  return `analysis-v2:${contentHash}:grade=${context?.grade ?? 'unspecified'}:language=${context?.language ?? 'zh-TW'}`
+}
+
 export async function analyzeMaterial(
   input: AnalyzeMaterialInput,
 ): Promise<Result<AnalysisResult, AppError>> {
@@ -30,8 +37,9 @@ export async function analyzeMaterial(
     }
   }
 
-  const hash = input.contentHash ?? (await calculateInputHash(input.data))
-  const cached = await getAnalysisCache(hash)
+  const contentHash = input.contentHash ?? (await calculateInputHash(input.data))
+  const cacheKey = buildAnalysisCacheKey(contentHash, input.context)
+  const cached = await getAnalysisCache(cacheKey)
   if (cached) {
     const parsedCached = analysisResultSchema.safeParse(cached)
     if (parsedCached.success) {
@@ -63,7 +71,7 @@ export async function analyzeMaterial(
   if (!result.ok) return result
 
   const reviewedResult = applyAnalysisReviewRules(result.value)
-  await putAnalysisCache(hash, reviewedResult)
+  await putAnalysisCache(cacheKey, reviewedResult)
   return { ok: true, value: reviewedResult }
 }
 

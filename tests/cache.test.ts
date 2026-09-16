@@ -9,7 +9,7 @@ import {
   putAnalysisCache,
   putImageCache,
 } from '../src/infrastructure'
-import { analyzeMaterial, getCachedAnalysis } from '../src/services'
+import { analyzeMaterial, buildAnalysisCacheKey, getCachedAnalysis } from '../src/services'
 
 const cachedAnalysis: AnalysisResult = {
   characters: [
@@ -55,7 +55,7 @@ describe('analysis cache', () => {
   })
 
   it('uses the cache before requiring an API key or calling Gemini', async () => {
-    await putAnalysisCache('known-hash', cachedAnalysis)
+    await putAnalysisCache(buildAnalysisCacheKey('known-hash'), cachedAnalysis)
 
     const result = await analyzeMaterial({
       data: new Blob(['processed']),
@@ -65,5 +65,10 @@ describe('analysis cache', () => {
     })
 
     expect(result).toEqual({ ok: true, value: cachedAnalysis })
+  })
+
+  it('uses separate cache entries for different grade contexts', () => {
+    expect(buildAnalysisCacheKey('same-material', { grade: 1, language: 'zh-TW' }))
+      .not.toBe(buildAnalysisCacheKey('same-material', { grade: 6, language: 'zh-TW' }))
   })
 })
