@@ -24,6 +24,8 @@ export const PrintPreviewPage: React.FC = () => {
     navigate,
     selectedGrade,
     setSelectedGrade,
+    includeZhuyin,
+    setIncludeZhuyin,
   } = useApp()
 
   const [isExportingPdf, setIsExportingPdf] = useState(false)
@@ -179,7 +181,10 @@ export const PrintPreviewPage: React.FC = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div className="sheet-instruction-banner">
-          <strong>【壹、生字筆順與田字格習寫】</strong> 先讀注音與部首，再依正確筆順在田字格內端正書寫。
+          <strong>【壹、生字筆順與田字格習寫】</strong>{' '}
+          {includeZhuyin
+            ? '先讀注音與部首，再依正確筆順在田字格內端正書寫。'
+            : '觀察字形與部首，再依正確筆順在田字格內端正書寫。'}
         </div>
 
         {items.map((item, idx) => (
@@ -196,18 +201,30 @@ export const PrintPreviewPage: React.FC = () => {
                   筆畫：{item.strokeCount || '—'} 畫
                 </span>
               </div>
-              <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>讀音：</span>
-                <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
-              </div>
+              {includeZhuyin && Boolean(item.zhuyin && item.zhuyin.trim()) && (
+                <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>讀音：</span>
+                  <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
+                </div>
+              )}
             </div>
 
             <div className="sheet-char-grid-row">
-              {/* 示範大格（國字在田字格內，標準直式注音位於右側注音欄） */}
-              <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isDemonstration />
+              {/* 示範大格（國字在田字格內，標準直式注音位於右側注音欄；若 includeZhuyin 為 false 則不渲染右側注音欄，不留空位） */}
+              <TianzigeWithZhuyin
+                character={item.character}
+                zhuyin={item.zhuyin}
+                isDemonstration
+                showZhuyin={includeZhuyin}
+              />
 
               {/* 1 格描紅格 */}
-              <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isTracing />
+              <TianzigeWithZhuyin
+                character={item.character}
+                zhuyin={item.zhuyin}
+                isTracing
+                showZhuyin={false}
+              />
 
               {/* 6 格空白田字格練習 */}
               {Array.from({ length: 6 }).map((_, boxIdx) => (
@@ -280,7 +297,7 @@ export const PrintPreviewPage: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
-                  生字核心：【 {item.character} 】（{item.zhuyin}）
+                  生字核心：【 {item.character} 】{includeZhuyin && item.zhuyin && item.zhuyin.trim() ? `（${item.zhuyin}）` : ''}
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748b' }}>
                   請依序練習以下生詞，並在右側空白橫線練習擴詞：
@@ -402,9 +419,14 @@ export const PrintPreviewPage: React.FC = () => {
 
           return (
             <section key={`${item.character}-${idx}`} className="sheet-char-row">
-              {/* 示範田字格含直式注音 */}
+              {/* 示範田字格含直式注音（若 includeZhuyin 為 false 則不渲染右側注音欄） */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isDemonstration />
+                <TianzigeWithZhuyin
+                  character={item.character}
+                  zhuyin={item.zhuyin}
+                  isDemonstration
+                  showZhuyin={includeZhuyin}
+                />
                 <div style={{ fontSize: '10px', color: '#64748b' }}>
                   部首：{charDetail?.radical || '—'}
                 </div>
@@ -412,7 +434,12 @@ export const PrintPreviewPage: React.FC = () => {
 
               {/* 習寫田字格 (1格描紅 + 2格空白練習) */}
               <div style={{ display: 'flex', gap: '4px' }}>
-                <TianzigeWithZhuyin character={item.character} zhuyin={item.zhuyin} isTracing />
+                <TianzigeWithZhuyin
+                  character={item.character}
+                  zhuyin={item.zhuyin}
+                  isTracing
+                  showZhuyin={false}
+                />
                 <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={1} />
                 <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={2} />
               </div>
@@ -543,7 +570,7 @@ export const PrintPreviewPage: React.FC = () => {
                   </span>
                   <div className="sheet-tian-grid sm" aria-label="看圖寫生字格"></div>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    （注音：________ ｜ 部首：________）
+                    （{includeZhuyin ? '注音：________ ｜ ' : ''}部首：________）
                   </span>
                 </div>
                 <div style={{ fontSize: '13px', color: '#334155' }}>
@@ -590,34 +617,68 @@ export const PrintPreviewPage: React.FC = () => {
               ；本步驟由純前端引擎執行，不經任何外部 AI 後端
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-              <label htmlFor="preview-grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-                🎓 切換教材年級：
-              </label>
-              <select
-                id="preview-grade-select"
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(Number(e.target.value))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <label htmlFor="preview-grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
+                  🎓 切換教材年級：
+                </label>
+                <select
+                  id="preview-grade-select"
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(Number(e.target.value))}
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.88rem',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="選擇學習單適用國小年級"
+                >
+                  <option value={1}>國小一年級（芫荽注音字體）</option>
+                  <option value={2}>國小二年級（芫荽注音字體）</option>
+                  <option value={3}>國小三年級（標楷體）</option>
+                  <option value={4}>國小四年級（標楷體）</option>
+                  <option value={5}>國小五年級（標楷體）</option>
+                  <option value={6}>國小六年級（標楷體）</option>
+                </select>
+              </div>
+
+              {/* 即時切換注音開關 */}
+              <label
                 style={{
-                  padding: '0.35rem 0.65rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--color-border)',
-                  fontSize: '0.88rem',
-                  backgroundColor: '#ffffff',
-                  color: '#0f172a',
-                  fontWeight: 500,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
                   cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  color: includeZhuyin ? '#166534' : '#64748b',
+                  backgroundColor: includeZhuyin ? '#f0fdf4' : '#f8fafc',
+                  border: includeZhuyin ? '1.5px solid #86efac' : '1px solid var(--color-border)',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  userSelect: 'none',
                 }}
-                aria-label="選擇學習單適用國小年級"
               >
-                <option value={1}>國小一年級（芫荽注音字體）</option>
-                <option value={2}>國小二年級（芫荽注音字體）</option>
-                <option value={3}>國小三年級（標楷體）</option>
-                <option value={4}>國小四年級（標楷體）</option>
-                <option value={5}>國小五年級（標楷體）</option>
-                <option value={6}>國小六年級（標楷體）</option>
-              </select>
-              <span style={{ fontSize: '0.82rem', color: isLowerGrade ? '#0d9488' : '#64748b', fontWeight: isLowerGrade ? 600 : 400 }}>
-                {isLowerGrade ? '✨ 一、二年級已啟用「芫荽注音」直式排版' : '📝 三至六年級標準標楷體'}
+                <input
+                  type="checkbox"
+                  id="preview-include-zhuyin"
+                  checked={includeZhuyin}
+                  onChange={(e) => setIncludeZhuyin(e.target.checked)}
+                  style={{ cursor: 'pointer', accentColor: '#16a34a' }}
+                />
+                <span>顯示注音</span>
+              </label>
+
+              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : isLowerGrade ? '#0d9488' : '#3b82f6', fontWeight: 600 }}>
+                {!includeZhuyin
+                  ? '🚫 已關閉注音（純文字排版，不留空白佔位）'
+                  : isLowerGrade
+                    ? '✨ 一、二年級已啟用「芫荽注音」直式排版'
+                    : '📝 三至六年級標準標楷體'}
               </span>
             </div>
           </div>
@@ -712,9 +773,15 @@ export const PrintPreviewPage: React.FC = () => {
                 <h2 className="sheet-title">{activeTitle}</h2>
                 <p style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
                   國小 {selectedGrade} 年級 ｜ 國語單元評量 ｜ {templateNameMap[activeTemplate] || '生字練習單'}
-                  {isLowerGrade && (
-                    <span style={{ marginLeft: '6px', color: '#0d9488', fontWeight: 600 }}>
-                      （芫荽注音）
+                  {includeZhuyin ? (
+                    isLowerGrade ? (
+                      <span style={{ marginLeft: '6px', color: '#0d9488', fontWeight: 600 }}>
+                        （芫荽注音）
+                      </span>
+                    ) : null
+                  ) : (
+                    <span style={{ marginLeft: '6px', color: '#64748b', fontWeight: 600 }}>
+                      （無注音版）
                     </span>
                   )}
                 </p>

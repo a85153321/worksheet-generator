@@ -63,6 +63,7 @@ export interface TianzigeWithZhuyinProps {
   isTracing?: boolean
   practiceNumber?: number
   className?: string
+  showZhuyin?: boolean
 }
 
 /**
@@ -75,15 +76,17 @@ export const TianzigeWithZhuyin: React.FC<TianzigeWithZhuyinProps> = ({
   isTracing = false,
   practiceNumber,
   className = '',
+  showZhuyin = true,
 }) => {
+  const hasZhuyinCol = isDemonstration && showZhuyin && Boolean(zhuyin && zhuyin.trim())
   const { symbols, tone, toneMark } = parseZhuyin(zhuyin)
 
   return (
     <div className={`tianzige-block-item ${className}`}>
-      <div className="tianzige-box-with-zhuyin">
+      <div className={`tianzige-box-with-zhuyin ${!hasZhuyinCol ? 'no-zhuyin' : ''}`}>
         {/* 田字格主體 */}
         <div
-          className={`sheet-tian-grid sm ${isDemonstration ? 'demo-box' : ''} ${isTracing ? 'tracing-box' : ''}`}
+          className={`sheet-tian-grid sm ${isDemonstration ? 'demo-box' : ''} ${isTracing ? 'tracing-box' : ''} ${!hasZhuyinCol ? 'no-zhuyin-col' : ''}`}
           aria-label={
             isDemonstration
               ? `示範字：${character}`
@@ -96,7 +99,7 @@ export const TianzigeWithZhuyin: React.FC<TianzigeWithZhuyinProps> = ({
         </div>
 
         {/* 示範格右側附帶直式注音欄 */}
-        {isDemonstration && (
+        {hasZhuyinCol && (
           <div className="sheet-tian-zhuyin-column" aria-label={`讀音：${zhuyin}`}>
             {tone === 5 && <span className="tian-zhuyin-light-dot">˙</span>}
             <div className="tian-zhuyin-symbols">

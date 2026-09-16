@@ -1,5 +1,10 @@
 import React, { useEffect, useState, useTransition, useMemo } from 'react'
-import type { AnalysisResult, AppError } from '../domain'
+import type {
+  AnalysisResult,
+  AnalysisSkillTag,
+  AnalysisContextInput,
+  AppError,
+} from '../domain'
 import {
   analyzeMaterial,
   buildAnalysisCacheKey,
@@ -13,7 +18,12 @@ import {
   type WorksheetTemplate,
 } from '../services'
 import { type AppRoute, ROUTE_METAS } from './routes'
-import { AppContext, type UploadedFileInfo, type AnalysisScope } from './app-context'
+import {
+  AppContext,
+  DEFAULT_SKILL_TAGS,
+  type UploadedFileInfo,
+  type AnalysisScope,
+} from './app-context'
 
 function parseHash(hash: string): AppRoute {
   const clean = hash.replace(/^#\/?/, '').trim() as AppRoute
@@ -45,6 +55,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [analysisError, setAnalysisError] = useState<AppError | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
   const [selectedGrade, setSelectedGrade] = useState<number>(3)
+  const [skillTags, setSkillTags] = useState<AnalysisSkillTag[]>(DEFAULT_SKILL_TAGS)
+  const [includeZhuyin, setIncludeZhuyin] = useState<boolean>(true)
   const [generatedImages, setGeneratedImages] = useState<Record<string, ImageResult>>({})
   const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('character-practice')
   const [worksheetDoc, setWorksheetDoc] = useState<WorksheetDoc | null>(null)
@@ -106,8 +118,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       estimatedItemsMin: Math.max(1, pageCount * 2),
       estimatedItemsMax: pageCount * 4,
       grade: selectedGrade,
+      skillTags,
+      includeZhuyin,
     }
-  }, [uploadedFile, selectedGrade])
+  }, [uploadedFile, selectedGrade, skillTags, includeZhuyin])
 
   /**
    * 執行教材分析 use case 流程：
@@ -140,7 +154,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 計算特徵雜湊值（包含所選頁碼以確保多頁 PDF 快取命中正確性）
       const pagesKey = activePages.sort((a, b) => a - b).join(',')
       const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
-      const analysisContext = { grade: selectedGrade, language: 'zh-TW' as const }
+      const analysisContext: AnalysisContextInput = {
+        grade: selectedGrade,
+        language: 'zh-TW',
+        skillTags,
+        includeZhuyin,
+      }
       const cacheKey = buildAnalysisCacheKey(contentHash, analysisContext)
 
       // 檢查快取
@@ -206,6 +225,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAnalyzing,
         selectedGrade,
         setSelectedGrade,
+        skillTags,
+        setSkillTags,
+        includeZhuyin,
+        setIncludeZhuyin,
         generatedImages,
         setGeneratedImages,
         selectedTemplate,

@@ -58,7 +58,15 @@ interface EditFormState {
 }
 
 export const ReviewPage: React.FC = () => {
-  const { analysisResult, setAnalysisResult, uploadedFile, selectedGrade, navigate } = useApp()
+  const {
+    analysisResult,
+    setAnalysisResult,
+    uploadedFile,
+    selectedGrade,
+    skillTags,
+    includeZhuyin,
+    navigate,
+  } = useApp()
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditFormState>({
@@ -91,7 +99,7 @@ export const ReviewPage: React.FC = () => {
       const contentHash = uploadedFile
         ? buildAnalysisCacheKey(
             `hash-${encodeURIComponent(uploadedFile.name)}-${uploadedFile.size}-p${(uploadedFile.selectedPages ?? [1]).slice().sort((a, b) => a - b).join(',')}`,
-            { grade: selectedGrade, language: 'zh-TW' },
+            { grade: selectedGrade, language: 'zh-TW', skillTags, includeZhuyin },
           )
         : undefined
 

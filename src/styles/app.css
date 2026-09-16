@@ -660,6 +660,11 @@ textarea:focus-visible {
   border-bottom-right-radius: 0;
 }
 
+.sheet-tian-grid.demo-box.no-zhuyin-col {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
 .sheet-tian-grid.tracing-box {
   opacity: 0.35;
 }
@@ -1404,4 +1409,167 @@ textarea:focus-visible {
     border-top: 1px solid #cbd5e1 !important;
   }
 }
+
+/* ==========================================================================
+   可複選功能標籤（Chip 群組）與獨立注音開關
+   ========================================================================== */
+
+.skill-tags-panel {
+  margin-top: 1rem;
+  padding: 1.15rem 1.25rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.skill-tags-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skill-tags-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.skill-tags-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.skill-quick-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.skill-quick-btn {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  background-color: #f1f5f9;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: #475569;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.skill-quick-btn:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+/* 獨立「顯示注音」勾選方塊 */
+.zhuyin-toggle-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.9rem;
+  background-color: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+
+.zhuyin-toggle-wrapper:hover {
+  background-color: #dcfce7;
+  border-color: #4ade80;
+}
+
+.zhuyin-toggle-wrapper.off {
+  background-color: #f8fafc;
+  border-color: var(--color-border);
+}
+
+.zhuyin-toggle-wrapper.off:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.zhuyin-checkbox-input {
+  width: 17px;
+  height: 17px;
+  accent-color: #16a34a;
+  cursor: pointer;
+}
+
+.zhuyin-toggle-label-text {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.zhuyin-toggle-wrapper.off .zhuyin-toggle-label-text {
+  color: #64748b;
+}
+
+/* 標籤 Chips 容器 */
+.skill-chips-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--color-border);
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+  outline: none;
+}
+
+.skill-chip:hover {
+  border-color: var(--color-primary);
+  background-color: #eff6ff;
+  color: var(--color-primary-dark);
+}
+
+.skill-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.skill-chip.selected {
+  background-color: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+}
+
+.skill-chip.selected:hover {
+  background-color: #1d4ed8;
+  border-color: #1e40af;
+}
+
+.skill-chip-check {
+  font-size: 0.82rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
 

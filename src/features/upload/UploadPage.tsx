@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { useApp } from '../../app/index'
 import type { UploadedFileInfo } from '../../app/app-context'
+import { ANALYSIS_SKILL_TAGS, type AnalysisSkillTag } from '../../domain'
 
 // 簡易從 PDF 二進位資料偵測頁數
 async function detectPdfPageCount(file: Blob): Promise<number> {
@@ -35,6 +36,10 @@ export const UploadPage: React.FC = () => {
     isAnalyzing,
     selectedGrade,
     setSelectedGrade,
+    skillTags,
+    setSkillTags,
+    includeZhuyin,
+    setIncludeZhuyin,
     runAnalysis,
     navigate,
     hasApiKey,
@@ -169,6 +174,27 @@ export const UploadPage: React.FC = () => {
 
   const clearPageSelection = () => {
     setSelectedPages([])
+  }
+
+  // 功能標籤選取切換
+  const toggleSkillTag = (tag: AnalysisSkillTag) => {
+    if (skillTags.includes(tag)) {
+      setSkillTags(skillTags.filter((t) => t !== tag))
+    } else {
+      setSkillTags([...skillTags, tag])
+    }
+  }
+
+  const handleSelectAllSkills = () => {
+    setSkillTags([...ANALYSIS_SKILL_TAGS])
+  }
+
+  const handleClearSkills = () => {
+    setSkillTags([])
+  }
+
+  const handleDefaultSkills = () => {
+    setSkillTags(['生字', '部件', '造詞', '句型仿寫'])
   }
 
   // 昂貴操作：點擊時才觸發 runAnalysis
@@ -455,31 +481,146 @@ export const UploadPage: React.FC = () => {
             </div>
           )}
 
-          {/* 教材語境：國小年級選擇 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-            <label htmlFor="grade-select" style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-              🎯 適用年級語境：
-            </label>
-            <select
-              id="grade-select"
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(Number(e.target.value))}
-              disabled={isAnalyzing}
+          {/* 功能標籤與注音開關設定面板 (Requirement 1 & 2) */}
+          <div className="skill-tags-panel" role="region" aria-label="學習單功能標籤與注音設定">
+            <div className="skill-tags-header">
+              <div className="skill-tags-header-left">
+                <span className="skill-tags-title">
+                  🎯 學習單功能標籤（可複選，共 {ANALYSIS_SKILL_TAGS.length} 項）：
+                </span>
+                <div className="skill-quick-btns">
+                  <button
+                    type="button"
+                    className="skill-quick-btn"
+                    onClick={handleDefaultSkills}
+                    disabled={isAnalyzing}
+                    title="選取常用核心標籤：生字、部件、造詞、句型仿寫"
+                  >
+                    常用預設
+                  </button>
+                  <button
+                    type="button"
+                    className="skill-quick-btn"
+                    onClick={handleSelectAllSkills}
+                    disabled={isAnalyzing}
+                    title="全選 19 項功能標籤"
+                  >
+                    全選
+                  </button>
+                  <button
+                    type="button"
+                    className="skill-quick-btn"
+                    onClick={handleClearSkills}
+                    disabled={isAnalyzing}
+                    title="清空所有功能標籤"
+                  >
+                    清空
+                  </button>
+                </div>
+              </div>
+
+              {/* 獨立「顯示注音」勾選開關 (Requirement 2) */}
+              <label
+                className={`zhuyin-toggle-wrapper ${!includeZhuyin ? 'off' : ''}`}
+                htmlFor="upload-include-zhuyin"
+              >
+                <input
+                  type="checkbox"
+                  id="upload-include-zhuyin"
+                  className="zhuyin-checkbox-input"
+                  checked={includeZhuyin}
+                  onChange={(e) => setIncludeZhuyin(e.target.checked)}
+                  disabled={isAnalyzing}
+                  aria-label="獨立注音設定：是否顯示注音"
+                />
+                <span className="zhuyin-toggle-label-text">
+                  {includeZhuyin ? '顯示注音：已開啟' : '顯示注音：已關閉'}
+                </span>
+              </label>
+            </div>
+
+            {/* 19 個可勾選標籤 Chip 群組 (Requirement 1) */}
+            <div
+              className="skill-chips-group"
+              role="group"
+              aria-label="國語學習單教學功能標籤清單"
+            >
+              {ANALYSIS_SKILL_TAGS.map((tag) => {
+                const isSelected = skillTags.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`skill-chip ${isSelected ? 'selected' : ''}`}
+                    onClick={() => toggleSkillTag(tag)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        toggleSkillTag(tag)
+                      }
+                    }}
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    disabled={isAnalyzing}
+                    tabIndex={0}
+                    aria-label={`功能標籤：${tag}，${isSelected ? '已勾選' : '未勾選'}`}
+                  >
+                    <span className="skill-chip-check" aria-hidden="true">
+                      {isSelected ? '✓' : '+'}
+                    </span>
+                    <span>{tag}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 年級情境與注音提示 */}
+            <div
               style={{
-                padding: '0.4rem 0.75rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                fontSize: '0.9rem',
-                backgroundColor: 'var(--color-surface)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                marginTop: '0.85rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px dashed var(--color-border)',
               }}
             >
-              <option value={1}>國小一年級（簡易字、拼音描紅）</option>
-              <option value={2}>國小二年級（基礎部件、造詞）</option>
-              <option value={3}>國小三年級（生字練習、例句仿寫）</option>
-              <option value={4}>國小四年級（部首辨析、成語擴展）</option>
-              <option value={5}>國小五年級（進階修辭、短文應用）</option>
-              <option value={6}>國小六年級（深度鑑賞、閱讀素養）</option>
-            </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <label htmlFor="grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                  🎓 教材分級語境：
+                </label>
+                <select
+                  id="grade-select"
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(Number(e.target.value))}
+                  disabled={isAnalyzing}
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.88rem',
+                    backgroundColor: 'var(--color-surface)',
+                  }}
+                >
+                  <option value={1}>國小一年級（簡易字、拼音描紅）</option>
+                  <option value={2}>國小二年級（基礎部件、造詞）</option>
+                  <option value={3}>國小三年級（生字練習、例句仿寫）</option>
+                  <option value={4}>國小四年級（部首辨析、成語擴展）</option>
+                  <option value={5}>國小五年級（進階修辭、短文應用）</option>
+                  <option value={6}>國小六年級（深度鑑賞、閱讀素養）</option>
+                </select>
+              </div>
+
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                {includeZhuyin
+                  ? selectedGrade <= 2
+                    ? '💡 一、二年級已啟用注音，預覽列印將自動套用「芫荽注音」直式字體'
+                    : '💡 已開啟注音，將以標楷體呈現臺灣傳統直式注音'
+                  : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位'}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -509,6 +650,28 @@ export const UploadPage: React.FC = () => {
             </div>
             <div>
               <strong>語境目標：</strong> 國小 {selectedGrade} 年級
+            </div>
+            <div>
+              <strong>注音模式：</strong>{' '}
+              {includeZhuyin ? (
+                <span style={{ color: '#166534', fontWeight: 600 }}>
+                  顯示注音（{selectedGrade <= 2 ? '芫荽注音' : '標楷體'}）
+                </span>
+              ) : (
+                <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                  不顯示注音（無佔位空格）
+                </span>
+              )}
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <strong>已選功能標籤（{skillTags.length} 項）：</strong>{' '}
+              {skillTags.length > 0 ? (
+                <span style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
+                  {skillTags.join('、')}
+                </span>
+              ) : (
+                <span style={{ color: 'var(--color-text-muted)' }}>未選（僅進行核心生字分析）</span>
+              )}
             </div>
           </div>
 
