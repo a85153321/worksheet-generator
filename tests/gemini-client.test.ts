@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildGeminiGenerateContentUrl,
   buildGradeAdaptationInstruction,
-  buildSkillTagInstruction,
   buildZhuyinInstruction,
   createGeminiClient,
   DEFAULT_GEMINI_ANALYSIS_MODEL,
@@ -38,33 +37,16 @@ function geminiResponse(value: unknown): Response {
 }
 
 describe('Gemini client retry policy', () => {
-  it('changes both prompt and observable output for different skill tags', async () => {
-    const request = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
-      const prompt = String(init?.body)
-      return geminiResponse({
-        ...validAnalysis,
-        characters: [{
-          ...validAnalysis.characters[0],
-          words: prompt.includes('【成語運用】') ? ['學以致用'] : ['學習', '學生'],
-          exampleSentences: prompt.includes('【句型仿寫】')
-            ? ['因為我每天認真學習，所以進步很快。']
-            : ['我喜歡學習。'],
-        }],
-      })
-    })
-    const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })
+  it('restricts lookalike candidates to common elementary-school characters', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
 
-    const wordResult = await client.analyzeMaterial({ ...input, skillTags: ['造詞'] })
-    const advancedResult = await client.analyzeMaterial({
-      ...input,
-      skillTags: ['成語運用', '句型仿寫'],
-    })
+    await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
 
-    expect(wordResult.ok && wordResult.value.characters[0].words).toEqual(['學習', '學生'])
-    expect(advancedResult.ok && advancedResult.value.characters[0].words).toEqual(['學以致用'])
-    expect(advancedResult.ok && advancedResult.value.characters[0].exampleSentences[0])
-      .toContain('因為')
-    expect(buildSkillTagInstruction(['造詞'])).toContain('符合語境的造詞')
+    const body = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+    const prompt = JSON.stringify(body)
+    expect(prompt).toContain('教育部常用字表')
+    expect(prompt).toContain('國小')
+    expect(prompt).toContain('不得輸出生僻或罕見候選字')
   })
 
   it('requires populated zhuyin when enabled and accepts an empty field when disabled', async () => {

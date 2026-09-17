@@ -86,12 +86,14 @@ src/
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
 - 年級必須實際影響造詞範圍、詞語難度、例句長度與句型／修辭複雜度；分析快取 key
   必須包含年級與語言，避免切換年級時誤用其他年級的結果。
-- 分析 context 可帶入 `skillTags` 與 `includeZhuyin`；功能標籤必須逐項轉成具體 prompt
-  指令，注音關閉時保留 `zhuyin` 欄位但允許空字串。快取 key 必須同時包含這兩項設定。
+- 分析 context 可帶入 `includeZhuyin`；注音關閉時保留 `zhuyin` 欄位但允許空字串。
+  快取 key 必須包含此設定，避免切換注音模式時誤用結果。
 - 教材分析預設使用 GA 穩定模型 `gemini-3.5-flash`，透過
   `v1beta/models/gemini-3.5-flash:generateContent` 呼叫；模型與 endpoint 集中由
   infrastructure 常數管理，不在 UI 或 service 重複寫死。
 - 將相關資料合併成單一高品質請求，避免「生字、注音、詞語」分開呼叫。
+- `lookalikeCandidates` 僅能使用教育部常用字表內、國小學生會接觸的常用字，
+  不得因部首或筆畫相近而選入生僻字或罕見字。
 - 低信心、歧義 OCR、筆畫或部首不確定時標示 `needsReview`，不可偽裝成確定答案。
 - `confidence < 0.8` 時由 domain 規則自動加入 `low-confidence`；OCR、部首或筆畫
   不確定性分別以 `reviewReasons` 的 `ambiguous-ocr`、`uncertain-radical`、
@@ -114,16 +116,15 @@ src/
 | 3：快取與韌性 | hash、IndexedDB、受控 retry、可刪除快取 |
 | 4：教師工作流 | 結果審核、低信心標示、編輯與版本狀態 |
 | 5：選擇性配圖 | 圖片建議、確認、快取、替換／刪除 |
-| 6：學習單引擎 | 生字、詞語、句子、看圖與綜合模板 |
+| 6：學習單引擎 | 生字、詞語、句子、看圖、字音字形辨析與閱讀理解模板 |
 | 7：輸出 | A4 預覽、列印 CSS、PDF 匯出與測試 |
 
 `buildWorksheet` 完全在本機將已驗證的分析結果組裝成 `WorksheetDoc`。模板識別值為
-`character-practice`、`word-practice`、`sentence-practice`、`picture-practice`、`mixed`；
+`character-practice`、`word-practice`、`sentence-practice`、`picture-practice`、
+`character-discrimination`、`reading-comprehension`；
 每頁的 `sections` 是預覽／列印的主要資料來源，舊有 `blocks` 保留為相容索引。
-
-延伸模板另包含 `character-discrimination`（字音字形辨析）與
-`reading-comprehension`（閱讀理解）。兩者同樣只使用已驗證的 `AnalysisResult`
-在本機組裝；若資料未達題型門檻，只省略不足的部分，不呼叫 AI 補齊。
+所有模板只使用已驗證的 `AnalysisResult` 在本機組裝；若資料未達題型門檻，
+只省略不足的部分，不呼叫 AI 補齊。
 
 ## 7a. Phase 0 起手式（具體步驟）
 

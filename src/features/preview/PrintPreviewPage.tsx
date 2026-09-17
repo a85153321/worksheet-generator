@@ -4,7 +4,6 @@ import type { CharacterAnalysis, AppError } from '../../domain'
 import { VerticalZhuyin, TianzigeWithZhuyin } from '../../components/VerticalZhuyin'
 import {
   buildWorksheet,
-  type WorksheetBlock,
   type WorksheetSection,
   type CharacterWorksheetSection,
   type WordWorksheetSection,
@@ -46,7 +45,6 @@ export const PrintPreviewPage: React.FC = () => {
     'word-practice': '詞語積木擴展單',
     'sentence-practice': '句型仿寫應用單',
     'picture-practice': '看圖識字練習單',
-    mixed: '生字語文綜合單',
     'character-discrimination': '字音字形辨析單',
     'reading-comprehension': '閱讀理解評量單',
   }
@@ -414,115 +412,7 @@ export const PrintPreviewPage: React.FC = () => {
     )
   }
 
-  // 4. 渲染生字語文綜合單 (mixed)
-  const renderMixedPractice = (_pageSections: WorksheetSection[], pageBlocks: WorksheetBlock[]) => {
-    const blocks: WorksheetBlock[] = pageBlocks.length > 0
-      ? pageBlocks
-      : fallbackCharacters.map((c) => ({
-          character: c.character,
-          zhuyin: c.zhuyin,
-          words: c.words,
-          exampleSentences: c.exampleSentences,
-        }))
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        <div className="sheet-instruction-banner">
-          <strong>【肆、生字語文綜合評量】</strong> 整合生字書寫、生詞造詞、看圖寫字與情境造句。
-        </div>
-
-        {blocks.map((item, idx) => {
-          const img = generatedImages[item.character]
-          const charDetail = findCharacterData(item.character)
-
-          return (
-            <section key={`${item.character}-${idx}`} className="sheet-char-row">
-              {/* 示範田字格含直式注音（若 includeZhuyin 為 false 則不渲染右側注音欄） */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                <TianzigeWithZhuyin
-                  character={item.character}
-                  zhuyin={item.zhuyin}
-                  isDemonstration
-                  showZhuyin={includeZhuyin}
-                />
-                <div style={{ fontSize: '10px', color: '#64748b' }}>
-                  部首：{charDetail?.radical || '—'}
-                </div>
-              </div>
-
-              {/* 習寫田字格 (1格描紅 + 2格空白練習) */}
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <TianzigeWithZhuyin
-                  character={item.character}
-                  zhuyin={item.zhuyin}
-                  isTracing
-                  showZhuyin={false}
-                />
-                <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={1} />
-                <TianzigeWithZhuyin character="" zhuyin="" practiceNumber={2} />
-              </div>
-
-              {/* 語詞與造句練習區 */}
-              <div style={{ flex: 1, paddingLeft: '6px' }}>
-                <div style={{ fontSize: '13px', marginBottom: '6px' }}>
-                  <strong>【生詞造詞】</strong>
-                  <span style={{ marginLeft: '6px' }}>
-                    {item.words && item.words.length > 0
-                      ? item.words.join('、')
-                      : '_____________、_____________'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '13px', color: '#1e293b' }}>
-                  <strong>【情境造句】</strong>
-                  <div
-                    style={{
-                      marginTop: '4px',
-                      padding: '4px 6px',
-                      borderBottom: '1px dashed #94a3b8',
-                      fontSize: '12px',
-                      color: '#475569',
-                    }}
-                  >
-                    {item.exampleSentences && item.exampleSentences.length > 0
-                      ? `例：${item.exampleSentences[0]}`
-                      : '請用生詞造出一個完整的句子。'}
-                  </div>
-                </div>
-              </div>
-
-              {/* 教學插圖（若有產生） */}
-              {img && (
-                <div
-                  style={{
-                    width: '90px',
-                    textAlign: 'center',
-                    borderLeft: '1px solid #e2e8f0',
-                    paddingLeft: '8px',
-                  }}
-                >
-                  <img
-                    src={img.url}
-                    alt={`插圖：${item.character}`}
-                    style={{
-                      width: '76px',
-                      height: '56px',
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                    }}
-                  />
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                    看圖識字
-                  </div>
-                </div>
-              )}
-            </section>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // 5. 渲染看圖識字練習單 (picture-practice)
+  // 4. 渲染看圖識字練習單 (picture-practice)
   const renderPicturePractice = (pageSections: WorksheetSection[]) => {
     const picSections = pageSections.filter((s): s is PictureWorksheetSection => s.kind === 'picture')
     const displayList = picSections.length > 0
@@ -899,7 +789,7 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 根據模板分流渲染當前頁面內容
-  const renderContentByTemplate = (pageSections: WorksheetSection[], pageBlocks: WorksheetBlock[]) => {
+  const renderContentByTemplate = (pageSections: WorksheetSection[]) => {
     switch (activeTemplate) {
       case 'character-practice':
         return renderCharacterPractice(pageSections)
@@ -913,9 +803,8 @@ export const PrintPreviewPage: React.FC = () => {
         return renderReadingComprehension(pageSections)
       case 'picture-practice':
         return renderPicturePractice(pageSections)
-      case 'mixed':
       default:
-        return renderMixedPractice(pageSections, pageBlocks)
+        return renderCharacterPractice(pageSections)
     }
   }
 
@@ -1164,7 +1053,7 @@ export const PrintPreviewPage: React.FC = () => {
               </header>
 
               <main className="sheet-content">
-                {renderContentByTemplate(page.sections, page.blocks)}
+                {renderContentByTemplate(page.sections)}
               </main>
 
               <footer className="sheet-footer">

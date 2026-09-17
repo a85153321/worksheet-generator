@@ -48,7 +48,6 @@ describe('buildWorksheet', () => {
     ['word-practice', ['word']],
     ['sentence-practice', ['sentence']],
     ['picture-practice', ['picture']],
-    ['mixed', ['character', 'word', 'sentence', 'picture']],
   ])('builds the %s template locally', async (template, expectedKinds) => {
     const networkRequest = vi.fn(() => {
       throw new Error('buildWorksheet must not call AI')
@@ -87,28 +86,6 @@ describe('buildWorksheet', () => {
     const result = await buildWorksheet(noWords, 'word-practice')
 
     expect(result).toMatchObject({ ok: false, error: { type: 'validation' } })
-  })
-
-  it('paginates 12 mixed-template characters without duplicates or omissions', async () => {
-    const characters = Array.from({ length: 12 }, (_, index) => ({
-      ...analysis.characters[0],
-      character: String.fromCodePoint(0x4e00 + index),
-      imageSuggestion: {
-        ...analysis.characters[0].imageSuggestion!,
-        selected: false,
-      },
-    }))
-    const twelveCharacterAnalysis: AnalysisResult = { characters }
-
-    const result = await buildWorksheet(twelveCharacterAnalysis, 'mixed')
-
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.value.pages.map((page) => page.blocks.length)).toEqual([8, 4])
-      expect(result.value.pages.flatMap((page) => page.blocks.map((block) => block.character)))
-        .toEqual(characters.map((item) => item.character))
-      expect(findCharacterPaginationIssues(characters, result.value.pages)).toEqual([])
-    }
   })
 
   it('detects duplicated or omitted characters in assembled pages', () => {

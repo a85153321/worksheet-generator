@@ -20,9 +20,7 @@ export {
 export type {
   AnalysisContext,
   AnalysisContextInput,
-  AnalysisSkillTag,
 } from '../domain'
-export { ANALYSIS_SKILL_TAGS } from '../domain'
 export type {
   AnalyzeMaterialInput,
   BuildWorksheetOptions,

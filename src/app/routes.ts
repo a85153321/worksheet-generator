@@ -49,7 +49,7 @@ export const ROUTE_METAS: Record<AppRoute, RouteMeta> = {
     path: 'templates',
     title: '學習單模板',
     stepNumber: 5,
-    description: '挑選生字、詞語或綜合學習單版型',
+    description: '挑選生字、詞語、句型、字音字形或閱讀理解版型',
   },
   preview: {
     path: 'preview',

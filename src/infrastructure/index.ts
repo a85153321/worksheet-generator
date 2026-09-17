@@ -5,7 +5,6 @@ export {
   saveGeminiApiKey,
 } from './api-key-store'
 export {
-  buildSkillTagInstruction,
   buildZhuyinInstruction,
   buildGeminiGenerateContentUrl,
   createGeminiClient,

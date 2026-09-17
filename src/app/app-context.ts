@@ -1,9 +1,7 @@
 import { createContext } from 'react'
-import type { AnalysisResult, AnalysisSkillTag, AppError } from '../domain'
+import type { AnalysisResult, AppError } from '../domain'
 import type { ImageResult, WorksheetDoc, WorksheetTemplate } from '../services'
 import type { AppRoute } from './routes'
-
-export const DEFAULT_SKILL_TAGS: AnalysisSkillTag[] = ['生字練習', '語詞練習', '句型練習']
 
 export interface UploadedFileInfo {
   name: string
@@ -22,7 +20,6 @@ export interface AnalysisScope {
   estimatedItemsMin: number
   estimatedItemsMax: number
   grade?: number
-  skillTags?: AnalysisSkillTag[]
   includeZhuyin?: boolean
 }
 
@@ -45,8 +42,6 @@ export interface AppContextType {
   setIsAnalyzing: (loading: boolean) => void
   selectedGrade: number
   setSelectedGrade: (grade: number) => void
-  skillTags: AnalysisSkillTag[]
-  setSkillTags: React.Dispatch<React.SetStateAction<AnalysisSkillTag[]>>
   includeZhuyin: boolean
   setIncludeZhuyin: React.Dispatch<React.SetStateAction<boolean>>
   generatedImages: Record<string, ImageResult>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useApp } from '../../app/index'
 import { buildWorksheet, type WorksheetTemplate } from '../../services'
-import type { CharacterAnalysis, AnalysisSkillTag } from '../../domain'
+import type { CharacterAnalysis } from '../../domain'
 
 interface TemplateOption {
   id: WorksheetTemplate
@@ -11,7 +11,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'character' | 'word' | 'sentence' | 'mixed' | 'discrimination' | 'reading'
+  wireframeType: 'character' | 'word' | 'sentence' | 'discrimination' | 'reading'
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -65,62 +65,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     icon: '📖',
     wireframeType: 'reading',
   },
-  {
-    id: 'mixed',
-    title: '生字語文綜合單',
-    badge: '全方位評量',
-    targetGrade: '全學段通用評量',
-    description: '整合生字習寫、生詞造詞、情境造句與插畫圖文題',
-    features: ['含教學插圖看圖寫字', '田字格與造詞造句', '課堂隨堂評量適用'],
-    icon: '📑',
-    wireframeType: 'mixed',
-  },
 ]
-
-/**
- * 判斷指定模板是否受當前勾選之功能標籤推薦
- * 依據專案規範：
- * - 勾選「字音字形」時，優先推薦「字音字形辨析單」
- * - 勾選「閱讀理解」時，優先推薦「閱讀理解評量單」
- * - 其餘標籤沿用既有三個模板的推薦邏輯不變
- */
-function isTemplateRecommendedByTags(
-  templateId: WorksheetTemplate,
-  tags: readonly AnalysisSkillTag[]
-): boolean {
-  if (!tags || tags.length === 0) return false
-  switch (templateId) {
-    case 'character-discrimination':
-      return tags.includes('字音字形')
-    case 'reading-comprehension':
-      return tags.includes('閱讀理解')
-    case 'character-practice':
-      return tags.includes('生字練習')
-    case 'word-practice':
-      return tags.includes('語詞練習')
-    case 'sentence-practice':
-      return tags.includes('句型練習') || tags.includes('造句練習')
-    case 'mixed':
-      return tags.length >= 3
-    default:
-      return false
-  }
-}
-
-/**
- * 取得當前標籤中最高優先級的推薦模板
- */
-function getPrioritizedTemplateByTags(
-  tags: readonly AnalysisSkillTag[]
-): WorksheetTemplate | null {
-  if (!tags || tags.length === 0) return null
-  if (tags.includes('字音字形')) return 'character-discrimination'
-  if (tags.includes('閱讀理解')) return 'reading-comprehension'
-  if (tags.includes('生字練習')) return 'character-practice'
-  if (tags.includes('語詞練習')) return 'word-practice'
-  if (tags.includes('句型練習') || tags.includes('造句練習')) return 'sentence-practice'
-  return null
-}
 
 export const TemplateSelectionPage: React.FC = () => {
   const {
@@ -132,31 +77,17 @@ export const TemplateSelectionPage: React.FC = () => {
     setWorksheetDoc,
     generatedImages,
     navigate,
-    skillTags,
   } = useApp()
 
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildError, setBuildError] = useState<string | null>(null)
   const [successNotice, setSuccessNotice] = useState<string | null>(null)
   const [showEnlargedPreview, setShowEnlargedPreview] = useState(false)
-  const [hasUserManuallySelected, setHasUserManuallySelected] = useState(false)
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const generatedCount = Object.keys(generatedImages).length
-
-  // 當有勾選功能標籤，且使用者尚未手動切換模板時，優先預設選取推薦之模板
-  useEffect(() => {
-    if (!hasUserManuallySelected && skillTags && skillTags.length > 0) {
-      const recommended = getPrioritizedTemplateByTags(skillTags)
-      if (recommended && selectedTemplate !== recommended) {
-        if (selectedTemplate === 'character-practice' || !isTemplateRecommendedByTags(selectedTemplate, skillTags)) {
-          setSelectedTemplate(recommended)
-        }
-      }
-    }
-  }, [skillTags, selectedTemplate, setSelectedTemplate, hasUserManuallySelected])
 
   // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
@@ -413,28 +344,6 @@ export const TemplateSelectionPage: React.FC = () => {
             </div>
           </div>
         )
-      case 'mixed':
-        return (
-          <div className="template-wireframe" aria-hidden="true">
-            <div className="wireframe-header-line"></div>
-            <div className="wireframe-row">
-              <div style={{ width: '28px', height: '22px', border: '1px solid #cbd5e1', backgroundColor: '#e2e8f0', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px' }}>🖼️</div>
-              <div className="wireframe-box" style={{ fontWeight: 700 }}>學</div>
-              <div className="wireframe-lines">
-                <div className="wireframe-line-sm" style={{ width: '90%' }}></div>
-                <div className="wireframe-line-sm" style={{ width: '60%' }}></div>
-              </div>
-            </div>
-            <div className="wireframe-row">
-              <div style={{ width: '28px', height: '22px', border: '1px solid #cbd5e1', backgroundColor: '#e2e8f0', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px' }}>🖼️</div>
-              <div className="wireframe-box" style={{ fontWeight: 700 }}>習</div>
-              <div className="wireframe-lines">
-                <div className="wireframe-line-sm" style={{ width: '85%' }}></div>
-                <div className="wireframe-line-sm" style={{ width: '50%' }}></div>
-              </div>
-            </div>
-          </div>
-        )
     }
   }
 
@@ -531,8 +440,6 @@ export const TemplateSelectionPage: React.FC = () => {
         {/* 依模板樣式呈現排版模擬 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: isEnlarged ? '16px' : '10px' }}>
           {previewChars.slice(0, 2).map((item, idx) => {
-            const img = generatedImages[item.character]
-
             return (
               <div
                 key={`${item.character}-${idx}`}
@@ -547,30 +454,6 @@ export const TemplateSelectionPage: React.FC = () => {
                   flexWrap: 'wrap',
                 }}
               >
-                {/* 綜合模板特有：插圖預覽 */}
-                {selectedTemplate === 'mixed' && (
-                  <div
-                    style={{
-                      width: isEnlarged ? '110px' : '64px',
-                      height: isEnlarged ? '80px' : '46px',
-                      border: '1px dashed #94a3b8',
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#ffffff',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {img ? (
-                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontSize: isEnlarged ? '28px' : '18px' }} aria-hidden="true">🖼️</span>
-                    )}
-                  </div>
-                )}
-
                 {/* 生字田字格 */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>
                   <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#64748b' }}>{item.zhuyin}</div>
@@ -709,16 +592,6 @@ export const TemplateSelectionPage: React.FC = () => {
                     </div>
                   )}
 
-                  {selectedTemplate === 'mixed' && (
-                    <div>
-                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#334155' }}>
-                        <strong>造詞：</strong>{item.words?.slice(0, 3).join('、')}
-                      </div>
-                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#64748b', marginTop: isEnlarged ? '6px' : '2px' }}>
-                        <strong>造句：</strong>{item.exampleSentences?.[0] || '請用生詞練習造句。'}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )
@@ -849,21 +722,17 @@ export const TemplateSelectionPage: React.FC = () => {
       <div className="template-grid" role="radiogroup" aria-label="學習單模板選項">
         {TEMPLATE_OPTIONS.map((tpl) => {
           const isSelected = selectedTemplate === tpl.id
-          const isRecommended = isTemplateRecommendedByTags(tpl.id, skillTags)
-
           return (
             <div
               key={tpl.id}
-              className={`template-card ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}`}
+              className={`template-card ${isSelected ? 'selected' : ''}`}
               onClick={() => {
-                setHasUserManuallySelected(true)
                 setSelectedTemplate(tpl.id)
                 setBuildError(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  setHasUserManuallySelected(true)
                   setSelectedTemplate(tpl.id)
                   setBuildError(null)
                 }
@@ -871,7 +740,7 @@ export const TemplateSelectionPage: React.FC = () => {
               role="radio"
               aria-checked={isSelected}
               tabIndex={0}
-              aria-label={`學習單模板：${tpl.title}，${isSelected ? '已選取' : '點選套用'}${isRecommended ? '（標籤推薦）' : ''}`}
+              aria-label={`學習單模板：${tpl.title}，${isSelected ? '已選取' : '點選套用'}`}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -883,21 +752,6 @@ export const TemplateSelectionPage: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '2rem' }} aria-hidden="true">{tpl.icon}</span>
                   <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    {isRecommended && (
-                      <span
-                        className="tag tag-success"
-                        style={{
-                          fontWeight: 700,
-                          fontSize: '0.74rem',
-                          padding: '0.15rem 0.45rem',
-                          backgroundColor: '#dcfce7',
-                          color: '#15803d',
-                          border: '1px solid #86efac',
-                        }}
-                      >
-                        🎯 推薦
-                      </span>
-                    )}
                     <span className="tag tag-info">{tpl.badge}</span>
                   </div>
                 </div>

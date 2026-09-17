@@ -72,24 +72,13 @@ describe('analysis cache', () => {
       .not.toBe(buildAnalysisCacheKey('same-material', { grade: 6, language: 'zh-TW' }))
   })
 
-  it('uses separate cache entries for skill tags and zhuyin preference', () => {
+  it('uses separate cache entries for zhuyin preference', () => {
     const base = { language: 'zh-TW' as const }
     expect(buildAnalysisCacheKey('same-material', {
       ...base,
-      skillTags: ['造詞'],
       includeZhuyin: true,
     })).not.toBe(buildAnalysisCacheKey('same-material', {
       ...base,
-      skillTags: ['成語運用'],
-      includeZhuyin: true,
-    }))
-    expect(buildAnalysisCacheKey('same-material', {
-      ...base,
-      skillTags: ['造詞'],
-      includeZhuyin: true,
-    })).not.toBe(buildAnalysisCacheKey('same-material', {
-      ...base,
-      skillTags: ['造詞'],
       includeZhuyin: false,
     }))
   })

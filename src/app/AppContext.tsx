@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useTransition, useMemo } from 'react'
 import type {
   AnalysisResult,
-  AnalysisSkillTag,
   AnalysisContextInput,
   AppError,
 } from '../domain'
@@ -20,7 +19,6 @@ import {
 import { type AppRoute, ROUTE_METAS } from './routes'
 import {
   AppContext,
-  DEFAULT_SKILL_TAGS,
   type UploadedFileInfo,
   type AnalysisScope,
 } from './app-context'
@@ -55,7 +53,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [analysisError, setAnalysisError] = useState<AppError | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
   const [selectedGrade, setSelectedGrade] = useState<number>(3)
-  const [skillTags, setSkillTags] = useState<AnalysisSkillTag[]>(DEFAULT_SKILL_TAGS)
   const [includeZhuyin, setIncludeZhuyin] = useState<boolean>(true)
   const [generatedImages, setGeneratedImages] = useState<Record<string, ImageResult>>({})
   const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('character-practice')
@@ -117,10 +114,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedPages: pages,
       estimatedItemsMin: Math.max(1, pageCount * 2),
       estimatedItemsMax: pageCount * 4,
-      skillTags,
       includeZhuyin,
     }
-  }, [uploadedFile, skillTags, includeZhuyin])
+  }, [uploadedFile, includeZhuyin])
 
   /**
    * 執行教材分析 use case 流程：
@@ -155,7 +151,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
       const analysisContext: AnalysisContextInput = {
         language: 'zh-TW',
-        skillTags,
         includeZhuyin,
       }
       const cacheKey = buildAnalysisCacheKey(contentHash, analysisContext)
@@ -223,8 +218,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAnalyzing,
         selectedGrade,
         setSelectedGrade,
-        skillTags,
-        setSkillTags,
         includeZhuyin,
         setIncludeZhuyin,
         generatedImages,

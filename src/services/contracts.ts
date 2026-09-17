@@ -47,7 +47,6 @@ export type WorksheetTemplate =
   | 'word-practice'
   | 'sentence-practice'
   | 'picture-practice'
-  | 'mixed'
   | 'character-discrimination'
   | 'reading-comprehension'
 
@@ -159,7 +158,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '綜合' | '字音字形辨析' | '閱讀理解'
+  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '字音字形辨析' | '閱讀理解'
   status: 'draft' | 'ready'
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult
