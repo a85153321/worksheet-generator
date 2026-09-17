@@ -38,6 +38,16 @@ const image: ImageResult = {
   createdAt: '2026-09-16T00:00:00.000Z',
 }
 
+const readingPassage = {
+  id: 'reading-test',
+  title: '春日校園',
+  text: '小鳥飛過花園，花朵迎著陽光開放。',
+  grade: 3 as const,
+  maxCharacters: 50,
+  includedCharacters: ['鳥', '花'],
+  createdAt: '2026-09-17T00:00:00.000Z',
+}
+
 function sectionKinds(sections: WorksheetSection[]): string[] {
   return sections.map((section) => section.kind)
 }
@@ -163,7 +173,7 @@ describe('buildWorksheet', () => {
     if (!result.ok) expect(appErrorSchema.safeParse(result.error).success).toBe(true)
   })
 
-  it('builds reading passage, choices and open responses from existing analysis only', async () => {
+  it('builds a generated passage and local multiple-choice questions without calling AI', async () => {
     const networkRequest = vi.fn()
     vi.stubGlobal('fetch', networkRequest)
     const readingAnalysis: AnalysisResult = {
@@ -178,7 +188,10 @@ describe('buildWorksheet', () => {
       ],
     }
 
-    const result = await buildWorksheet(readingAnalysis, 'reading-comprehension')
+    const result = await buildWorksheet(readingAnalysis, 'reading-comprehension', {
+      grade: 3,
+      readingPassage,
+    })
 
     expect(result.ok).toBe(true)
     if (result.ok) {
@@ -186,33 +199,24 @@ describe('buildWorksheet', () => {
       expect(result.value.pages[0]?.sections[0]).toMatchObject({
         kind: 'reading-comprehension',
         item: {
-          passage: { sentences: expect.any(Array) },
+          passage: { title: '春日校園', text: readingPassage.text },
           multipleChoiceQuestions: [{ character: '鳥' }, { character: '花' }],
-          openResponseQuestions: expect.arrayContaining([
-            expect.objectContaining({ sourceSentence: '小鳥在天空中飛翔。' }),
-          ]),
         },
+      })
+      expect(result.value).toMatchObject({
+        grade: 3,
+        locale: 'zh-TW',
+        pageSetup: { size: 'A4', orientation: 'portrait' },
       })
     }
     expect(networkRequest).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
 
-  it('omits reading content types independently when their thresholds are not met', async () => {
+  it('requires an explicitly generated passage before building reading comprehension', async () => {
     const result = await buildWorksheet(analysis, 'reading-comprehension')
 
-    expect(result).toMatchObject({
-      ok: true,
-      value: {
-        pages: [{ sections: [{
-          item: {
-            passage: null,
-            multipleChoiceQuestions: [],
-            openResponseQuestions: [{ sourceSentence: '小鳥在天空中飛翔。' }],
-          },
-        }] }],
-      },
-    })
+    expect(result).toMatchObject({ ok: false, error: { type: 'validation' } })
   })
 
   it('returns no-eligible-characters when all reading content is below threshold', async () => {
@@ -220,7 +224,9 @@ describe('buildWorksheet', () => {
       characters: [{ ...analysis.characters[0], words: [], exampleSentences: [] }],
     }
 
-    const result = await buildWorksheet(emptyReadingMaterial, 'reading-comprehension')
+    const result = await buildWorksheet(emptyReadingMaterial, 'reading-comprehension', {
+      readingPassage: { ...readingPassage, includedCharacters: ['鳥'] },
+    })
 
     expect(result).toMatchObject({
       ok: false,

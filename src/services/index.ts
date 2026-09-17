@@ -6,6 +6,12 @@ export {
 } from './use-cases'
 export { buildWorksheet } from './worksheet-builder'
 export {
+  buildStandardizedReadingPrompt,
+  createGenerateReadingPassageUseCase,
+  generateReadingPassage,
+  readingPassageCharacterLimit,
+} from './reading-passage-generation'
+export {
   buildStandardizedImagePrompt,
   createGenerateSelectedImageUseCase,
   generateSelectedImage,
@@ -26,6 +32,8 @@ export type {
   BuildWorksheetOptions,
   CharacterWorksheetSection,
   CharacterDiscriminationWorksheetSection,
+  GeneratedReadingPassageResult,
+  GenerateReadingPassageInput,
   ImageResult,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
@@ -33,8 +41,6 @@ export type {
   PictureWorksheetSection,
   ReadingComprehensionWorksheetSection,
   ReadingMultipleChoiceQuestion,
-  ReadingOpenResponseQuestion,
-  ReadingPassage,
   SentenceWorksheetSection,
   WordWorksheetSection,
   WorksheetBlock,
@@ -43,6 +49,7 @@ export type {
   WorksheetSection,
   WorksheetTemplate,
 } from './contracts'
+export type { ElementaryGrade, ReadingPassage } from '../domain'
 export type {
   CropRect,
   ImageProcessingOptions,

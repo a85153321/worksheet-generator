@@ -50,6 +50,9 @@ export {
   processedPdfSelectionSchema,
   supportedImageMimeTypeSchema,
 } from './processed-material'
+
+export { elementaryGradeSchema, readingPassageSchema } from './reading-passage'
+export type { ElementaryGrade, ReadingPassage } from './reading-passage'
 export type {
   CropRect,
   ImageProcessingOptions,

@@ -663,80 +663,30 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 7. 渲染閱讀理解評量單 (reading-comprehension)
-  // 嚴格落實短文／選擇題／問答題獨立呈現 fallback：有資料才顯示，無資料完全不渲染 DOM，絕不使用 display: none
   const renderReadingComprehension = (pageSections: WorksheetSection[]) => {
     const readingSections = pageSections.filter(
       (s): s is ReadingComprehensionWorksheetSection => s.kind === 'reading-comprehension'
     )
 
-    const sectionsToRender = readingSections.length > 0
-      ? readingSections
-      : [
-          {
-            kind: 'reading-comprehension' as const,
-            id: 'reading-comprehension-default',
-            instructions: '閱讀短文或例句後，完成可用的選擇題與問答題。',
-            item: {
-              passage: {
-                title: '教材情境短文',
-                text: '我每天到學校學習新知識，在明亮的教室裡認真讀書。多練習可以讓生字寫得更漂亮，讓我們一起快樂成長。',
-                sentences: [
-                  '我每天到學校學習新知識，在明亮的教室裡認真讀書。',
-                  '多練習可以讓生字寫得更漂亮，讓我們一起快樂成長。',
-                ],
-              },
-              multipleChoiceQuestions: [
-                {
-                  id: 'default-mc-1',
-                  character: '學',
-                  prompt: '下列哪一個詞語是教材中「學」的造詞？',
-                  options: ['學校', '習慣', '羽毛', '飛翔'],
-                  correctAnswer: '學校',
-                },
-                {
-                  id: 'default-mc-2',
-                  character: '習',
-                  prompt: '下列哪一個詞語是教材中「習」的造詞？',
-                  options: ['學習', '學生', '教室', '老師'],
-                  correctAnswer: '學習',
-                },
-              ],
-              openResponseQuestions: [
-                {
-                  id: 'default-open-1',
-                  prompt: '讀完短文後，請用自己的話說明為什麼要多練習寫生字？',
-                  sourceSentence: '多練習可以讓生字寫得更漂亮。',
-                  answerLineCount: 2,
-                },
-              ],
-            },
-          },
-        ]
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div className="sheet-instruction-banner">
-          <strong>【閱讀理解評量單】</strong> 請仔細閱讀以下短文或情境教學例句，再完成各項文意理解與造句題目。
+          <strong>【閱讀理解評量單】</strong> 請仔細閱讀以下短文，再完成文意與生詞理解選擇題。
         </div>
 
-        {sectionsToRender.map((s, idx) => {
+        {readingSections.map((s, idx) => {
           const passage = s.item.passage
           const mcQuestions = s.item.multipleChoiceQuestions || []
-          const openQuestions = s.item.openResponseQuestions || []
 
           return (
             <div key={`${s.id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* 1. 情境短文區塊 (有短文才渲染，null 絕不渲染 DOM，不殘留空白節點) */}
-              {passage !== null && (
-                <section className="sheet-passage-box">
-                  <div className="sheet-passage-title">
-                    📖 【{passage.title || '教材情境短文'}】
-                  </div>
-                  <div className="sheet-passage-text">
-                    {passage.text}
-                  </div>
-                </section>
-              )}
+              <section className="sheet-passage-box">
+                <div className="sheet-passage-title">
+                  📖 【{passage.title}】
+                </div>
+                <div className="sheet-passage-text">{passage.text}</div>
+              </section>
 
               {/* 2. 選擇題區塊 (有題目才渲染，空陣列絕不渲染 DOM) */}
               {mcQuestions.length > 0 && (
@@ -769,32 +719,6 @@ export const PrintPreviewPage: React.FC = () => {
                 </section>
               )}
 
-              {/* 3. 開放式問答題區塊 (有題目才渲染，空陣列絕不渲染 DOM) */}
-              {openQuestions.length > 0 && (
-                <section className="sheet-reading-card">
-                  <div className="sheet-sub-section-title">
-                    <span>貳、文意深究與簡答題（請閱讀句子後，用完整通順的話回答）：</span>
-                  </div>
-                  <div className="sheet-open-list">
-                    {openQuestions.map((q, qIdx) => (
-                      <div key={q.id || qIdx} className="sheet-open-item">
-                        <div className="sheet-open-prompt">
-                          <span className="sheet-open-num">{qIdx + 1}.</span>
-                          <span>{q.prompt}</span>
-                        </div>
-                        <div className="sheet-open-lines">
-                          {Array.from({ length: q.answerLineCount || 2 }).map((_, lIdx) => (
-                            <div key={lIdx} className="sheet-writing-line">
-                              <span style={{ fontSize: '12px', color: '#64748b' }}>答：</span>
-                              <div className="sheet-writing-rule"></div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
             </div>
           )
         })}

@@ -111,31 +111,15 @@ function characterDiscriminationSection(
   }
 }
 
-function isCompleteSentence(sentence: string): boolean {
-  return sentence.trim().length > 0
-}
-
 function readingComprehensionSection(
   analysis: AnalysisResult,
+  passage: NonNullable<BuildWorksheetOptions['readingPassage']>,
 ): ReadingComprehensionWorksheetSection | null {
-  const completeSentences = analysis.characters
-    .flatMap((item) => item.exampleSentences)
-    .map((sentence) => sentence.trim())
-    .filter(isCompleteSentence)
   const wordCharacters = analysis.characters.filter((item) =>
-    item.words.some((word) => word.trim().length > 0),
+    item.editableState.status === 'confirmed'
+    && passage.includedCharacters.includes(item.character)
+    && item.words.some((word) => word.trim().length > 0),
   )
-
-  const passageSentences = completeSentences.length >= 3
-    ? completeSentences.slice(0, 5)
-    : []
-  const passage = passageSentences.length > 0
-    ? {
-        title: '教材情境短文',
-        text: passageSentences.join(''),
-        sentences: passageSentences,
-      }
-    : null
 
   const multipleChoiceQuestions = wordCharacters.length >= 2
     ? wordCharacters.map((item, index) => {
@@ -147,32 +131,25 @@ function readingComprehensionSection(
           .filter((word, wordIndex, words) =>
             word.length > 0 && word !== correctAnswer && words.indexOf(word) === wordIndex,
           )
+        const rawOptions = [correctAnswer, ...distractors].slice(0, 4)
+        const offset = index % rawOptions.length
+        const options = [...rawOptions.slice(offset), ...rawOptions.slice(0, offset)]
         return {
           id: `reading-choice-${index + 1}`,
           character: item.character,
-          prompt: `下列哪一個詞語是教材中「${item.character}」的造詞？`,
-          options: [correctAnswer, ...distractors].slice(0, 4),
+          prompt: `短文中出現了「${item.character}」，下列哪一個是它的正確詞語？`,
+          options,
           correctAnswer,
         }
       })
     : []
-
-  const openResponseQuestions = completeSentences.slice(0, 3).map((sentence, index) => ({
-    id: `reading-open-${index + 1}`,
-    prompt: `讀完例句後，請用自己的話說明句意：${sentence}`,
-    sourceSentence: sentence,
-    answerLineCount: 3,
-  }))
-
-  if (!passage && multipleChoiceQuestions.length === 0 && openResponseQuestions.length === 0) {
-    return null
-  }
+  if (multipleChoiceQuestions.length === 0) return null
 
   return {
     kind: 'reading-comprehension',
     id: 'reading-comprehension-1',
-    instructions: '閱讀短文或例句後，完成可用的選擇題與問答題。',
-    item: { passage, multipleChoiceQuestions, openResponseQuestions },
+    instructions: '閱讀短文後，完成文意與生詞理解選擇題。',
+    item: { passage: structuredClone(passage), multipleChoiceQuestions },
   }
 }
 
@@ -272,8 +249,18 @@ export async function buildWorksheet(
   }
 
   const images = new Map((options.images ?? []).map((image) => [image.character, image]))
+  if (template === 'reading-comprehension' && !options.readingPassage) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: '請先由教師明確觸發短文生成，再建立閱讀理解評量單。',
+        retryable: false,
+      },
+    }
+  }
   const readingSection = template === 'reading-comprehension'
-    ? readingComprehensionSection(analysis)
+    ? readingComprehensionSection(analysis, options.readingPassage!)
     : null
   const sections = readingSection
     ? [readingSection]
@@ -282,7 +269,7 @@ export async function buildWorksheet(
     if (template === 'character-discrimination' || template === 'reading-comprehension') {
       const message = template === 'character-discrimination'
         ? '整份教材的生字都缺少形近字與多音字資料，無法建立字音字形辨析單。'
-        : '教材沒有足夠的完整例句或至少兩個含詞語的生字，無法建立閱讀理解評量單。'
+        : '至少需要兩個教師確認保留、且各自含有詞語的生字，才能建立閱讀理解選擇題。'
       return {
         ok: false,
         error: { type: 'no-eligible-characters', template, message, retryable: false },
@@ -313,6 +300,9 @@ export async function buildWorksheet(
       title: options.title?.trim() || `${TEMPLATE_LABELS[template]}學習單`,
       template,
       templateLabel: TEMPLATE_LABELS[template],
+      grade: options.grade ?? 3,
+      locale: 'zh-TW',
+      pageSetup: { size: 'A4', orientation: 'portrait' },
       status: 'draft',
       pages,
       sourceAnalysis: structuredClone(analysis),

@@ -5,6 +5,8 @@ import type {
   ImageProcessingOptions,
   LookalikeCandidate,
   MultiPronunciation,
+  ElementaryGrade,
+  ReadingPassage,
 } from '../domain'
 
 export interface AnalyzeMaterialInput {
@@ -40,6 +42,16 @@ export interface InspectUploadedPdfInput {
 export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
   selectedPages: readonly number[]
   options?: ImageProcessingOptions
+}
+
+export interface GenerateReadingPassageInput {
+  analysis: AnalysisResult
+  grade: ElementaryGrade
+}
+
+export interface GeneratedReadingPassageResult {
+  passage: ReadingPassage
+  source: 'generated' | 'cache'
 }
 
 export type WorksheetTemplate =
@@ -105,12 +117,6 @@ export interface CharacterDiscriminationWorksheetSection extends WorksheetSectio
   }
 }
 
-export interface ReadingPassage {
-  title: string
-  text: string
-  sentences: string[]
-}
-
 export interface ReadingMultipleChoiceQuestion {
   id: string
   character: string
@@ -119,19 +125,11 @@ export interface ReadingMultipleChoiceQuestion {
   correctAnswer: string
 }
 
-export interface ReadingOpenResponseQuestion {
-  id: string
-  prompt: string
-  sourceSentence: string
-  answerLineCount: number
-}
-
 export interface ReadingComprehensionWorksheetSection extends WorksheetSectionBase {
   kind: 'reading-comprehension'
   item: {
-    passage: ReadingPassage | null
+    passage: ReadingPassage
     multipleChoiceQuestions: ReadingMultipleChoiceQuestion[]
-    openResponseQuestions: ReadingOpenResponseQuestion[]
   }
 }
 
@@ -152,6 +150,8 @@ export interface WorksheetPage {
 export interface BuildWorksheetOptions {
   title?: string
   images?: readonly ImageResult[]
+  grade?: ElementaryGrade
+  readingPassage?: ReadingPassage
 }
 
 export interface WorksheetDoc {
@@ -159,6 +159,12 @@ export interface WorksheetDoc {
   title: string
   template: WorksheetTemplate
   templateLabel: '生字' | '詞語' | '句子' | '看圖' | '字音字形辨析' | '閱讀理解'
+  grade: ElementaryGrade
+  locale: 'zh-TW'
+  pageSetup: {
+    size: 'A4'
+    orientation: 'portrait'
+  }
   status: 'draft' | 'ready'
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult

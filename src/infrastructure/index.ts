@@ -13,6 +13,15 @@ export {
 } from './gemini-client'
 export type { GeminiAnalysisInput, GeminiClientOptions } from './gemini-client'
 export {
+  createGeminiReadingClient,
+  DEFAULT_GEMINI_READING_MODEL,
+  GEMINI_READING_ENDPOINT,
+} from './gemini-reading-client'
+export type {
+  GeminiReadingClientOptions,
+  GeminiReadingPassageInput,
+} from './gemini-reading-client'
+export {
   buildGeminiImageGenerateContentUrl,
   createGeminiImageClient,
   DEFAULT_GEMINI_IMAGE_MODEL,
@@ -24,12 +33,16 @@ export type { HashInput } from './hash'
 export {
   clearAnalysisCache,
   clearImageCache,
+  clearReadingPassageCache,
   deleteAnalysisCache,
   deleteImageCache,
+  deleteReadingPassageCache,
   getAnalysisCache,
   getImageCache,
+  getReadingPassageCache,
   putAnalysisCache,
   putImageCache,
+  putReadingPassageCache,
 } from './indexed-db'
 export type { CachedImage } from './indexed-db'
 export { calculateOutputDimensions, preprocessImage } from './image-processing'

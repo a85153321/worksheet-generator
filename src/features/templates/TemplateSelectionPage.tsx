@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useApp } from '../../app/index'
-import { buildWorksheet, type WorksheetTemplate } from '../../services'
-import type { CharacterAnalysis } from '../../domain'
+import {
+  buildWorksheet,
+  generateReadingPassage,
+  type WorksheetTemplate,
+} from '../../services'
+import type { CharacterAnalysis, ElementaryGrade, ReadingPassage } from '../../domain'
 
 interface TemplateOption {
   id: WorksheetTemplate
@@ -77,17 +81,29 @@ export const TemplateSelectionPage: React.FC = () => {
     setWorksheetDoc,
     generatedImages,
     navigate,
+    selectedGrade,
   } = useApp()
 
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildError, setBuildError] = useState<string | null>(null)
   const [successNotice, setSuccessNotice] = useState<string | null>(null)
   const [showEnlargedPreview, setShowEnlargedPreview] = useState(false)
+  const [isGeneratingPassage, setIsGeneratingPassage] = useState(false)
+  const [readingPassage, setReadingPassage] = useState<ReadingPassage | null>(null)
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const generatedCount = Object.keys(generatedImages).length
+  const confirmedCharacters = characters
+    .filter((item) => item.editableState.status === 'confirmed')
+    .map((item) => item.character)
+  const activeReadingPassage = readingPassage
+    && readingPassage.grade === selectedGrade
+    && readingPassage.includedCharacters.length === new Set(confirmedCharacters).size
+    && readingPassage.includedCharacters.every((character) => confirmedCharacters.includes(character))
+    ? readingPassage
+    : null
 
   // 若選到已移除之 mixed 模板，自動轉向 character-practice
   useEffect(() => {
@@ -127,7 +143,13 @@ export const TemplateSelectionPage: React.FC = () => {
 
     try {
       const imageList = Object.values(generatedImages)
-      const res = await buildWorksheet(analysisResult, selectedTemplate, { images: imageList })
+      const res = await buildWorksheet(analysisResult, selectedTemplate, {
+        images: imageList,
+        grade: selectedGrade as ElementaryGrade,
+        readingPassage: selectedTemplate === 'reading-comprehension'
+          ? activeReadingPassage ?? undefined
+          : undefined,
+      })
       if (res.ok) {
         setWorksheetDoc(res.value)
         setSuccessNotice(
@@ -150,6 +172,27 @@ export const TemplateSelectionPage: React.FC = () => {
     } finally {
       setIsBuilding(false)
     }
+  }
+
+  const handleGenerateReadingPassage = async () => {
+    if (!analysisResult) return
+    setIsGeneratingPassage(true)
+    setBuildError(null)
+    const result = await generateReadingPassage({
+      analysis: analysisResult,
+      grade: selectedGrade as ElementaryGrade,
+    })
+    setIsGeneratingPassage(false)
+    if (!result.ok) {
+      setBuildError(result.error.message)
+      return
+    }
+    setReadingPassage(result.value.passage)
+    setSuccessNotice(
+      result.value.source === 'cache'
+        ? '已載入本機快取的閱讀短文，不會消耗新的 Gemini quota。'
+        : '閱讀短文已生成並儲存於本機快取。',
+    )
   }
 
   // 快速載入三上完整示範生字（含形近字、多音字與完整例句短文）
@@ -615,14 +658,11 @@ export const TemplateSelectionPage: React.FC = () => {
                       <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: isEnlarged ? '6px 10px' : '4px 6px', marginBottom: isEnlarged ? '6px' : '4px' }}>
                         <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0f172a' }}>📖 【短文閱讀理解】</div>
                         <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#334155', lineHeight: 1.4 }}>
-                          {item.exampleSentences?.[0] || '我在學校快樂地學習國語，認真練習寫字。'}
+                          {activeReadingPassage?.text || '請按下「生成閱讀短文」，取得連貫文章預覽。'}
                         </div>
                       </div>
                       <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#0369a1' }}>
                         <strong>選擇題：</strong>下列哪一個詞語是「{item.character}」的正確造詞？ ① {item.words?.[0] || '詞語一'} ② ...
-                      </div>
-                      <div style={{ fontSize: isEnlarged ? '12px' : '10px', color: '#64748b', marginTop: isEnlarged ? '4px' : '2px' }}>
-                        <strong>問答題：</strong>讀完句子後，請說明其主要意旨：____________________
                       </div>
                     </div>
                   )}
@@ -888,6 +928,29 @@ export const TemplateSelectionPage: React.FC = () => {
         {renderLivePreviewContent()}
       </section>
 
+      {selectedTemplate === 'reading-comprehension' && (
+        <div className="callout callout-warning" style={{ marginTop: '1.25rem' }}>
+          <div className="callout-title">✨ 生成連貫閱讀短文（需明確觸發）</div>
+          <p>
+            本動作會使用國小 {selectedGrade} 年級設定與教師確認保留的生字，先查本機快取；
+            僅在快取未命中時送出 1 次 Gemini 文字生成請求，可能使用您的 quota。
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleGenerateReadingPassage}
+            disabled={isGeneratingPassage || isEmpty}
+          >
+            {isGeneratingPassage ? '正在生成閱讀短文…' : activeReadingPassage ? '重新取得閱讀短文' : '生成閱讀短文'}
+          </button>
+          {activeReadingPassage && (
+            <p style={{ marginTop: '0.75rem' }}>
+              <strong>{activeReadingPassage.title}</strong>：{activeReadingPassage.text}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* 底部導引與建立學習單按鈕 (Requirement 2: 串接 buildWorksheet use case) */}
       <div className="btn-group" style={{ marginTop: '2.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
@@ -904,7 +967,7 @@ export const TemplateSelectionPage: React.FC = () => {
           className="btn btn-primary"
           style={{ padding: '0.75rem 1.8rem', fontSize: '1.05rem', fontWeight: 700 }}
           onClick={handleCreateWorksheet}
-          disabled={isBuilding || isEmpty}
+          disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
           aria-label={`套用「${currentOption.title}」並建立學習單`}
         >
           {isBuilding ? (
@@ -978,7 +1041,7 @@ export const TemplateSelectionPage: React.FC = () => {
                     setShowEnlargedPreview(false)
                     handleCreateWorksheet()
                   }}
-                  disabled={isBuilding || isEmpty}
+                  disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
                 >
                   🚀 套用此模板並建立學習單
                 </button>
