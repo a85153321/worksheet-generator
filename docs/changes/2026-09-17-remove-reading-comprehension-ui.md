@@ -1,0 +1,23 @@
+## Handoff
+
+- Owner: Antigravity
+- Goal: 完成「閱讀理解評量單」前端 UI、CSS 與 A4 預覽列印邏輯清理，確保其餘四個模板（生字田字格練習單、詞語積木擴展單、句型仿寫應用單、字音字形辨析單）流程運作完全正常。
+- Changed files:
+  - `src/features/templates/TemplateSelectionPage.tsx`
+  - `src/styles/app.css`
+- Frontend UI / Route changes:
+  - 步驟 5 模板選擇頁 (`TemplateSelectionPage.tsx`)：
+    - `TEMPLATE_OPTIONS` 維持 4 張卡片（生字田字格練習單、詞語積木擴展單、句型仿寫應用單、字音字形辨析單），已無「閱讀理解評量單」卡片。
+    - 加入保護機制：若 localStorage 或 state 殘留選定值為 `'reading-comprehension'`，自動退回切換為 `'character-practice'`。
+    - 移除註解中過時的短文字樣。
+  - 步驟 6 預覽與列印 (`PrintPreviewPage.tsx`)：
+    - 確認 `templateNameMap`、`renderContentByTemplate` 與空狀態說明等無任何閱讀理解或短文生成殘留。
+  - CSS 樣式清理 (`src/styles/app.css`)：
+    - 移除了列印專用樣式中殘留的 `.sheet-reading-card` 與 `.sheet-passage-box`。
+- Residual scan across codebase:
+  - 針對 `reading-comprehension`、`閱讀理解`、`短文`、`選擇題`、`字數` 進行全站 grep，除 `TemplateSelectionPage` 保留舊值回退保護與 IndexedDB version 4 遷移邏輯外，生產程式碼中已 0 處殘留。
+- Verification:
+  - `npm test`: 8 passed, 52 tests passed (100%).
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npm run build`: TypeScript compile & bundle passed without error.
+  - 瀏覽器端對步驟 5 及步驟 6（四個模板完整流程）進行端到端截圖驗證，確認畫面無任何破損或殘留按鈕與文案。

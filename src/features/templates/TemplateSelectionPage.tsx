@@ -86,9 +86,9 @@ export const TemplateSelectionPage: React.FC = () => {
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const uploadedImageCount = Object.keys(worksheetImages).length
 
-  // 若選到已移除之 mixed 模板，自動轉向 character-practice
+  // 若選到已移除之 mixed 或 reading-comprehension 模板，自動轉向 character-practice
   useEffect(() => {
-    if ((selectedTemplate as string) === 'mixed') {
+    if ((selectedTemplate as string) === 'mixed' || (selectedTemplate as string) === 'reading-comprehension') {
       setSelectedTemplate('character-practice')
     }
   }, [selectedTemplate, setSelectedTemplate])
@@ -152,7 +152,7 @@ export const TemplateSelectionPage: React.FC = () => {
     }
   }
 
-  // 快速載入三上完整示範生字（含形近字、多音字與完整例句短文）
+  // 快速載入三上完整示範生字（含形近字、多音字與完整例句）
   const handleLoadSampleData = () => {
     setAnalysisResult({
       characters: [

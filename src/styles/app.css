@@ -1707,9 +1707,7 @@ textarea:focus-visible {
   .sheet-word-card,
   .sheet-sentence-card,
   .sheet-char-row,
-  .sheet-discrimination-card,
-  .sheet-reading-card,
-  .sheet-passage-box {
+  .sheet-discrimination-card {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
