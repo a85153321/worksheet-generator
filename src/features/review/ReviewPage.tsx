@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
-import { buildAnalysisCacheKey, updateAnalysisResult } from '../../services'
+import { updateAnalysisResult } from '../../services'
 
 const defaultSampleAnalysis: AnalysisResult = {
   characters: [
@@ -10,15 +10,10 @@ const defaultSampleAnalysis: AnalysisResult = {
       zhuyin: 'ㄒㄩㄝˊ',
       radical: '子',
       strokeCount: 16,
-      words: ['學校', '學習', '學生'],
-      exampleSentences: ['我每天到學校學習新知識。'],
+      wordCandidates: ['學校', '學習', '學生'],
+      sentenceCandidates: ['我每天到學校學習新知識。'],
       confidence: 0.96,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: {
-        prompt: '小學生在明亮的教室裡專心學習，兒童教材插畫風格',
-        rationale: '用熟悉的校園情境幫助理解「學」。',
-        selected: false,
-      },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -30,15 +25,10 @@ const defaultSampleAnalysis: AnalysisResult = {
       zhuyin: 'ㄒㄧˊ',
       radical: '羽',
       strokeCount: 11,
-      words: ['學習', '練習', '習慣'],
-      exampleSentences: ['多練習可以讓生字寫得更漂亮。'],
+      wordCandidates: ['學習', '練習', '習慣'],
+      sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
       confidence: 0.88,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: {
-        prompt: '小朋友手握鉛筆在作業本上認真習字練習，特寫溫馨插畫',
-        rationale: '對應習字、練習的生活經驗。',
-        selected: false,
-      },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -50,18 +40,13 @@ const defaultSampleAnalysis: AnalysisResult = {
       zhuyin: 'ㄧ',
       radical: '一',
       strokeCount: 1,
-      words: ['一起', '一定', '一樣', '第一'],
-      exampleSentences: [
+      wordCandidates: ['一起', '一定', '一樣', '第一'],
+      sentenceCandidates: [
         '我們一起到公園玩耍。',
         '只要努力練習，一定能把字寫好。',
       ],
       confidence: 0.98,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: {
-        prompt: '一群小朋友手牽手開心地在草地上一起玩耍，溫暖童趣風格',
-        rationale: '「一起」的同儕合作情境，貼近國小學生生活。',
-        selected: false,
-      },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -84,8 +69,6 @@ export const ReviewPage: React.FC = () => {
   const {
     analysisResult,
     setAnalysisResult,
-    uploadedFile,
-    includeZhuyin,
     navigate,
   } = useApp()
 
@@ -116,16 +99,8 @@ export const ReviewPage: React.FC = () => {
     setSaveSuccessMsg(null)
 
     try {
-      // 依快取特徵更新快取
-      const contentHash = uploadedFile
-        ? buildAnalysisCacheKey(
-            `hash-${encodeURIComponent(uploadedFile.name)}-${uploadedFile.size}-p${(uploadedFile.selectedPages ?? [1]).slice().sort((a, b) => a - b).join(',')}`,
-            { language: 'zh-TW', includeZhuyin },
-          )
-        : undefined
-
       // 呼叫 updateAnalysisResult use case
-      const res = await updateAnalysisResult(updatedData, contentHash)
+      const res = await updateAnalysisResult(updatedData)
 
       if (res.ok) {
         setAnalysisResult(res.value)
@@ -225,8 +200,8 @@ export const ReviewPage: React.FC = () => {
       zhuyin: item.zhuyin,
       radical: item.radical,
       strokeCount: item.strokeCount,
-      words: item.words.join('、'),
-      exampleSentence: item.exampleSentences[0] || '',
+      words: item.wordCandidates.join('、'),
+      exampleSentence: item.sentenceCandidates[0] || '',
     })
   }
 
@@ -279,11 +254,10 @@ export const ReviewPage: React.FC = () => {
         zhuyin: editForm.zhuyin.trim(),
         radical: editForm.radical.trim(),
         strokeCount: editForm.strokeCount,
-        words: parsedWords.length > 0 ? parsedWords : [editForm.character.trim()],
-        exampleSentences: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
+        wordCandidates: parsedWords.length > 0 ? parsedWords : [editForm.character.trim()],
+        sentenceCandidates: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
         confidence: 1.0,
         source: { page: 1, block: '教師自訂新增' },
-        imageSuggestion: null,
         editableState: {
           status: 'confirmed',
           isEditable: true,
@@ -304,8 +278,8 @@ export const ReviewPage: React.FC = () => {
         zhuyin: editForm.zhuyin.trim(),
         radical: editForm.radical.trim(),
         strokeCount: editForm.strokeCount,
-        words: parsedWords,
-        exampleSentences: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
+        wordCandidates: parsedWords,
+        sentenceCandidates: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
         editableState: {
           ...current.editableState,
           status: 'edited',
@@ -481,7 +455,7 @@ export const ReviewPage: React.FC = () => {
             <span>⚠️ 注意：有 {needsReviewCount} 個生字標記為「待審核」</span>
           </div>
           <p>
-            標示有黃色警示外框與「⚠️ 待審核」圖示的項目為 AI 信心值偏低或字形筆畫辨識存疑處，建議特別核對<strong>注音與總筆畫</strong>。
+            標示有黃色警示外框與「⚠️ 待審核」圖示的項目需要教師再次確認，建議特別核對<strong>注音與總筆畫</strong>。
           </p>
         </div>
       )}
@@ -798,10 +772,10 @@ export const ReviewPage: React.FC = () => {
                 /* 正常呈現狀態 */
                 <div style={{ marginTop: '0.5rem' }}>
                   <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem' }}>
-                    <strong>詞語：</strong> {item.words.join('、')}
+                    <strong>詞語：</strong> {item.wordCandidates.join('、')}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-                    <strong>例句：</strong> {item.exampleSentences[0] || '（無例句）'}
+                    <strong>例句：</strong> {item.sentenceCandidates[0] || '（無例句）'}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
                     來源：第 {item.source.page ?? 1} 頁 ｜ {item.source.block ?? '課文段落'}

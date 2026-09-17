@@ -13,15 +13,10 @@ const analysis: AnalysisResult = {
       zhuyin: 'ㄋㄧㄠˇ',
       radical: '鳥',
       strokeCount: 11,
-      words: ['小鳥', '飛鳥'],
-      exampleSentences: ['小鳥在天空中飛翔。'],
+      wordCandidates: ['小鳥', '飛鳥'],
+      sentenceCandidates: ['小鳥在天空中飛翔。'],
       confidence: 0.98,
       source: { page: 1, block: '第二段' },
-      imageSuggestion: {
-        prompt: '小鳥在藍天下飛翔',
-        rationale: '配合例句理解情境',
-        selected: true,
-      },
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ],
@@ -48,7 +43,7 @@ describe('buildWorksheet', () => {
     ['picture-practice', ['picture']],
   ])('builds the %s template locally', async (template, expectedKinds) => {
     const networkRequest = vi.fn(() => {
-      throw new Error('buildWorksheet must not call AI')
+      throw new Error('buildWorksheet must not make network requests')
     })
     vi.stubGlobal('fetch', networkRequest)
 
@@ -65,20 +60,18 @@ describe('buildWorksheet', () => {
     vi.unstubAllGlobals()
   })
 
-  it('marks a selected picture exercise that has no generated image', async () => {
+  it('requires a teacher-uploaded image for picture practice', async () => {
     const result = await buildWorksheet(analysis, 'picture-practice')
 
     expect(result).toMatchObject({
-      ok: true,
-      value: {
-        pages: [{ sections: [{ kind: 'picture', item: { image: null, needsImage: true } }] }],
-      },
+      ok: false,
+      error: { type: 'validation' },
     })
   })
 
   it('rejects a template when the analysis has no matching material', async () => {
     const noWords: AnalysisResult = {
-      characters: [{ ...analysis.characters[0], words: [] }],
+      characters: [{ ...analysis.characters[0], wordCandidates: [] }],
     }
 
     const result = await buildWorksheet(noWords, 'word-practice')
@@ -90,8 +83,8 @@ describe('buildWorksheet', () => {
     const duplicatedPage = {
       pageNumber: 1,
       blocks: [
-        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', words: [], exampleSentences: [] },
-        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', words: [], exampleSentences: [] },
+        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', wordCandidates: [], sentenceCandidates: [] },
+        { character: '鳥', zhuyin: 'ㄋㄧㄠˇ', wordCandidates: [], sentenceCandidates: [] },
       ],
       sections: [],
     }

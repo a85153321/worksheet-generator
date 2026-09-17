@@ -9,11 +9,10 @@ function character(overrides: Partial<CharacterAnalysis> = {}): CharacterAnalysi
     zhuyin: 'ㄒㄩㄝˊ',
     radical: '子',
     strokeCount: 16,
-    words: ['學習'],
-    exampleSentences: ['我喜歡學習。'],
+    wordCandidates: ['學習'],
+    sentenceCandidates: ['我喜歡學習。'],
     confidence: 0.95,
     source: { page: 1, block: '第一段' },
-    imageSuggestion: null,
     editableState: { status: 'draft', isEditable: true, needsReview: false },
     ...overrides,
   }

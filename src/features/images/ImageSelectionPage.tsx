@@ -62,7 +62,7 @@ export const ImageSelectionPage: React.FC = () => {
       <div className="card-header">
         <h1 className="card-title">🖼️ 步驟 4：上傳教學配圖</h1>
         <p className="card-subtitle">
-          如需配圖，請從本機上傳；圖片只保留在目前瀏覽器工作階段，不會送往 AI 服務。
+          如需配圖，請從本機上傳；圖片只保留在目前瀏覽器工作階段，不會送往外部服務。
         </p>
       </div>
 

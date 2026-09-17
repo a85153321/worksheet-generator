@@ -1,25 +1,11 @@
-export {
-  clearGeminiApiKey,
-  getGeminiApiKey,
-  hasGeminiApiKey,
-  saveGeminiApiKey,
-} from './api-key-store'
-export {
-  buildGeminiGenerateContentUrl,
-  createGeminiClient,
-  DEFAULT_GEMINI_ANALYSIS_MODEL,
-  GEMINI_GENERATE_CONTENT_ENDPOINT,
-} from './gemini-client'
-export type {
-  GeminiAnalysisDraft,
-  GeminiAnalysisInput,
-  GeminiClientOptions,
-  GeminiTypedCharactersInput,
-} from './gemini-client'
 export { calculateInputHash } from './hash'
 export type { HashInput } from './hash'
-export { formatCharacterZhuyin, lookupCharacterInfo } from './character-info'
-export type { CharacterInfo } from './character-info'
+export {
+  lookupCharacterFromDictionary,
+  lookupDictionaryEntriesByTerm,
+  MOE_CONCISED_DICTIONARY_METADATA,
+} from './moe-dictionary'
+export type { CharacterDictionaryLookup, DictionaryEntry } from './moe-dictionary'
 export {
   clearAnalysisCache,
   deleteAnalysisCache,

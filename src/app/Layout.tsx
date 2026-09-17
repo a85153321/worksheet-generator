@@ -2,7 +2,6 @@ import React from 'react'
 import { Header } from '../components/Header'
 import { StepNavigation } from '../components/StepNavigation'
 import { useApp } from './useApp'
-import { SettingsPage } from '../features/settings/SettingsPage'
 import { UploadPage } from '../features/upload/UploadPage'
 import { AnalyzingPage } from '../features/analyzing/AnalyzingPage'
 import { ReviewPage } from '../features/review/ReviewPage'
@@ -15,8 +14,6 @@ export const Layout: React.FC = () => {
 
   const renderPage = () => {
     switch (currentRoute) {
-      case 'settings':
-        return <SettingsPage />
       case 'upload':
         return <UploadPage />
       case 'analyzing':
@@ -37,7 +34,7 @@ export const Layout: React.FC = () => {
   return (
     <div>
       <Header />
-      {currentRoute !== 'settings' && <StepNavigation />}
+      <StepNavigation />
       <main className="main-content" role="main">
         {renderPage()}
       </main>

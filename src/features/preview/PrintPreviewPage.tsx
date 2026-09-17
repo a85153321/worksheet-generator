@@ -76,7 +76,7 @@ export const PrintPreviewPage: React.FC = () => {
     setExportSuccess(null)
 
     try {
-      // 動態引入 jspdf 與 html2canvas (純前端瀏覽器端編譯，符合 BYOK 與 Local-First 原則)
+      // 動態引入 jspdf 與 html2canvas，維持純前端本機輸出。
       const { jsPDF } = await import('jspdf')
       const html2canvasModule = await import('html2canvas')
       const html2canvas = html2canvasModule.default || html2canvasModule
@@ -155,11 +155,10 @@ export const PrintPreviewPage: React.FC = () => {
       zhuyin: 'ㄒㄩㄝˊ',
       radical: '子',
       strokeCount: 16,
-      words: ['學校', '學習', '學生'],
-      exampleSentences: ['我每天到學校學習新知識。'],
+      wordCandidates: ['學校', '學習', '學生'],
+      sentenceCandidates: ['我每天到學校學習新知識。'],
       confidence: 0.96,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: null,
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
@@ -167,11 +166,10 @@ export const PrintPreviewPage: React.FC = () => {
       zhuyin: 'ㄒㄧˊ',
       radical: '羽',
       strokeCount: 11,
-      words: ['學習', '練習', '習慣'],
-      exampleSentences: ['多練習可以讓生字寫得更漂亮。'],
+      wordCandidates: ['學習', '練習', '習慣'],
+      sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
       confidence: 0.92,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: null,
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
@@ -179,11 +177,10 @@ export const PrintPreviewPage: React.FC = () => {
       zhuyin: 'ㄧ',
       radical: '一',
       strokeCount: 1,
-      words: ['一起', '一定', '一樣', '第一'],
-      exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
+      wordCandidates: ['一起', '一定', '一樣', '第一'],
+      sentenceCandidates: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
       confidence: 0.98,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: null,
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ]
@@ -204,7 +201,7 @@ export const PrintPreviewPage: React.FC = () => {
             zhuyin: s.item.zhuyin,
             radical: s.item.radical,
             strokeCount: s.item.strokeCount,
-            words: detail?.words || [],
+            wordCandidates: detail?.wordCandidates || [],
           }
         })
       : fallbackCharacters.map((c) => ({
@@ -212,7 +209,7 @@ export const PrintPreviewPage: React.FC = () => {
           zhuyin: c.zhuyin,
           radical: c.radical,
           strokeCount: c.strokeCount,
-          words: c.words,
+          wordCandidates: c.wordCandidates,
         }))
 
     return (
@@ -277,8 +274,8 @@ export const PrintPreviewPage: React.FC = () => {
             <div style={{ fontSize: '13px', color: '#334155', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
               <strong>【常用詞語造詞參考】：</strong>
               <span>
-                {item.words && item.words.length > 0
-                  ? item.words.join('、')
+                {item.wordCandidates && item.wordCandidates.length > 0
+                  ? item.wordCandidates.join('、')
                   : '________________、________________'}
               </span>
             </div>
@@ -303,7 +300,7 @@ export const PrintPreviewPage: React.FC = () => {
       : fallbackCharacters.map((c) => ({
           character: c.character,
           zhuyin: c.zhuyin,
-          words: c.words.map((text) => ({ text, practiceLineCount: 1 })),
+          words: c.wordCandidates.map((text) => ({ text, practiceLineCount: 1 })),
         }))
 
     return (
@@ -387,7 +384,7 @@ export const PrintPreviewPage: React.FC = () => {
         }))
       : fallbackCharacters.map((c) => ({
           character: c.character,
-          sentences: c.exampleSentences.map((text) => ({ text, answerLineCount: 2 })),
+          sentences: c.sentenceCandidates.map((text) => ({ text, answerLineCount: 2 })),
         }))
 
     return (
@@ -540,7 +537,7 @@ export const PrintPreviewPage: React.FC = () => {
             <p className="card-subtitle">
               已套用「{templateNameMap[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級
               {previewFont === 'bopomofo' ? '（已套用「芫荽注音字體」）' : '（已套用「標楷體」）'}
-              ；本步驟由純前端引擎執行，不經任何外部 AI 後端
+              ；本步驟由純前端引擎執行，不會傳送資料到外部服務
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
               {/* 即時切換注音開關 */}
@@ -737,7 +734,7 @@ export const PrintPreviewPage: React.FC = () => {
               </main>
 
               <footer className="sheet-footer">
-                <span>國小 AI 學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
+                <span>國小本機學習單生成器（Local-First 免費教師版）· {templateNameMap[activeTemplate]}</span>
                 <span>第 {page.pageNumber} 頁 / 共 {pages.length} 頁</span>
               </footer>
             </article>

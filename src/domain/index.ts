@@ -9,7 +9,6 @@ export {
   analysisResultSchema,
   characterAnalysisSchema,
   editableStateSchema,
-  imageSuggestionSchema,
   reviewReasonSchema,
   sourceLocationSchema,
 } from './analysis-result'
@@ -17,7 +16,6 @@ export type {
   AnalysisResult,
   CharacterAnalysis,
   EditableState,
-  ImageSuggestion,
   ReviewReason,
   SourceLocation,
 } from './analysis-result'
@@ -29,9 +27,7 @@ export {
 
 export {
   appErrorSchema,
-  authenticationErrorSchema,
-  networkErrorSchema,
-  quotaErrorSchema,
+  dictionaryNotFoundErrorSchema,
   validationErrorSchema,
 } from './app-error'
 export type { AppError, Result } from './app-error'

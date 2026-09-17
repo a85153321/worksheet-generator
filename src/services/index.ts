@@ -1,8 +1,6 @@
 export {
-  analyzeMaterial,
   analyzeTypedCharacters,
-  buildAnalysisCacheKey,
-  getCachedAnalysis,
+  lookupCharacterFromDictionary,
   updateAnalysisResult,
 } from './use-cases'
 export { buildWorksheet } from './worksheet-builder'
@@ -11,7 +9,6 @@ export {
   generateDocxBlob,
   exportWorksheetToDocx,
 } from './docx-builder'
-export { clearApiKey, getApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
 export {
   inspectUploadedPdf,
   processSelectedPdfPages,
@@ -22,7 +19,6 @@ export type {
   AnalysisContextInput,
 } from '../domain'
 export type {
-  AnalyzeMaterialInput,
   AnalyzeTypedCharactersInput,
   BuildWorksheetOptions,
   CharacterWorksheetSection,

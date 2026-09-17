@@ -9,34 +9,16 @@ export const validationErrorSchema = z.object({
   details: errorDetailsSchema,
 })
 
-export const networkErrorSchema = z.object({
-  type: z.literal('network'),
-  message: z.string().min(1),
-  retryable: z.boolean(),
-  statusCode: z.number().int().optional(),
-  details: errorDetailsSchema,
-})
-
-export const authenticationErrorSchema = z.object({
-  type: z.literal('authentication'),
+export const dictionaryNotFoundErrorSchema = z.object({
+  type: z.literal('dictionary-not-found'),
   message: z.string().min(1),
   retryable: z.literal(false),
-  details: errorDetailsSchema,
-})
-
-export const quotaErrorSchema = z.object({
-  type: z.literal('quota'),
-  message: z.string().min(1),
-  retryable: z.literal(false),
-  retryAfterSeconds: z.number().nonnegative().optional(),
-  details: errorDetailsSchema,
+  missingCharacters: z.array(z.string().min(1)).min(1),
 })
 
 export const appErrorSchema = z.discriminatedUnion('type', [
   validationErrorSchema,
-  networkErrorSchema,
-  authenticationErrorSchema,
-  quotaErrorSchema,
+  dictionaryNotFoundErrorSchema,
 ])
 
 export type AppError = z.infer<typeof appErrorSchema>

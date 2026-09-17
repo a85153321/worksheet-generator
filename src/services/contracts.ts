@@ -6,15 +6,6 @@ import type {
   ElementaryGrade,
 } from '../domain'
 
-export interface AnalyzeMaterialInput {
-  data: Blob
-  fileName: string
-  mimeType: string
-  contentHash?: string
-  selectedPages?: readonly number[]
-  context?: AnalysisContextInput
-}
-
 export interface AnalyzeTypedCharactersInput {
   characters: readonly string[]
   context?: AnalysisContextInput
@@ -53,7 +44,7 @@ export type WorksheetTemplate =
 
 export type WorksheetBlock = Pick<
   CharacterAnalysis,
-  'character' | 'zhuyin' | 'words' | 'exampleSentences'
+  'character' | 'zhuyin' | 'wordCandidates' | 'sentenceCandidates'
 >
 
 interface WorksheetSectionBase {

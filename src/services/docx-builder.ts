@@ -145,7 +145,7 @@ function renderCharacterSections(
   sections.forEach((sec, idx) => {
     const item = sec.item
     const analysis = charMap.get(item.character)
-    const words = analysis?.words || []
+    const words = analysis?.wordCandidates || []
 
     result.push(
       new Paragraph({
@@ -672,7 +672,7 @@ export function createDocxDocument(doc: WorksheetDoc): Document {
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: `國小 AI 學習單生成器（Local-First 免費教師版）· ${templateTitle}    第 ${pageIdx + 1} 頁 / 共 ${totalPages} 頁`,
+                    text: `國小本機學習單生成器（Local-First 免費教師版）· ${templateTitle}    第 ${pageIdx + 1} 頁 / 共 ${totalPages} 頁`,
                     size: 18,
                     font: FONT_FAMILY,
                     color: '94A3B8',

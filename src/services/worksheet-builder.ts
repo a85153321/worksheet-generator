@@ -38,27 +38,27 @@ function characterSection(item: CharacterAnalysis, index: number): WorksheetSect
 }
 
 function wordSection(item: CharacterAnalysis, index: number): WorksheetSection | null {
-  if (item.words.length === 0) return null
+  if (item.wordCandidates.length === 0) return null
   return {
     kind: 'word',
     id: sectionId('word', item.character, index),
     instructions: '讀一讀詞語，並在空白處各寫一次。',
     item: {
       character: item.character,
-      words: item.words.map((text) => ({ text, practiceLineCount: 1 })),
+      words: item.wordCandidates.map((text) => ({ text, practiceLineCount: 1 })),
     },
   }
 }
 
 function sentenceSection(item: CharacterAnalysis, index: number): WorksheetSection | null {
-  if (item.exampleSentences.length === 0) return null
+  if (item.sentenceCandidates.length === 0) return null
   return {
     kind: 'sentence',
     id: sectionId('sentence', item.character, index),
     instructions: '讀一讀例句，再仿寫一句完整的句子。',
     item: {
       character: item.character,
-      sentences: item.exampleSentences.map((text) => ({ text, answerLineCount: 2 })),
+      sentences: item.sentenceCandidates.map((text) => ({ text, answerLineCount: 2 })),
     },
   }
 }
@@ -68,9 +68,8 @@ function pictureSection(
   index: number,
   images: ReadonlyMap<string, WorksheetImage>,
 ): WorksheetSection | null {
-  const suggestion = item.imageSuggestion
   const image = images.get(item.character)
-  if (!suggestion?.selected && !image) return null
+  if (!image) return null
 
   return {
     kind: 'picture',
@@ -78,8 +77,8 @@ function pictureSection(
     instructions: '看圖後，寫出對應的生字或詞語。',
     item: {
       character: item.character,
-      prompt: suggestion?.prompt ?? `與「${item.character}」相關的教學圖片`,
-      rationale: suggestion?.rationale ?? '教師選擇的看圖練習。',
+      prompt: `教師為「${item.character}」上傳的教學圖片`,
+      rationale: '教師選擇的看圖練習。',
       image: image ? { id: image.id, url: image.url, mimeType: image.mimeType } : null,
       needsImage: !image,
     },
@@ -114,8 +113,8 @@ function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
   return {
     character: item.character,
     zhuyin: item.zhuyin,
-    words: [...item.words],
-    exampleSentences: [...item.exampleSentences],
+    wordCandidates: [...item.wordCandidates],
+    sentenceCandidates: [...item.sentenceCandidates],
   }
 }
 

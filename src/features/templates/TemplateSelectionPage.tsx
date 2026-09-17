@@ -148,15 +148,10 @@ export const TemplateSelectionPage: React.FC = () => {
           zhuyin: 'ㄒㄩㄝˊ',
           radical: '子',
           strokeCount: 16,
-          words: ['學校', '學習', '學生'],
-          exampleSentences: ['我每天到學校學習新知識。', '在明亮的教室裡認真讀書。'],
+          wordCandidates: ['學校', '學習', '學生'],
+          sentenceCandidates: ['我每天到學校學習新知識。', '在明亮的教室裡認真讀書。'],
           confidence: 0.96,
           source: { page: 1, block: '第一段' },
-          imageSuggestion: {
-            prompt: '小學生在明亮的教室裡專心學習，兒童教材插畫風格',
-            rationale: '用熟悉的校園情境幫助理解「學」。',
-            selected: true,
-          },
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -168,15 +163,10 @@ export const TemplateSelectionPage: React.FC = () => {
           zhuyin: 'ㄒㄧˊ',
           radical: '羽',
           strokeCount: 11,
-          words: ['學習', '練習', '習慣'],
-          exampleSentences: ['多練習可以讓生字寫得更漂亮。', '養成良好的讀書與習字習慣。'],
+          wordCandidates: ['學習', '練習', '習慣'],
+          sentenceCandidates: ['多練習可以讓生字寫得更漂亮。', '養成良好的讀書與習字習慣。'],
           confidence: 0.88,
           source: { page: 1, block: '第一段' },
-          imageSuggestion: {
-            prompt: '小朋友手握鉛筆在作業本上認真習字練習，特寫溫馨插畫',
-            rationale: '對應習字、練習的生活經驗。',
-            selected: true,
-          },
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -188,15 +178,10 @@ export const TemplateSelectionPage: React.FC = () => {
           zhuyin: 'ㄧ',
           radical: '一',
           strokeCount: 1,
-          words: ['一起', '一定', '一樣', '第一'],
-          exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
+          wordCandidates: ['一起', '一定', '一樣', '第一'],
+          sentenceCandidates: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
           confidence: 0.98,
           source: { page: 1, block: '第一段' },
-          imageSuggestion: {
-            prompt: '小朋友們手牽手開心地在一起遊戲，溫暖陽光風格插畫',
-            rationale: '用「一起玩耍」的生活情境理解「一」。',
-            selected: true,
-          },
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -288,14 +273,14 @@ export const TemplateSelectionPage: React.FC = () => {
           {
             character: '學',
             zhuyin: 'ㄒㄩㄝˊ',
-            words: ['學校', '學習', '學生'],
-            exampleSentences: ['我每天到學校學習新知識。'],
+            wordCandidates: ['學校', '學習', '學生'],
+            sentenceCandidates: ['我每天到學校學習新知識。'],
           },
           {
             character: '習',
             zhuyin: 'ㄒㄧˊ',
-            words: ['學習', '練習', '習慣'],
-            exampleSentences: ['多練習可以讓生字寫得更漂亮。'],
+            wordCandidates: ['學習', '練習', '習慣'],
+            sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
           },
         ]
 
@@ -441,7 +426,7 @@ export const TemplateSelectionPage: React.FC = () => {
                         )}
                       </div>
                       <div style={{ fontSize: isEnlarged ? '14px' : '11px', color: '#475569' }}>
-                        生詞造詞：{item.words?.slice(0, 3).join('、') || '______、______'}
+                        生詞造詞：{item.wordCandidates?.slice(0, 3).join('、') || '______、______'}
                       </div>
                     </div>
                   )}
@@ -451,7 +436,7 @@ export const TemplateSelectionPage: React.FC = () => {
                       <div style={{ fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600, color: '#334155' }}>【詞語積木延伸】</div>
                       <div style={{ display: 'flex', gap: isEnlarged ? '10px' : '6px', marginTop: isEnlarged ? '6px' : '3px', flexWrap: 'wrap' }}>
                         <span style={{ border: '1px solid #cbd5e1', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600 }}>
-                          {item.words?.[0] || '詞語一'}
+                          {item.wordCandidates?.[0] || '詞語一'}
                         </span>
                         <span style={{ border: '1px dashed #94a3b8', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', color: '#94a3b8' }}>
                           [ 造詞填空：__________________ ]
@@ -471,7 +456,7 @@ export const TemplateSelectionPage: React.FC = () => {
                           borderRadius: '4px',
                         }}
                       >
-                        <strong>例：</strong>{item.exampleSentences?.[0] || '我在學校快樂地學習國語。'}
+                        <strong>例：</strong>{item.sentenceCandidates?.[0] || '我在學校快樂地學習國語。'}
                       </div>
                       <div
                         style={{
@@ -513,7 +498,7 @@ export const TemplateSelectionPage: React.FC = () => {
           <div>
             <h1 className="card-title">📋 步驟 5：選擇學習單版型與排版預覽</h1>
             <p className="card-subtitle">
-              根據教學目的挑選適合的學習單模板；點選即可切換版面結構並即時預覽，本步驟不消耗任何 AI Quota
+              根據教學目的挑選適合的學習單模板；點選即可切換版面結構並即時預覽，本步驟完全在本機執行
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
