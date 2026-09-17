@@ -76,9 +76,13 @@ export const TemplateSelectionPage: React.FC = () => {
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const uploadedImageCount = Object.keys(worksheetImages).length
 
-  // 若選到已移除之 mixed 或 reading-comprehension 模板，自動轉向 character-practice
+  // 若選到已移除之 mixed、reading-comprehension 或 character-discrimination 模板，自動轉向 character-practice
   useEffect(() => {
-    if ((selectedTemplate as string) === 'mixed' || (selectedTemplate as string) === 'reading-comprehension') {
+    if (
+      (selectedTemplate as string) === 'mixed' ||
+      (selectedTemplate as string) === 'reading-comprehension' ||
+      (selectedTemplate as string) === 'character-discrimination'
+    ) {
       setSelectedTemplate('character-practice')
     }
   }, [selectedTemplate, setSelectedTemplate])

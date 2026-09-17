@@ -1,0 +1,25 @@
+## Handoff
+
+- Owner: Antigravity
+- Goal: 完成「字音字形辨析單」前端 UI、CSS 與 A4 預覽列印邏輯清理，確認步驟三審核編輯頁無形近字/多音字殘留且既有欄位完整，並驗證其餘三個模板（生字田字格練習單、詞語積木擴展單、句型仿寫應用單）選用與預覽流程正常。
+- Changed files:
+  - `src/features/templates/TemplateSelectionPage.tsx`
+  - `src/styles/app.css`
+- Frontend UI / Review Page status:
+  - 步驟 5 模板選擇頁 (`TemplateSelectionPage.tsx`)：
+    - `TEMPLATE_OPTIONS` 維持 3 張卡片（生字田字格練習單、詞語積木擴展單、句型仿寫應用單），無「字音字形辨析單」卡片。
+    - 補足相容保護切換邏輯：若 localStorage 或 state 殘留選定值為 `'character-discrimination'`，自動回退切換至預設 `'character-practice'`。
+  - 步驟 6 預覽與列印 (`PrintPreviewPage.tsx`)：
+    - 模板映射與渲染邏輯僅支援當前現存模板，完全無字音字形辨析渲染分支。
+  - 步驟 3 審核編輯頁 (`ReviewPage.tsx`)：
+    - 確認無形近字／多音字可選欄位顯示或編輯功能（系統既有設計即未將其放入編輯表單）。
+    - 既有欄位（生字、注音、部首、筆畫、詞語、例句）完整保留，顯示與編輯功能運作正常。
+  - CSS 樣式清理 (`src/styles/app.css`)：
+    - 移除了列印專用樣式中殘留的 `.sheet-discrimination-card`。
+- Residual scan across codebase:
+  - 針對 `character-discrimination`、`字音字形`、`lookalike`、`multiPronunciation` 等進行全站掃描，生產程式碼中 0 處殘留（僅 `TemplateSelectionPage` 保留舊值回退保護）。
+- Verification:
+  - `npm test`: 8 passed, 48 tests passed (100%).
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npm run build`: TypeScript compile & bundle passed without error.
+  - 瀏覽器端對審核編輯頁、模板選擇頁及三大模板之 A4 預覽列印頁面進行端到端截圖驗證。

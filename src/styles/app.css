@@ -1508,8 +1508,7 @@ textarea:focus-visible {
   .sheet-char-card,
   .sheet-word-card,
   .sheet-sentence-card,
-  .sheet-char-row,
-  .sheet-discrimination-card {
+  .sheet-char-row {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
