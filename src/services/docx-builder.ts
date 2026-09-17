@@ -20,7 +20,6 @@ import type {
   SentenceWorksheetSection,
   PictureWorksheetSection,
   CharacterDiscriminationWorksheetSection,
-  ReadingComprehensionWorksheetSection,
 } from './contracts'
 
 const FONT_FAMILY = 'DFKai-SB'
@@ -43,7 +42,6 @@ const templateNameMap: Record<string, string> = {
   'sentence-practice': '句型仿寫應用單',
   'picture-practice': '看圖識字練習單',
   'character-discrimination': '字音字形辨析單',
-  'reading-comprehension': '閱讀理解評量單',
 }
 
 /**
@@ -726,129 +724,6 @@ function renderDiscriminationSections(
 }
 
 /**
- * 5. 渲染閱讀理解評量單 (reading-comprehension) - 純選擇題，無問答題
- */
-function renderReadingSections(
-  sections: ReadingComprehensionWorksheetSection[],
-): (Paragraph | Table)[] {
-  const result: (Paragraph | Table)[] = [
-    createInstructionBanner('【閱讀理解評量單】 請仔細閱讀以下短文，再完成文意與生詞理解選擇題。'),
-  ]
-
-  sections.forEach((sec) => {
-    const { passage, multipleChoiceQuestions } = sec.item
-
-    // 閱讀短文方框 (使用 Table 邊框包裹)
-    result.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                shading: { type: ShadingType.CLEAR, fill: 'F8FAFC' },
-                borders: {
-                  top: borderThin,
-                  bottom: borderThin,
-                  left: borderThin,
-                  right: borderThin,
-                },
-                margins: { top: 120, bottom: 120, left: 160, right: 160 },
-                children: [
-                  new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 40, after: 100 },
-                    children: [
-                      new TextRun({
-                        text: `📖 【${passage.title}】`,
-                        bold: true,
-                        size: 26,
-                        font: FONT_FAMILY,
-                        color: '0F172A',
-                      }),
-                    ],
-                  }),
-                  new Paragraph({
-                    spacing: { before: 40, after: 40 },
-                    children: [
-                      new TextRun({
-                        text: passage.text,
-                        size: 22,
-                        font: FONT_FAMILY,
-                        color: '334155',
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    )
-
-    // 選擇題大標
-    result.push(
-      new Paragraph({
-        spacing: { before: 180, after: 80 },
-        children: [
-          new TextRun({
-            text: '壹、文意與生詞理解選擇題（請將最適合的答案填入括號中）：',
-            bold: true,
-            size: 22,
-            font: FONT_FAMILY,
-            color: '0369A1',
-          }),
-        ],
-      }),
-    )
-
-    // 各題題幹與選項
-    multipleChoiceQuestions.forEach((q, qIdx) => {
-      const optionLabels = ['①', '②', '③', '④']
-      const optionsText = q.options
-        .map((opt, oIdx) => `${optionLabels[oIdx] || `(${oIdx + 1})`} ${opt}`)
-        .join('    ')
-
-      result.push(
-        new Paragraph({
-          spacing: { before: 80, after: 40 },
-          children: [
-            new TextRun({
-              text: `（\u3000）${qIdx + 1}. `,
-              bold: true,
-              size: 22,
-              font: FONT_FAMILY,
-              color: '0F172A',
-            }),
-            new TextRun({
-              text: q.prompt,
-              size: 22,
-              font: FONT_FAMILY,
-              color: '1E293B',
-            }),
-          ],
-        }),
-        new Paragraph({
-          spacing: { before: 20, after: 100 },
-          indent: { left: 480 },
-          children: [
-            new TextRun({
-              text: optionsText,
-              size: 20,
-              font: FONT_FAMILY,
-              color: '475569',
-            }),
-          ],
-        }),
-      )
-    })
-  })
-
-  return result
-}
-
-/**
  * 6. 渲染看圖識字 (picture-practice)
  */
 function renderPictureSections(
@@ -979,10 +854,6 @@ function renderPageSections(
     case 'character-discrimination':
       return renderDiscriminationSections(
         sections.filter((s): s is CharacterDiscriminationWorksheetSection => s.kind === 'character-discrimination'),
-      )
-    case 'reading-comprehension':
-      return renderReadingSections(
-        sections.filter((s): s is ReadingComprehensionWorksheetSection => s.kind === 'reading-comprehension'),
       )
     case 'picture-practice':
       return renderPictureSections(

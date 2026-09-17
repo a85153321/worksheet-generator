@@ -6,8 +6,6 @@ import type {
   LookalikeCandidate,
   MultiPronunciation,
   ElementaryGrade,
-  ReadingPassage,
-  ReadingPassageLength,
 } from '../domain'
 
 export interface AnalyzeMaterialInput {
@@ -49,24 +47,12 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
   options?: ImageProcessingOptions
 }
 
-export interface GenerateReadingPassageInput {
-  analysis: AnalysisResult
-  grade: ElementaryGrade
-  targetCharacters: ReadingPassageLength
-}
-
-export interface GeneratedReadingPassageResult {
-  passage: ReadingPassage
-  source: 'generated' | 'cache'
-}
-
 export type WorksheetTemplate =
   | 'character-practice'
   | 'word-practice'
   | 'sentence-practice'
   | 'picture-practice'
   | 'character-discrimination'
-  | 'reading-comprehension'
 
 export type WorksheetBlock = Pick<
   CharacterAnalysis,
@@ -123,29 +109,12 @@ export interface CharacterDiscriminationWorksheetSection extends WorksheetSectio
   }
 }
 
-export interface ReadingMultipleChoiceQuestion {
-  id: string
-  character: string
-  prompt: string
-  options: string[]
-  correctAnswer: string
-}
-
-export interface ReadingComprehensionWorksheetSection extends WorksheetSectionBase {
-  kind: 'reading-comprehension'
-  item: {
-    passage: ReadingPassage
-    multipleChoiceQuestions: ReadingMultipleChoiceQuestion[]
-  }
-}
-
 export type WorksheetSection =
   | CharacterWorksheetSection
   | WordWorksheetSection
   | SentenceWorksheetSection
   | PictureWorksheetSection
   | CharacterDiscriminationWorksheetSection
-  | ReadingComprehensionWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -157,14 +126,13 @@ export interface BuildWorksheetOptions {
   title?: string
   images?: readonly WorksheetImage[]
   grade?: ElementaryGrade
-  readingPassage?: ReadingPassage
 }
 
 export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '字音字形辨析' | '閱讀理解'
+  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '字音字形辨析'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {

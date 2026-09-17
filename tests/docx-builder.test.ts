@@ -44,16 +44,6 @@ const sampleAnalysis: AnalysisResult = {
   ],
 }
 
-const readingPassage = {
-  id: 'reading-passage-test',
-  title: '快樂學習',
-  text: '我們在學校裡一起學習，每天都進步。',
-  grade: 3 as const,
-  maxCharacters: 50,
-  includedCharacters: ['學', '習'],
-  createdAt: '2026-09-17T00:00:00.000Z',
-}
-
 describe('docx-builder', () => {
   it('creates valid Document and generates non-empty buffer for character-practice', async () => {
     const res = await buildWorksheet(sampleAnalysis, 'character-practice', { grade: 3 })
@@ -93,27 +83,6 @@ describe('docx-builder', () => {
     const docx = createDocxDocument(discrimRes.value)
     const buf = await Packer.toBuffer(docx)
     expect(buf.length).toBeGreaterThan(1000)
-  })
-
-  it('creates valid Document for reading-comprehension with choice questions and no open responses', async () => {
-    const readRes = await buildWorksheet(sampleAnalysis, 'reading-comprehension', {
-      grade: 3,
-      readingPassage,
-    })
-    expect(readRes.ok).toBe(true)
-    if (!readRes.ok) return
-
-    const docx = createDocxDocument(readRes.value)
-    const buf = await Packer.toBuffer(docx)
-    expect(buf.length).toBeGreaterThan(1000)
-
-    // Verify section in worksheet doc has no open responses
-    const readingSection = readRes.value.pages[0]?.sections[0]
-    expect(readingSection?.kind).toBe('reading-comprehension')
-    if (readingSection?.kind === 'reading-comprehension') {
-      expect(readingSection.item.multipleChoiceQuestions.length).toBeGreaterThan(0)
-      expect((readingSection.item as Record<string, unknown>).openResponseQuestions).toBeUndefined()
-    }
   })
 
   it('generateDocxBlob produces a Blob in supported environments', async () => {

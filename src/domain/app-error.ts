@@ -34,7 +34,7 @@ export const quotaErrorSchema = z.object({
 
 export const noEligibleCharactersErrorSchema = z.object({
   type: z.literal('no-eligible-characters'),
-  template: z.enum(['character-discrimination', 'reading-comprehension']),
+  template: z.literal('character-discrimination'),
   message: z.string().min(1),
   retryable: z.literal(false),
   details: errorDetailsSchema,

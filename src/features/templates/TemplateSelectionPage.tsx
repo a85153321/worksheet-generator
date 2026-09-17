@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { useApp } from '../../app/index'
 import {
   buildWorksheet,
-  generateReadingPassage,
   type WorksheetTemplate,
 } from '../../services'
 import type {
   CharacterAnalysis,
   ElementaryGrade,
-  ReadingPassage,
-  ReadingPassageLength,
 } from '../../domain'
 
 interface TemplateOption {
@@ -20,7 +17,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'character' | 'word' | 'sentence' | 'discrimination' | 'reading'
+  wireframeType: 'character' | 'word' | 'sentence' | 'discrimination'
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -64,16 +61,6 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     icon: '🔍',
     wireframeType: 'discrimination',
   },
-  {
-    id: 'reading-comprehension',
-    title: '閱讀理解評量單',
-    badge: '閱讀思維',
-    targetGrade: '適合國小二至六年級',
-    description: '依教材生字由 AI 生成連貫短文，並由本機組裝生字詞義理解選擇題，深化閱讀素養',
-    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '自選短文字數上限'],
-    icon: '📖',
-    wireframeType: 'reading',
-  },
 ]
 
 export const TemplateSelectionPage: React.FC = () => {
@@ -87,31 +74,17 @@ export const TemplateSelectionPage: React.FC = () => {
     worksheetImages,
     navigate,
     selectedGrade,
-    hasApiKey,
   } = useApp()
 
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildError, setBuildError] = useState<string | null>(null)
   const [successNotice, setSuccessNotice] = useState<string | null>(null)
   const [showEnlargedPreview, setShowEnlargedPreview] = useState(false)
-  const [isGeneratingPassage, setIsGeneratingPassage] = useState(false)
-  const [readingPassage, setReadingPassage] = useState<ReadingPassage | null>(null)
-  const [targetCharacters, setTargetCharacters] = useState<ReadingPassageLength>(50)
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const uploadedImageCount = Object.keys(worksheetImages).length
-  const confirmedCharacters = characters
-    .filter((item) => item.editableState.status === 'confirmed')
-    .map((item) => item.character)
-  const activeReadingPassage = readingPassage
-    && readingPassage.grade === selectedGrade
-    && readingPassage.maxCharacters === targetCharacters
-    && readingPassage.includedCharacters.length === new Set(confirmedCharacters).size
-    && readingPassage.includedCharacters.every((character) => confirmedCharacters.includes(character))
-    ? readingPassage
-    : null
 
   // 若選到已移除之 mixed 模板，自動轉向 character-practice
   useEffect(() => {
@@ -154,9 +127,6 @@ export const TemplateSelectionPage: React.FC = () => {
       const res = await buildWorksheet(analysisResult, selectedTemplate, {
         images: imageList,
         grade: selectedGrade as ElementaryGrade,
-        readingPassage: selectedTemplate === 'reading-comprehension'
-          ? activeReadingPassage ?? undefined
-          : undefined,
       })
       if (res.ok) {
         setWorksheetDoc(res.value)
@@ -180,28 +150,6 @@ export const TemplateSelectionPage: React.FC = () => {
     } finally {
       setIsBuilding(false)
     }
-  }
-
-  const handleGenerateReadingPassage = async () => {
-    if (!analysisResult) return
-    setIsGeneratingPassage(true)
-    setBuildError(null)
-    const result = await generateReadingPassage({
-      analysis: analysisResult,
-      grade: selectedGrade as ElementaryGrade,
-      targetCharacters,
-    })
-    setIsGeneratingPassage(false)
-    if (!result.ok) {
-      setBuildError(result.error.message)
-      return
-    }
-    setReadingPassage(result.value.passage)
-    setSuccessNotice(
-      result.value.source === 'cache'
-        ? '已載入本機快取的閱讀短文，不會消耗新的 Gemini quota。'
-        : '閱讀短文已生成並儲存於本機快取。',
-    )
   }
 
   // 快速載入三上完整示範生字（含形近字、多音字與完整例句短文）
@@ -412,22 +360,6 @@ export const TemplateSelectionPage: React.FC = () => {
               <div className="wireframe-lines">
                 <div className="wireframe-line-sm" style={{ width: '65%' }}></div>
               </div>
-            </div>
-          </div>
-        )
-      case 'reading':
-        return (
-          <div className="template-wireframe" aria-hidden="true">
-            <div className="wireframe-header-line" style={{ width: '60%' }}></div>
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '2px', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <div className="wireframe-line-sm" style={{ width: '95%' }}></div>
-              <div className="wireframe-line-sm" style={{ width: '80%' }}></div>
-            </div>
-            <div className="wireframe-row" style={{ marginTop: '2px' }}>
-              <span style={{ fontSize: '8px', fontWeight: 700, color: '#0284c7' }}>①</span>
-              <div className="wireframe-line-sm" style={{ width: '38%' }}></div>
-              <span style={{ fontSize: '8px', fontWeight: 700, color: '#0284c7' }}>②</span>
-              <div className="wireframe-line-sm" style={{ width: '38%' }}></div>
             </div>
           </div>
         )
@@ -658,20 +590,6 @@ export const TemplateSelectionPage: React.FC = () => {
                       </div>
                       <div style={{ fontSize: isEnlarged ? '12px' : '11px', color: '#475569' }}>
                         常用讀音：{item.zhuyin || '—'} ｜ 語境搭配：{item.words?.[0] || '生詞例詞'}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedTemplate === 'reading-comprehension' && (
-                    <div>
-                      <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: isEnlarged ? '6px 10px' : '4px 6px', marginBottom: isEnlarged ? '6px' : '4px' }}>
-                        <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0f172a' }}>📖 【短文閱讀理解】</div>
-                        <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#334155', lineHeight: 1.4 }}>
-                          {activeReadingPassage?.text || '請按下「生成閱讀短文」，取得連貫文章預覽。'}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#0369a1' }}>
-                        <strong>選擇題：</strong>下列哪一個詞語是「{item.character}」的正確造詞？ ① {item.words?.[0] || '詞語一'} ② ...
                       </div>
                     </div>
                   )}
@@ -937,158 +855,6 @@ export const TemplateSelectionPage: React.FC = () => {
         {renderLivePreviewContent()}
       </section>
 
-      {selectedTemplate === 'reading-comprehension' && (
-        <div className="callout callout-warning" style={{ marginTop: '1.5rem', padding: '1.25rem' }}>
-          <div className="callout-title" style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-            ✨ 閱讀短文生成設定與 AI Quota 提示（需明確觸發）
-          </div>
-          <div style={{ fontSize: '0.88rem', color: '#1e293b', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <p style={{ margin: 0 }}>
-              • <strong>本次動作預估處理範圍</strong>：目標年級為國小 <strong>{selectedGrade} 年級</strong>，已確認納入之生字為 <strong>{confirmedCharacters.length}</strong> 個（{confirmedCharacters.length > 0 ? confirmedCharacters.join('、') : '尚無確認生字'}）。
-            </p>
-            <p style={{ margin: 0 }}>
-              • <strong>短文字數</strong>：由教師自行選擇正文上限；年級僅用於調整用詞難度。短文必須自然包含全部生字，並由本機組裝選擇題。
-            </p>
-            <p style={{ margin: 0 }}>
-              • <strong>主動觸發機制</strong>：短文生成絕不在切換或選擇此模板時自動呼叫，必須由您主動點擊下方「生成閱讀短文」按鈕觸發。
-            </p>
-            <p style={{ margin: 0, color: '#92400e' }}>
-              • <strong>Quota 與本機快取說明</strong>：優先查詢本機 IndexedDB 快取（命中時 0 請求、0 Quota）；若快取未命中僅發送 1 次 Gemini 文字生成請求。實際用量請以 Google AI Studio 官方後台為主。
-            </p>
-          </div>
-
-          {!hasApiKey && (
-            <div
-              style={{
-                marginTop: '0.75rem',
-                padding: '0.5rem 0.75rem',
-                backgroundColor: '#fef3c7',
-                borderRadius: '4px',
-                border: '1px dashed #d97706',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-              }}
-            >
-              <span>🔑 尚未設定 Gemini API Key；請先完成設定，才能生成閱讀短文。</span>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
-                onClick={() => navigate('settings')}
-              >
-                前往金鑰設定
-              </button>
-            </div>
-          )}
-
-          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>📏 短文字數上限選項：</span>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {([
-                  { value: 30, label: '30 字以內（低年級／初學）' },
-                  { value: 50, label: '50 字以內（三年級標準）' },
-                  { value: 60, label: '60 字以內（中高年級進階）' },
-                  { value: 100, label: '100 字以內（完整情境段落）' },
-                ] as const).map((opt) => (
-                  <label
-                    key={opt.value}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      cursor: 'pointer',
-                      fontSize: '0.86rem',
-                      fontWeight: targetCharacters === opt.value ? 700 : 500,
-                      color: targetCharacters === opt.value ? 'var(--color-primary-dark)' : 'var(--color-text-main)',
-                      backgroundColor: targetCharacters === opt.value ? '#eff6ff' : '#ffffff',
-                      border: targetCharacters === opt.value ? '1.5px solid var(--color-primary)' : '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      padding: '0.35rem 0.65rem',
-                      userSelect: 'none',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="reading-target-length"
-                      value={opt.value}
-                      checked={targetCharacters === opt.value}
-                      onChange={() => setTargetCharacters(opt.value)}
-                      disabled={isGeneratingPassage}
-                      style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleGenerateReadingPassage}
-                disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0 || !hasApiKey}
-                style={{ padding: '0.55rem 1.4rem', fontSize: '0.95rem', fontWeight: 600 }}
-              >
-                {isGeneratingPassage ? (
-                  <>
-                    <span className="spinner-sm" aria-hidden="true"></span>
-                    <span>正在生成閱讀短文（約需 1~3 秒）…</span>
-                  </>
-                ) : activeReadingPassage ? (
-                  '🔄 重新依設定生成閱讀短文'
-                ) : (
-                  '✨ 生成閱讀短文'
-                )}
-              </button>
-              {!activeReadingPassage && !isGeneratingPassage && (
-                <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 600 }}>
-                  ⚠️ 建立閱讀理解評量單前，請先點擊按鈕生成閱讀短文
-                </span>
-              )}
-            </div>
-          </div>
-
-          {activeReadingPassage && (
-            <div
-              style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: '6px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <strong style={{ fontSize: '1rem', color: '#0f172a' }}>
-                  📖 【{activeReadingPassage.title}】
-                </strong>
-                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', fontSize: '0.8rem' }}>
-                  <span className="tag tag-info">國小 {activeReadingPassage.grade} 年級</span>
-                  <span className="tag tag-success">
-                    正文字數：{[...activeReadingPassage.text.replace(/\s/gu, '')].length} / {activeReadingPassage.maxCharacters} 字
-                  </span>
-                </div>
-              </div>
-              <p style={{ fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>
-                {activeReadingPassage.text}
-              </p>
-              <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px dashed #e2e8f0', fontSize: '0.82rem', color: '#64748b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span>涵蓋生字：<strong>{activeReadingPassage.includedCharacters.join('、')}</strong></span>
-                <span style={{ color: '#0369a1', fontWeight: 600 }}>
-                  ✓ 短文已就緒，本機將自動組裝生字詞義選擇題（無問答題）
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* 底部導引與建立學習單按鈕 (Requirement 2: 串接 buildWorksheet use case) */}
       <div className="btn-group" style={{ marginTop: '2.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
@@ -1106,7 +872,7 @@ export const TemplateSelectionPage: React.FC = () => {
             className="btn btn-primary"
             style={{ padding: '0.75rem 1.8rem', fontSize: '1.05rem', fontWeight: 700 }}
             onClick={handleCreateWorksheet}
-            disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
+            disabled={isBuilding || isEmpty}
             aria-label={`套用「${currentOption.title}」並建立學習單`}
           >
             {isBuilding ? (
@@ -1118,11 +884,6 @@ export const TemplateSelectionPage: React.FC = () => {
               `🚀 套用「${currentOption.title}」並建立學習單 →`
             )}
           </button>
-          {selectedTemplate === 'reading-comprehension' && !activeReadingPassage && (
-            <span style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600 }}>
-              ⚠️ 請先點擊上方「生成閱讀短文」按鈕生成文本後方可建立學習單
-            </span>
-          )}
         </div>
       </div>
 
@@ -1186,7 +947,7 @@ export const TemplateSelectionPage: React.FC = () => {
                     setShowEnlargedPreview(false)
                     handleCreateWorksheet()
                   }}
-                  disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
+                  disabled={isBuilding || isEmpty}
                 >
                   🚀 套用此模板並建立學習單
                 </button>

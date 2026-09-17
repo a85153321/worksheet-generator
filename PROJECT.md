@@ -21,7 +21,7 @@ Browser (React + TypeScript)
 ├─ UI / worksheet preview / editor
 ├─ local settings (API Key only)
 ├─ bundled CNS11643 lookup (zhuyin / radical / stroke count)
-├─ IndexedDB (document, analysis and reading-passage cache)
+├─ IndexedDB (document and analysis cache)
 ├─ Gemini client ────────────────────> Gemini API
 └─ local worksheet / print / PDF engine
 
@@ -34,7 +34,7 @@ Optional static host
 | 資料 | 位置 | 備註 |
 | --- | --- | --- |
 | Gemini API Key | 本機設定儲存 | 預設不顯示完整值；可測試與清除 |
-| 教材檔案、分析結果、閱讀短文快取 | IndexedDB | 使用者可刪除；不可自動上傳 |
+| 教材檔案、分析結果 | IndexedDB | 使用者可刪除；不可自動上傳 |
 | 畫面狀態 | React state | 不含 Key |
 | Log / analytics | 不得含 Key、教材原檔或完整模型回覆 | 預設關閉或匿名化 |
 
@@ -51,7 +51,7 @@ UI → use cases / services → domain schemas → storage or Gemini client
 ```text
 src/
   domain/        # Zod schemas、types、純規則
-  services/      # 分析、快取、短文生成、worksheet use cases
+  services/      # 分析、快取、worksheet use cases
   infrastructure/ # Gemini client、IndexedDB、hash、檔案預處理
   features/      # UI 功能模組與 components
   app/           # routing、providers、application composition
@@ -87,9 +87,7 @@ Gemini 不負責產生這三個事實欄位。查不到的字元不得以猜測�
    受控修復。網路暫時錯誤最多一次重試；認證、配額與 4xx 不重試。
 6. 教師審核／修改結果。
 7. 教師可選擇從本機上傳自備配圖；系統不提供 AI 圖片生成。
-8. 閱讀理解短文只在教師於模板預覽階段明確觸發後生成；先依標準化 prompt 查本機快取，
-   未命中才呼叫 Gemini。選擇題仍由本機依短文與生字資料組裝。
-9. 用本機模板產生 A4 預覽、列印與 PDF；除前述明確觸發的短文生成外，排版本身不呼叫 AI。
+8. 用本機模板產生 A4 預覽、列印與 PDF；排版本身不呼叫 AI。
 
 ## 6. AI 呼叫規範
 
@@ -104,8 +102,6 @@ Gemini 不負責產生這三個事實欄位。查不到的字元不得以猜測�
 - 教材分析預設使用 GA 穩定模型 `gemini-3.5-flash`，透過
   `v1beta/models/gemini-3.5-flash:generateContent` 呼叫；模型與 endpoint 集中由
   infrastructure 常數管理，不在 UI 或 service 重複寫死。
-- 閱讀短文生成使用 GA 穩定模型 `gemini-3.8-flash`，透過
-  `v1beta/models/gemini-3.8-flash:generateContent` 呼叫並要求 JSON schema 相容輸出。
 - 將相關資料合併成單一高品質請求，避免「生字、注音、詞語」分開呼叫。
 - `lookalikeCandidates` 僅能使用教育部常用字表內、國小學生會接觸的常用字，
   不得因部首或筆畫相近而選入生僻字或罕見字。
@@ -113,8 +109,6 @@ Gemini 不負責產生這三個事實欄位。查不到的字元不得以猜測�
 - `confidence < 0.8` 時由 domain 規則自動加入 `low-confidence`；OCR、部首或筆畫
   不確定性分別以 `reviewReasons` 的 `ambiguous-ocr`、`uncertain-radical`、
   `uncertain-stroke-count` 表示。只有教師設為 `confirmed` 後才清除審核提示。
-- 閱讀理解短文只使用教師確認保留的生字；教師可選擇 30、50、60 或 100 字的正文
-  上限，年級只用於調整語言難度。短文必須連貫且包含所有指定生字，不得直接拼接例句。
 - 顯示本次動作的預估處理範圍（頁數、選取項目數）；不承諾或猜測實際費用。
 
 ## 7. 開發里程碑
@@ -127,12 +121,12 @@ Gemini 不負責產生這三個事實欄位。查不到的字元不得以猜測�
 | 3：快取與韌性 | hash、IndexedDB、受控 retry、可刪除快取 |
 | 4：教師工作流 | 結果審核、低信心標示、編輯與版本狀態 |
 | 5：自備配圖 | 教師本機上傳、替換／刪除 |
-| 6：學習單引擎 | 生字、詞語、句子、看圖、字音字形辨析與閱讀理解模板 |
+| 6：學習單引擎 | 生字、詞語、句子、看圖與字音字形辨析模板 |
 | 7：輸出 | A4 預覽、列印 CSS、PDF 匯出與測試 |
 
 `buildWorksheet` 完全在本機將已驗證的分析結果組裝成 `WorksheetDoc`。模板識別值為
 `character-practice`、`word-practice`、`sentence-practice`、`picture-practice`、
-`character-discrimination`、`reading-comprehension`；
+`character-discrimination`；
 每頁的 `sections` 是預覽／列印的主要資料來源，舊有 `blocks` 保留為相容索引。
 所有模板只使用已驗證的 `AnalysisResult` 在本機組裝；若資料未達題型門檻，
 只省略不足的部分，不呼叫 AI 補齊。

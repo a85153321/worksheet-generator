@@ -5,7 +5,6 @@ import type {
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
-  ReadingComprehensionWorksheetSection,
   WorksheetSection,
   WorksheetTemplate,
 } from './contracts'
@@ -18,7 +17,6 @@ const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> 
   'sentence-practice': '句子',
   'picture-practice': '看圖',
   'character-discrimination': '字音字形辨析',
-  'reading-comprehension': '閱讀理解',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
@@ -111,48 +109,6 @@ function characterDiscriminationSection(
   }
 }
 
-function readingComprehensionSection(
-  analysis: AnalysisResult,
-  passage: NonNullable<BuildWorksheetOptions['readingPassage']>,
-): ReadingComprehensionWorksheetSection | null {
-  const wordCharacters = analysis.characters.filter((item) =>
-    item.editableState.status === 'confirmed'
-    && passage.includedCharacters.includes(item.character)
-    && item.words.some((word) => word.trim().length > 0),
-  )
-
-  const multipleChoiceQuestions = wordCharacters.length >= 2
-    ? wordCharacters.map((item, index) => {
-        const correctAnswer = item.words.find((word) => word.trim().length > 0)!.trim()
-        const distractors = wordCharacters
-          .filter((candidate) => candidate.character !== item.character)
-          .flatMap((candidate) => candidate.words)
-          .map((word) => word.trim())
-          .filter((word, wordIndex, words) =>
-            word.length > 0 && word !== correctAnswer && words.indexOf(word) === wordIndex,
-          )
-        const rawOptions = [correctAnswer, ...distractors].slice(0, 4)
-        const offset = index % rawOptions.length
-        const options = [...rawOptions.slice(offset), ...rawOptions.slice(0, offset)]
-        return {
-          id: `reading-choice-${index + 1}`,
-          character: item.character,
-          prompt: `短文中出現了「${item.character}」，下列哪一個是它的正確詞語？`,
-          options,
-          correctAnswer,
-        }
-      })
-    : []
-  if (multipleChoiceQuestions.length === 0) return null
-
-  return {
-    kind: 'reading-comprehension',
-    id: 'reading-comprehension-1',
-    instructions: '閱讀短文後，完成文意與生詞理解選擇題。',
-    item: { passage: structuredClone(passage), multipleChoiceQuestions },
-  }
-}
-
 function buildSections(
   analysis: AnalysisResult,
   template: WorksheetTemplate,
@@ -178,7 +134,7 @@ function buildSections(
 }
 
 function sectionCharacter(section: WorksheetSection): string | null {
-  return section.kind === 'reading-comprehension' ? null : section.item.character
+  return section.item.character
 }
 
 function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
@@ -249,30 +205,17 @@ export async function buildWorksheet(
   }
 
   const images = new Map((options.images ?? []).map((image) => [image.character, image]))
-  if (template === 'reading-comprehension' && !options.readingPassage) {
-    return {
-      ok: false,
-      error: {
-        type: 'validation',
-        message: '請先由教師明確觸發短文生成，再建立閱讀理解評量單。',
-        retryable: false,
-      },
-    }
-  }
-  const readingSection = template === 'reading-comprehension'
-    ? readingComprehensionSection(analysis, options.readingPassage!)
-    : null
-  const sections = readingSection
-    ? [readingSection]
-    : buildSections(analysis, template, images)
+  const sections = buildSections(analysis, template, images)
   if (sections.length === 0) {
-    if (template === 'character-discrimination' || template === 'reading-comprehension') {
-      const message = template === 'character-discrimination'
-        ? '整份教材的生字都缺少形近字與多音字資料，無法建立字音字形辨析單。'
-        : '至少需要兩個教師確認保留、且各自含有詞語的生字，才能建立閱讀理解選擇題。'
+    if (template === 'character-discrimination') {
       return {
         ok: false,
-        error: { type: 'no-eligible-characters', template, message, retryable: false },
+        error: {
+          type: 'no-eligible-characters',
+          template,
+          message: '整份教材的生字都缺少形近字與多音字資料，無法建立字音字形辨析單。',
+          retryable: false,
+        },
       }
     }
     return {
@@ -285,13 +228,7 @@ export async function buildWorksheet(
     }
   }
 
-  const pages = template === 'reading-comprehension'
-      ? [{
-          pageNumber: 1,
-          blocks: analysis.characters.map(worksheetBlock),
-          sections,
-        }]
-      : buildPages(sections, analysis)
+  const pages = buildPages(sections, analysis)
 
   return {
     ok: true,

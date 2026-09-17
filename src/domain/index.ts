@@ -1,7 +1,8 @@
-export { analysisContextSchema } from './analysis-context'
+export { analysisContextSchema, elementaryGradeSchema } from './analysis-context'
 export type {
   AnalysisContext,
   AnalysisContextInput,
+  ElementaryGrade,
 } from './analysis-context'
 
 export {
@@ -51,16 +52,6 @@ export {
   supportedImageMimeTypeSchema,
 } from './processed-material'
 
-export {
-  elementaryGradeSchema,
-  readingPassageLengthSchema,
-  readingPassageSchema,
-} from './reading-passage'
-export type {
-  ElementaryGrade,
-  ReadingPassage,
-  ReadingPassageLength,
-} from './reading-passage'
 export type {
   CropRect,
   ImageProcessingOptions,

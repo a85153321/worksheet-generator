@@ -11,7 +11,6 @@ import {
   type SentenceWorksheetSection,
   type PictureWorksheetSection,
   type CharacterDiscriminationWorksheetSection,
-  type ReadingComprehensionWorksheetSection,
   type WorksheetPage,
   type WorksheetTemplate,
 } from '../../services'
@@ -50,7 +49,6 @@ export const PrintPreviewPage: React.FC = () => {
     'sentence-practice': '句型仿寫應用單',
     'picture-practice': '看圖識字練習單',
     'character-discrimination': '字音字形辨析單',
-    'reading-comprehension': '閱讀理解評量單',
   }
 
   // 自動同步：若尚未由 buildWorksheet 組裝，或當前 worksheetDoc 與已選 selectedTemplate 不一致時，自動呼叫 buildWorksheet
@@ -685,70 +683,6 @@ export const PrintPreviewPage: React.FC = () => {
     )
   }
 
-  // 7. 渲染閱讀理解評量單 (reading-comprehension)
-  const renderReadingComprehension = (pageSections: WorksheetSection[]) => {
-    const readingSections = pageSections.filter(
-      (s): s is ReadingComprehensionWorksheetSection => s.kind === 'reading-comprehension'
-    )
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div className="sheet-instruction-banner">
-          <strong>【閱讀理解評量單】</strong> 請仔細閱讀以下短文，再完成文意與生詞理解選擇題。
-        </div>
-
-        {readingSections.map((s, idx) => {
-          const passage = s.item.passage
-          const mcQuestions = s.item.multipleChoiceQuestions || []
-
-          return (
-            <div key={`${s.id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* 1. 情境短文區塊 (有短文才渲染，null 絕不渲染 DOM，不殘留空白節點) */}
-              <section className="sheet-passage-box">
-                <div className="sheet-passage-title">
-                  📖 【{passage.title}】
-                </div>
-                <div className="sheet-passage-text">{passage.text}</div>
-              </section>
-
-              {/* 2. 選擇題區塊 (有題目才渲染，空陣列絕不渲染 DOM) */}
-              {mcQuestions.length > 0 && (
-                <section className="sheet-reading-card">
-                  <div className="sheet-sub-section-title">
-                    <span>壹、文意與生詞理解選擇題（請將最適合的答案填入括號中）：</span>
-                  </div>
-                  <div className="sheet-mc-list">
-                    {mcQuestions.map((q, qIdx) => (
-                      <div key={q.id || qIdx} className="sheet-mc-item">
-                        <div className="sheet-mc-prompt">
-                          <span className="sheet-mc-bracket">（{'\u3000'}）</span>
-                          <span className="sheet-mc-num">{qIdx + 1}.</span>
-                          <span>{q.prompt}</span>
-                        </div>
-                        <div className="sheet-mc-options">
-                          {q.options.map((opt, optIdx) => {
-                            const optionLabels = ['①', '②', '③', '④']
-                            return (
-                              <div key={optIdx} className="sheet-mc-option">
-                                <span className="sheet-mc-opt-label">{optionLabels[optIdx] || `(${optIdx + 1})`}</span>
-                                <span>{opt}</span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
   // 根據模板分流渲染當前頁面內容
   const renderContentByTemplate = (pageSections: WorksheetSection[]) => {
     switch (activeTemplate) {
@@ -760,8 +694,6 @@ export const PrintPreviewPage: React.FC = () => {
         return renderSentencePractice(pageSections)
       case 'character-discrimination':
         return renderCharacterDiscrimination(pageSections)
-      case 'reading-comprehension':
-        return renderReadingComprehension(pageSections)
       case 'picture-practice':
         return renderPicturePractice(pageSections)
       default:
@@ -967,9 +899,7 @@ export const PrintPreviewPage: React.FC = () => {
               </p>
             </div>
             <p style={{ color: '#64748b', fontSize: '0.92rem', maxWidth: '580px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
-              {emptyStateError.template === 'character-discrimination'
-                ? '「字音字形辨析單」需要教材生字中包含「形近字」或「多音字」的分析資料。您可以返回教材審核編輯頁補充，或切換其他學習單模板。'
-                : '「閱讀理解評量單」需要教材提供至少 3 個完整例句以組裝短文，或至少 2 個生字造詞以設計選擇題。您可以返回教材審核補充例句，或切換其他學習單模板。'}
+              「字音字形辨析單」需要教材生字中包含「形近字」或「多音字」的分析資料。您可以返回教材審核編輯頁補充，或切換其他學習單模板。
             </p>
             <div className="btn-group" style={{ justifyContent: 'center', gap: '1rem' }}>
               <button

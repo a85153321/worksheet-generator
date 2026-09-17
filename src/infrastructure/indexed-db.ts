@@ -1,10 +1,10 @@
-import type { AnalysisResult, ReadingPassage } from '../domain'
+import type { AnalysisResult } from '../domain'
 
 const DATABASE_NAME = 'worksheet-generator'
-const DATABASE_VERSION = 3
+const DATABASE_VERSION = 4
 const ANALYSIS_STORE = 'analysis-results'
 const LEGACY_IMAGE_STORE = 'images'
-const READING_PASSAGE_STORE = 'reading-passages'
+const LEGACY_READING_PASSAGE_STORE = 'reading-passages'
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -25,8 +25,8 @@ function openDatabase(): Promise<IDBDatabase> {
       if (database.objectStoreNames.contains(LEGACY_IMAGE_STORE)) {
         database.deleteObjectStore(LEGACY_IMAGE_STORE)
       }
-      if (!database.objectStoreNames.contains(READING_PASSAGE_STORE)) {
-        database.createObjectStore(READING_PASSAGE_STORE)
+      if (database.objectStoreNames.contains(LEGACY_READING_PASSAGE_STORE)) {
+        database.deleteObjectStore(LEGACY_READING_PASSAGE_STORE)
       }
     }
 
@@ -67,28 +67,4 @@ export async function deleteAnalysisCache(hash: string): Promise<void> {
 
 export async function clearAnalysisCache(): Promise<void> {
   await withStore(ANALYSIS_STORE, 'readwrite', (store) => store.clear())
-}
-
-export async function getReadingPassageCache(key: string): Promise<ReadingPassage | null> {
-  const value = await withStore<ReadingPassage | undefined>(
-    READING_PASSAGE_STORE,
-    'readonly',
-    (store) => store.get(key),
-  )
-  return value ?? null
-}
-
-export async function putReadingPassageCache(
-  key: string,
-  passage: ReadingPassage,
-): Promise<void> {
-  await withStore(READING_PASSAGE_STORE, 'readwrite', (store) => store.put(passage, key))
-}
-
-export async function deleteReadingPassageCache(key: string): Promise<void> {
-  await withStore(READING_PASSAGE_STORE, 'readwrite', (store) => store.delete(key))
-}
-
-export async function clearReadingPassageCache(): Promise<void> {
-  await withStore(READING_PASSAGE_STORE, 'readwrite', (store) => store.clear())
 }

@@ -1,0 +1,30 @@
+## Handoff
+
+- Owner: Codex
+- Goal: 完整移除閱讀理解評量單、短文生成與本機選擇題組裝功能。
+- Removed files:
+  - `src/domain/reading-passage.ts`
+  - `src/infrastructure/gemini-reading-client.ts`
+  - `src/services/reading-passage-generation.ts`
+  - `tests/gemini-reading-client.test.ts`
+  - `tests/reading-passage-generation.test.ts`
+- Changed files:
+  - `src/domain/analysis-context.ts`, `src/domain/index.ts`, `src/domain/app-error.ts`
+  - `src/infrastructure/index.ts`, `src/infrastructure/indexed-db.ts`
+  - `src/services/contracts.ts`, `src/services/index.ts`, `src/services/worksheet-builder.ts`, `src/services/docx-builder.ts`
+  - `src/features/templates/TemplateSelectionPage.tsx`, `src/features/preview/PrintPreviewPage.tsx`
+  - `src/app/routes.ts`, `src/styles/app.css`
+  - `tests/cache.test.ts`, `tests/worksheet-builder.test.ts`, `tests/docx-builder.test.ts`
+  - `PROJECT.md`, `AGENT_COLLABORATION.md`
+- Contract change:
+  - 移除 `generateReadingPassage` 及其 factory、input/output types。
+  - `WorksheetTemplate` 移除 `reading-comprehension`。
+  - `WorksheetDoc.templateLabel` 移除 `閱讀理解`。
+  - 移除 `ReadingPassage`、`ReadingPassageLength`、`ReadingComprehensionWorksheetSection` 與 `ReadingMultipleChoiceQuestion`。
+  - `BuildWorksheetOptions` 移除 `readingPassage`。
+  - `no-eligible-characters.template` 現在只接受 `character-discrimination`。
+  - `ElementaryGrade` 仍為共用型別，已移至 `analysis-context.ts`。
+- Storage migration: IndexedDB 升級至 version 4，升級時刪除舊 `reading-passages` object store。
+- Verified: `npm run build`, `npm test -- --run`, `npm run lint`, source/test residual-reference scan。
+- Risks / open questions: 歷史 change notes保留過去實作紀錄；目前生產程式碼、測試與現行規格不再提供閱讀理解功能。
+- Next owner action: Antigravity 不需額外串接；模板頁不再顯示閱讀理解選項。

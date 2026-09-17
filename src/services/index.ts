@@ -11,11 +11,6 @@ export {
   generateDocxBlob,
   exportWorksheetToDocx,
 } from './docx-builder'
-export {
-  buildStandardizedReadingPrompt,
-  createGenerateReadingPassageUseCase,
-  generateReadingPassage,
-} from './reading-passage-generation'
 export { clearApiKey, getApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
 export {
   inspectUploadedPdf,
@@ -32,14 +27,10 @@ export type {
   BuildWorksheetOptions,
   CharacterWorksheetSection,
   CharacterDiscriminationWorksheetSection,
-  GeneratedReadingPassageResult,
-  GenerateReadingPassageInput,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,
   PictureWorksheetSection,
-  ReadingComprehensionWorksheetSection,
-  ReadingMultipleChoiceQuestion,
   SentenceWorksheetSection,
   WordWorksheetSection,
   WorksheetBlock,
@@ -49,7 +40,7 @@ export type {
   WorksheetTemplate,
   WorksheetImage,
 } from './contracts'
-export type { ElementaryGrade, ReadingPassage, ReadingPassageLength } from '../domain'
+export type { ElementaryGrade } from '../domain'
 export type {
   CropRect,
   ImageProcessingOptions,

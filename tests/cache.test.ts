@@ -3,11 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { AnalysisResult } from '../src/domain'
 import {
   clearAnalysisCache,
-  clearReadingPassageCache,
-  deleteReadingPassageCache,
-  getReadingPassageCache,
   putAnalysisCache,
-  putReadingPassageCache,
 } from '../src/infrastructure'
 import { analyzeMaterial, buildAnalysisCacheKey, getCachedAnalysis } from '../src/services'
 
@@ -30,7 +26,6 @@ const cachedAnalysis: AnalysisResult = {
 
 beforeEach(async () => {
   await clearAnalysisCache()
-  await clearReadingPassageCache()
 })
 
 describe('analysis cache', () => {
@@ -66,23 +61,5 @@ describe('analysis cache', () => {
       ...base,
       includeZhuyin: false,
     }))
-  })
-})
-
-describe('reading passage cache', () => {
-  it('stores and deletes a generated reading passage', async () => {
-    const passage = {
-      id: 'reading-key',
-      title: '上學日',
-      text: '小明到學校學習。',
-      grade: 3 as const,
-      maxCharacters: 50,
-      includedCharacters: ['學'],
-      createdAt: '2026-09-17T00:00:00.000Z',
-    }
-    await putReadingPassageCache('reading-key', passage)
-    await expect(getReadingPassageCache('reading-key')).resolves.toEqual(passage)
-    await deleteReadingPassageCache('reading-key')
-    await expect(getReadingPassageCache('reading-key')).resolves.toBeNull()
   })
 })
