@@ -24,11 +24,13 @@ export const PrintPreviewPage: React.FC = () => {
     selectedTemplate,
     navigate,
     selectedGrade,
-    setSelectedGrade,
     includeZhuyin,
     setIncludeZhuyin,
   } = useApp()
 
+  const [previewFont, setPreviewFont] = useState<'standard' | 'bopomofo'>(
+    (selectedGrade ?? 3) <= 2 ? 'bopomofo' : 'standard'
+  )
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
@@ -165,6 +167,18 @@ export const PrintPreviewPage: React.FC = () => {
       imageSuggestion: null,
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
+    {
+      character: '一',
+      zhuyin: 'ㄧ',
+      radical: '一',
+      strokeCount: 1,
+      words: ['一起', '一定', '一樣', '第一'],
+      exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
+      confidence: 0.98,
+      source: { page: 1, block: '第一段' },
+      imageSuggestion: null,
+      editableState: { status: 'confirmed', isEditable: true, needsReview: false },
+    },
   ]
 
   // 輔助函式：取得生字的完整資訊
@@ -234,7 +248,7 @@ export const PrintPreviewPage: React.FC = () => {
                 showZhuyin={includeZhuyin}
               />
 
-              {/* 1 格描紅格 */}
+              {/* 1 格描字格 */}
               <TianzigeWithZhuyin
                 character={item.character}
                 zhuyin={item.zhuyin}
@@ -808,8 +822,6 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }
 
-  const isLowerGrade = (selectedGrade ?? 3) <= 2
-
   return (
     <div>
       {/* 畫面控制列（列印時自動隱藏） */}
@@ -819,39 +831,10 @@ export const PrintPreviewPage: React.FC = () => {
             <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
             <p className="card-subtitle">
               已套用「{templateNameMap[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級
-              {isLowerGrade ? '（一、二年級：已套用「芫荽注音」直式注音字體）' : '（三至六年級：套用「標楷體」字體）'}
+              {previewFont === 'bopomofo' ? '（已套用「芫荽注音字體」）' : '（已套用「標楷體」）'}
               ；本步驟由純前端引擎執行，不經任何外部 AI 後端
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <label htmlFor="preview-grade-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-                  🎓 切換教材年級：
-                </label>
-                <select
-                  id="preview-grade-select"
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(Number(e.target.value))}
-                  style={{
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.88rem',
-                    backgroundColor: '#ffffff',
-                    color: '#0f172a',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                  aria-label="選擇學習單適用國小年級"
-                >
-                  <option value={1}>國小一年級（芫荽注音字體）</option>
-                  <option value={2}>國小二年級（芫荽注音字體）</option>
-                  <option value={3}>國小三年級（標楷體）</option>
-                  <option value={4}>國小四年級（標楷體）</option>
-                  <option value={5}>國小五年級（標楷體）</option>
-                  <option value={6}>國小六年級（標楷體）</option>
-                </select>
-              </div>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
               {/* 即時切換注音開關 */}
               <label
                 style={{
@@ -864,7 +847,7 @@ export const PrintPreviewPage: React.FC = () => {
                   color: includeZhuyin ? '#166534' : '#64748b',
                   backgroundColor: includeZhuyin ? '#f0fdf4' : '#f8fafc',
                   border: includeZhuyin ? '1.5px solid #86efac' : '1px solid var(--color-border)',
-                  padding: '0.3rem 0.75rem',
+                  padding: '0.35rem 0.75rem',
                   borderRadius: 'var(--radius-sm)',
                   userSelect: 'none',
                 }}
@@ -879,12 +862,38 @@ export const PrintPreviewPage: React.FC = () => {
                 <span>顯示注音</span>
               </label>
 
-              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : isLowerGrade ? '#0d9488' : '#3b82f6', fontWeight: 600 }}>
+              {/* 直接選擇字體控制 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <label htmlFor="preview-font-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
+                  🔤 學習單字體：
+                </label>
+                <select
+                  id="preview-font-select"
+                  value={previewFont}
+                  onChange={(e) => setPreviewFont(e.target.value as 'standard' | 'bopomofo')}
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.88rem',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                  aria-label="選擇學習單字體"
+                >
+                  <option value="standard">標楷體（標準字體）</option>
+                  <option value="bopomofo">芫荽注音字體</option>
+                </select>
+              </div>
+
+              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : previewFont === 'bopomofo' ? '#0d9488' : '#3b82f6', fontWeight: 600 }}>
                 {!includeZhuyin
                   ? '🚫 已關閉注音（純文字排版，不留空白佔位）'
-                  : isLowerGrade
-                    ? '✨ 一、二年級已啟用「芫荽注音」直式排版'
-                    : '📝 三至六年級標準標楷體'}
+                  : previewFont === 'bopomofo'
+                    ? '✨ 已套用「芫荽注音字體」排版'
+                    : '📝 已套用標準「標楷體」排版'}
               </span>
             </div>
           </div>
@@ -1022,7 +1031,7 @@ export const PrintPreviewPage: React.FC = () => {
           {pages.map((page) => (
             <article
               key={page.pageNumber}
-              className={`a4-sheet ${isLowerGrade ? 'worksheet-font-bopomofo worksheet-grade-1-2' : 'worksheet-font-standard worksheet-grade-3-6'}`}
+              className={`a4-sheet ${previewFont === 'bopomofo' ? 'worksheet-font-bopomofo' : 'worksheet-font-standard'}`}
               role="region"
               aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
             >
@@ -1036,7 +1045,7 @@ export const PrintPreviewPage: React.FC = () => {
                     <span className="sheet-header-meta-sep">｜</span>
                     <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
                     {includeZhuyin ? (
-                      isLowerGrade ? (
+                      previewFont === 'bopomofo' ? (
                         <span className="sheet-header-badge">（芫荽注音）</span>
                       ) : null
                     ) : (

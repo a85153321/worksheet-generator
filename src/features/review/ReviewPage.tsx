@@ -45,6 +45,29 @@ const defaultSampleAnalysis: AnalysisResult = {
         needsReview: true,
       },
     },
+    {
+      character: '一',
+      zhuyin: 'ㄧ',
+      radical: '一',
+      strokeCount: 1,
+      words: ['一起', '一定', '一樣', '第一'],
+      exampleSentences: [
+        '我們一起到公園玩耍。',
+        '只要努力練習，一定能把字寫好。',
+      ],
+      confidence: 0.98,
+      source: { page: 1, block: '第一段' },
+      imageSuggestion: {
+        prompt: '一群小朋友手牽手開心地在草地上一起玩耍，溫暖童趣風格',
+        rationale: '「一起」的同儕合作情境，貼近國小學生生活。',
+        selected: false,
+      },
+      editableState: {
+        status: 'draft',
+        isEditable: true,
+        needsReview: false,
+      },
+    },
   ],
 }
 
@@ -634,13 +657,10 @@ export const ReviewPage: React.FC = () => {
                     </span>
                   )}
                   {isEdited && !isConfirmed && (
-                    <span className="tag tag-info" style={{ display: 'block', marginBottom: '4px' }}>
+                    <span className="tag tag-info" style={{ display: 'block' }}>
                       ✏️ 已編輯
                     </span>
                   )}
-                  <span className="tag tag-info" style={{ display: 'block' }}>
-                    信心度 {(item.confidence * 100).toFixed(0)}%
-                  </span>
                 </div>
               </div>
 

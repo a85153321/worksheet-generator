@@ -20,8 +20,8 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     title: '生字田字格練習單',
     badge: '低年級首選',
     targetGrade: '適合國小一至三年級',
-    description: '標準田字格習寫、注音標註、筆畫部首與描紅空位',
-    features: ['九宮／田字格標準格', '國字筆畫部首標示', '字音字形對照描紅'],
+    description: '標準田字格習寫、注音標註、筆畫部首與描字空位',
+    features: ['九宮／田字格標準格', '國字筆畫部首標示', '字音字形對照描字'],
     icon: '🈴',
     wireframeType: 'character',
   },
@@ -89,6 +89,12 @@ export const TemplateSelectionPage: React.FC = () => {
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
   const generatedCount = Object.keys(generatedImages).length
 
+  // 若選到已移除之 mixed 模板，自動轉向 character-practice
+  useEffect(() => {
+    if ((selectedTemplate as string) === 'mixed') {
+      setSelectedTemplate('character-practice')
+    }
+  }, [selectedTemplate, setSelectedTemplate])
   // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -205,6 +211,35 @@ export const TemplateSelectionPage: React.FC = () => {
             needsReview: false,
           },
         },
+        {
+          character: '一',
+          zhuyin: 'ㄧ',
+          radical: '一',
+          strokeCount: 1,
+          words: ['一起', '一定', '一樣', '第一'],
+          exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
+          confidence: 0.98,
+          source: { page: 1, block: '第一段' },
+          imageSuggestion: {
+            prompt: '小朋友們手牽手開心地在一起遊戲，溫暖陽光風格插畫',
+            rationale: '用「一起玩耍」的生活情境理解「一」。',
+            selected: true,
+          },
+          lookalikeCandidates: [
+            { character: '二', radical: '二', strokeCount: 2 },
+            { character: '十', radical: '十', strokeCount: 2 },
+          ],
+          multiPronunciations: [
+            { pronunciation: 'ㄧ', word: '第一' },
+            { pronunciation: 'ㄧˊ', word: '一樣' },
+            { pronunciation: 'ㄧˋ', word: '一定' },
+          ],
+          editableState: {
+            status: 'confirmed',
+            isEditable: true,
+            needsReview: false,
+          },
+        },
       ],
     })
     setBuildError(null)
@@ -219,8 +254,8 @@ export const TemplateSelectionPage: React.FC = () => {
           zhuyin: 'ㄧ',
           radical: '一',
           strokeCount: 1,
-          words: [],
-          exampleSentences: [],
+          words: ['一起', '一定', '一樣'],
+          exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。'],
           confidence: 0.98,
           source: { page: 1, block: '第一段' },
           imageSuggestion: null,
@@ -630,6 +665,15 @@ export const TemplateSelectionPage: React.FC = () => {
               type="button"
               className="btn btn-secondary btn-sm"
               style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
+              onClick={handleLoadSampleData}
+              title="載入包含完整形近字、多音字、造詞造句的示範生字（學、習、一）"
+            >
+              ✨ 立即載入完整示範生字
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
               onClick={handleLoadIneligibleSampleData}
               title="載入無形近字/多音字候選的生字資料，供測試 Codex no-eligible-characters 空狀態"
             >
@@ -663,7 +707,7 @@ export const TemplateSelectionPage: React.FC = () => {
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
               onClick={handleLoadSampleData}
             >
-              ✨ 立即載入完整示範生字（學、習）
+              ✨ 立即載入完整示範生字（學、習、一）
             </button>
             <button
               type="button"
