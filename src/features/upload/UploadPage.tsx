@@ -35,13 +35,41 @@ export const UploadPage: React.FC = () => {
     isAnalyzing,
     runAnalysis,
     runTypedAnalysis,
+    analysisInputMode,
+    typedCharacters,
     navigate,
     hasApiKey,
   } = useApp()
 
+  const [activeTab, setActiveTab] = useState<'upload' | 'typed'>(
+    analysisInputMode === 'typed' ? 'typed' : 'upload'
+  )
   const [isDragging, setIsDragging] = useState(false)
-  const [typedInput, setTypedInput] = useState('')
+  const [typedInput, setTypedInput] = useState(
+    typedCharacters && typedCharacters.length > 0 ? typedCharacters.join('、') : ''
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const parsedCharacters = React.useMemo(() => {
+    return Array.from(new Set([...typedInput].filter((c) => /\p{Script=Han}/u.test(c))))
+  }, [typedInput])
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, currentTab: 'upload' | 'typed') => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault()
+      const nextTab = currentTab === 'upload' ? 'typed' : 'upload'
+      setActiveTab(nextTab)
+      setAnalysisError(null)
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setActiveTab('upload')
+      setAnalysisError(null)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setActiveTab('typed')
+      setAnalysisError(null)
+    }
+  }
 
   const handleFileProcess = async (file: File) => {
     setAnalysisError(null)
@@ -161,9 +189,9 @@ export const UploadPage: React.FC = () => {
   }
 
   const handleTypedAnalysis = () => {
-    const characters = [...typedInput].filter((character) => /\p{Script=Han}/u.test(character))
+    if (parsedCharacters.length === 0) return
     navigate('analyzing')
-    void runTypedAnalysis(characters)
+    void runTypedAnalysis(parsedCharacters)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -179,38 +207,48 @@ export const UploadPage: React.FC = () => {
   return (
     <div className="card">
       <div className="card-header">
-        <h1 className="card-title">📁 步驟 1：教材上傳與選頁</h1>
+        <h1 className="card-title">📁 步驟 1：教材生字來源</h1>
         <p className="card-subtitle">
-          支援圖片與 PDF 文件上傳；PDF 具備頁面縮圖勾選功能，精準控制分析範圍
+          支援上傳課文圖片／PDF 文件進行 AI 辨識，或直接輸入欲練習之生字清單
         </p>
       </div>
 
-      <div className="scope-card" style={{ marginTop: '1.5rem' }}>
-        <div className="scope-card-header">
-          <strong>⌨️ 或直接輸入生字</strong>
-          <span className="tag tag-info">本機查注音／部首／筆畫</span>
-        </div>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-          可連續輸入或用空白、頓號分隔。系統只會在按下按鈕後，呼叫一次 Gemini 產生造詞與例句。
-        </p>
-        <textarea
-          value={typedInput}
-          onChange={(event) => setTypedInput(event.target.value)}
-          rows={3}
-          placeholder="例如：學、習、快、樂"
-          aria-label="直接輸入生字"
-          style={{ width: '100%', marginTop: '0.75rem', padding: '0.75rem' }}
-        />
-        <div className="btn-group" style={{ justifyContent: 'flex-end', marginTop: '0.75rem' }}>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={isAnalyzing || !/\p{Script=Han}/u.test(typedInput)}
-            onClick={handleTypedAnalysis}
-          >
-            🚀 分析輸入的生字 →
-          </button>
-        </div>
+      {/* 分頁切換列：上傳檔案 vs 直接輸入生字 */}
+      <div className="input-mode-tabs" role="tablist" aria-label="教材輸入方式切換">
+        <button
+          type="button"
+          role="tab"
+          id="tab-upload"
+          aria-selected={activeTab === 'upload'}
+          aria-controls="tabpanel-upload"
+          tabIndex={activeTab === 'upload' ? 0 : -1}
+          className={`input-mode-tab ${activeTab === 'upload' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('upload')
+            setAnalysisError(null)
+          }}
+          onKeyDown={(e) => handleTabKeyDown(e, 'upload')}
+        >
+          <span>📄 上傳圖片／PDF 教材</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-typed"
+          aria-selected={activeTab === 'typed'}
+          aria-controls="tabpanel-typed"
+          tabIndex={activeTab === 'typed' ? 0 : -1}
+          className={`input-mode-tab ${activeTab === 'typed' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('typed')
+            setAnalysisError(null)
+          }}
+          onKeyDown={(e) => handleTabKeyDown(e, 'typed')}
+        >
+          <span>⌨️ 直接輸入生字</span>
+          <span className="tab-badge">免檔案</span>
+        </button>
       </div>
 
       {/* API Key 狀態提醒 */}
@@ -246,7 +284,13 @@ export const UploadPage: React.FC = () => {
         </div>
       )}
 
-      {/* 拖曳或點選上傳區 */}
+      {/* 模式一：上傳圖片／PDF 教材 */}
+      <div
+        role="tabpanel"
+        id="tabpanel-upload"
+        aria-labelledby="tab-upload"
+        hidden={activeTab !== 'upload'}
+      >
       <div
         className={`dropzone ${isDragging ? 'active' : ''}`}
         onDragOver={(e) => {
@@ -531,6 +575,151 @@ export const UploadPage: React.FC = () => {
             '🚀 開始 AI 結構化分析 →'
           )}
         </button>
+      </div>
+      </div>
+
+      {/* 模式二：直接輸入生字 */}
+      <div
+        role="tabpanel"
+        id="tabpanel-typed"
+        aria-labelledby="tab-typed"
+        hidden={activeTab !== 'typed'}
+        className="typed-panel"
+      >
+        {/* 指引說明卡片 */}
+        <div className="typed-guide-box">
+          <div className="typed-guide-box-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>⌨️</span>
+              <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>直接輸入欲練習之生字</strong>
+            </div>
+            <span className="tag tag-success">本機離線字典 0 Quota</span>
+          </div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', margin: '0.3rem 0 0' }}>
+            輸入格式極具彈性：可直接連續輸入（例如：<strong>學習快樂</strong>）、以逗號或頓號分隔（例如：<strong>學、習、快、樂</strong> 或 <strong>學, 習, 快, 樂</strong>）、或是以空格或換行分隔（每行一字）。系統將自動過濾標點符號並去除重複字。
+          </p>
+        </div>
+
+        {/* 輸入框與範例按鈕 */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <label htmlFor="typed-characters-input" style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--color-text-main)' }}>
+              請輸入或貼上生字清單：
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}
+                onClick={() => setTypedInput('學、習、春、暖')}
+              >
+                💡 填入範例：學、習、春、暖
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}
+                onClick={() => setTypedInput('山、水、風、雨')}
+              >
+                💡 填入範例：山、水、風、雨
+              </button>
+              {typedInput && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                  onClick={() => setTypedInput('')}
+                  aria-label="清空輸入內容"
+                >
+                  ✕ 清空
+                </button>
+              )}
+            </div>
+          </div>
+
+          <textarea
+            id="typed-characters-input"
+            value={typedInput}
+            onChange={(e) => setTypedInput(e.target.value)}
+            rows={4}
+            placeholder="請在此輸入生字，例如：&#10;學、習、快、樂&#10;或是每行一個字：&#10;春&#10;暖&#10;花&#10;開"
+            aria-label="直接輸入生字"
+            className="typed-textarea"
+          />
+        </div>
+
+        {/* 即時解析與預覽生字徽章卡片 */}
+        <div className="typed-preview-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#334155' }}>
+              {parsedCharacters.length > 0 ? (
+                <span>
+                  ✓ 即時解析：已識別出 <strong>{parsedCharacters.length}</strong> 個生字（已去除重複字與標點符號）：
+                </span>
+              ) : (
+                <span style={{ color: '#94a3b8' }}>
+                  ℹ️ 尚未偵測到有效中文字元，請在上方輸入框輸入生字。
+                </span>
+              )}
+            </div>
+          </div>
+
+          {parsedCharacters.length > 0 && (
+            <div className="typed-char-chips" aria-label="已識別之生字清單">
+              {parsedCharacters.map((char, index) => (
+                <span key={`${char}-${index}`} className="typed-char-chip" title={`生字第 ${index + 1} 個：${char}`}>
+                  {char}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quota 與 AI 處理說明 */}
+        <div className="callout callout-info" style={{ marginTop: '0.5rem' }}>
+          <div className="callout-title" style={{ fontSize: '0.9rem' }}>💡 處理範圍與 Quota 說明</div>
+          <ul style={{ fontSize: '0.85rem', color: '#334155', paddingLeft: '1.2rem', margin: '0.3rem 0 0' }}>
+            <li><strong>本機 CNS11643 查表（0 Quota）</strong>：標準注音、部首與筆畫由內建教育部標準字庫離線查出，完全不消耗 API 配額。</li>
+            <li><strong>Gemini 純文字輔助</strong>：僅在按下「開始分析生字」後發送 1 次純文字請求生成各生字之常用詞語與課文情境例句（不含圖片 token，成本極低）。</li>
+            <li><strong>明確觸發原則</strong>：輸入過程中絕不發送網路請求，僅在點擊下方按鈕後才開始執行分析。</li>
+          </ul>
+        </div>
+
+        {/* 底部明確觸發按鈕 */}
+        <div
+          style={{
+            marginTop: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+            {parsedCharacters.length > 0
+              ? `已就緒 ${parsedCharacters.length} 個生字，點擊按鈕啟動分析`
+              : '⚠️ 請先在上方輸入至少 1 個國字生字'}
+          </span>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 2rem', fontSize: '1.05rem', fontWeight: 700 }}
+            disabled={parsedCharacters.length === 0 || isAnalyzing}
+            onClick={handleTypedAnalysis}
+            aria-label="明確發起直接輸入生字分析"
+          >
+            {isAnalyzing ? (
+              <>
+                <span className="spinner-sm" aria-hidden="true"></span>
+                <span>分析處理中...</span>
+              </>
+            ) : (
+              `🚀 開始分析生字 ${parsedCharacters.length > 0 ? `(${parsedCharacters.length} 字) ` : ''}→`
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -2010,4 +2010,133 @@ textarea:focus-visible {
   align-items: center;
 }
 
+/* Tab 分頁切換元件 (步驟 1 教材來源切換) */
+.input-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--color-border);
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: all 0.2s ease;
+}
+
+.input-mode-tab:hover {
+  color: var(--color-text-main);
+  background-color: rgba(241, 245, 249, 0.6);
+}
+
+.input-mode-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background-color: var(--color-surface);
+  font-weight: 700;
+}
+
+.input-mode-tab:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.tab-badge {
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+/* 直接輸入生字專用樣式 */
+.typed-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.typed-guide-box {
+  padding: 1rem 1.25rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.typed-guide-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.typed-textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1.05rem;
+  font-family: inherit;
+  line-height: 1.6;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: #ffffff;
+  color: var(--color-text-main);
+  resize: vertical;
+  min-height: 90px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.typed-textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.typed-preview-card {
+  padding: 1rem 1.25rem;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.typed-char-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.typed-char-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 0.5rem;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-worksheet-standard);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 

@@ -1,0 +1,22 @@
+﻿## Handoff
+
+- Owner: Antigravity
+- Goal: 在教材上傳頁（步驟 1）新增「直接輸入生字」替代路徑之分頁切換介面（Accessible Tabs），支援自然文字輸入、即時生字解析預覽與明確觸發按鈕。
+- Changed files:
+  - `src/features/upload/UploadPage.tsx`:
+    - 標題更新為「步驟 1：教材生字來源」。
+    - 實作無障礙 Tab 分頁元件（`input-mode-tabs`，支援 ArrowLeft/Right、Home/End 鍵盤導航與 ARIA 屬性）。
+    - 提供彈性多行生字輸入框（支援連續輸入、頓號／逗號分隔、空白或換行每行一字）。
+    - 支援一鍵填入示範生字（「學、習、春、暖」、「山、水、風、雨」）與清空按鈕。
+    - 即時解析並以生字徽章（Chips）預覽不重複國字清單。
+    - 明確的 Quota 與本機查表說明（CNS11643 離線字典 0 Quota、Gemini 單次純文字呼叫）。
+    - 僅在使用者明確按下「開始分析生字 →」按鈕後，才呼叫 Codex 交付之 `analyzeTypedCharacters`（經由 `runTypedAnalysis`），嚴格遵守非自動觸發原則。
+  - `src/styles/app.css`:
+    - 新增 `.input-mode-tabs`, `.input-mode-tab`, `.tab-badge`, `.typed-panel`, `.typed-guide-box`, `.typed-textarea`, `.typed-preview-card`, `.typed-char-chips`, `.typed-char-chip` 等樣式。
+- Verified:
+  - `npm test`: 10 個測試套件、66 項測試全數通過。
+  - `npm run lint`: ESLint 0 錯誤、0 警告。
+  - `npm run build`: TypeScript 與 Vite 生產環境編譯通過。
+  - 實機 CDP 擷取「直接輸入生字」完整視覺截圖 `step1_typed_input_full.png`。
+- Next owner action:
+  - 既有審核編輯（步驟 3）、配圖（步驟 4）、模板選擇（步驟 5）與 A4 預覽列印（步驟 6）流程已 100% 自然共用，無中斷點。
