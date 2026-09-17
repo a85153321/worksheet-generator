@@ -6,7 +6,7 @@
 - WorksheetDoc change: 新增 `grade`、`locale`、`pageSetup`，閱讀 section 內含完整短文 metadata 與選擇題正解，可直接供 DOCX 產生器使用。
 - Cache: IndexedDB 升級至 version 2，新增 `reading-passages` store，支援查詢、寫入、刪除與清空。
 - Quota behavior: UI 只在教師按下「生成閱讀短文」時呼叫 use case；先查快取，命中時不讀 API Key、不呼叫 Gemini。
-- Grade limits: 一、二年級 30 字；三年級 50 字；四至六年級 60 字（正文不計空白）。
+- Length limits: 教師自行選擇 30、50、60 或 100 字上限（正文不計空白）；年級只調整用詞難度。
 - Local questions: 至少兩個教師確認且有詞語的生字才組裝選擇題；不再產生簡答／問答題，也不為題目另呼叫 AI。
 - Verified: `npm test`, `npm run lint`, `npm run build`。
 - Next owner action: DOCX 匯出可直接使用 `WorksheetDoc.pageSetup`、`grade`、`locale` 與 `pages[].sections[]`；答案鍵取 `correctAnswer`。

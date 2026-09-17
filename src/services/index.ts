@@ -14,14 +14,7 @@ export {
   buildStandardizedReadingPrompt,
   createGenerateReadingPassageUseCase,
   generateReadingPassage,
-  readingPassageCharacterLimit,
 } from './reading-passage-generation'
-export {
-  buildStandardizedImagePrompt,
-  createGenerateSelectedImageUseCase,
-  generateSelectedImage,
-  WORKSHEET_IMAGE_STYLE,
-} from './image-generation'
 export { clearApiKey, getApiKey, isApiKeyConfigured, saveApiKey } from './key-settings'
 export {
   inspectUploadedPdf,
@@ -39,7 +32,6 @@ export type {
   CharacterDiscriminationWorksheetSection,
   GeneratedReadingPassageResult,
   GenerateReadingPassageInput,
-  ImageResult,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,
@@ -53,8 +45,9 @@ export type {
   WorksheetPage,
   WorksheetSection,
   WorksheetTemplate,
+  WorksheetImage,
 } from './contracts'
-export type { ElementaryGrade, ReadingPassage } from '../domain'
+export type { ElementaryGrade, ReadingPassage, ReadingPassageLength } from '../domain'
 export type {
   CropRect,
   ImageProcessingOptions,

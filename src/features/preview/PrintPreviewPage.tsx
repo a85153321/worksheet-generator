@@ -21,7 +21,7 @@ export const PrintPreviewPage: React.FC = () => {
     worksheetDoc,
     setWorksheetDoc,
     analysisResult,
-    generatedImages,
+    worksheetImages,
     selectedTemplate,
     navigate,
     selectedGrade,
@@ -58,7 +58,7 @@ export const PrintPreviewPage: React.FC = () => {
   useEffect(() => {
     if (analysisResult && analysisResult.characters.length > 0) {
       if (!worksheetDoc || worksheetDoc.template !== selectedTemplate) {
-        const imageList = Object.values(generatedImages)
+        const imageList = Object.values(worksheetImages)
         buildWorksheet(analysisResult, selectedTemplate, { images: imageList }).then((res) => {
           if (res.ok) {
             setWorksheetDoc(res.value)
@@ -75,7 +75,7 @@ export const PrintPreviewPage: React.FC = () => {
         })
       }
     }
-  }, [selectedTemplate, analysisResult, worksheetDoc, generatedImages, setWorksheetDoc])
+  }, [selectedTemplate, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
 
   const handlePrint = () => {
     window.print()
@@ -459,7 +459,7 @@ export const PrintPreviewPage: React.FC = () => {
         }))
       : fallbackCharacters.map((c) => ({
           character: c.character,
-          img: generatedImages[c.character],
+          img: worksheetImages[c.character],
         }))
 
     return (
@@ -469,7 +469,7 @@ export const PrintPreviewPage: React.FC = () => {
         </div>
 
         {displayList.map((c, idx) => {
-          const img = c.img || generatedImages[c.character]
+          const img = c.img || worksheetImages[c.character]
 
           return (
             <section

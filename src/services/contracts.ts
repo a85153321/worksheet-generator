@@ -7,6 +7,7 @@ import type {
   MultiPronunciation,
   ElementaryGrade,
   ReadingPassage,
+  ReadingPassageLength,
 } from '../domain'
 
 export interface AnalyzeMaterialInput {
@@ -18,13 +19,12 @@ export interface AnalyzeMaterialInput {
   context?: AnalysisContextInput
 }
 
-export interface ImageResult {
+export interface WorksheetImage {
   id: string
   character: string
-  prompt: string
   url: string
   mimeType: 'image/svg+xml' | 'image/png' | 'image/jpeg' | 'image/webp'
-  source: 'mock' | 'generated' | 'cache'
+  source: 'upload'
   createdAt: string
 }
 
@@ -47,6 +47,7 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
 export interface GenerateReadingPassageInput {
   analysis: AnalysisResult
   grade: ElementaryGrade
+  targetCharacters: ReadingPassageLength
 }
 
 export interface GeneratedReadingPassageResult {
@@ -101,7 +102,7 @@ export interface PictureWorksheetSection extends WorksheetSectionBase {
     character: CharacterAnalysis['character']
     prompt: string
     rationale: string
-    image: Pick<ImageResult, 'id' | 'url' | 'mimeType'> | null
+    image: Pick<WorksheetImage, 'id' | 'url' | 'mimeType'> | null
     needsImage: boolean
   }
 }
@@ -149,7 +150,7 @@ export interface WorksheetPage {
 
 export interface BuildWorksheetOptions {
   title?: string
-  images?: readonly ImageResult[]
+  images?: readonly WorksheetImage[]
   grade?: ElementaryGrade
   readingPassage?: ReadingPassage
 }

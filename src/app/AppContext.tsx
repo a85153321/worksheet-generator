@@ -12,7 +12,7 @@ import {
   getCachedAnalysis,
   isApiKeyConfigured,
   saveApiKey as persistApiKey,
-  type ImageResult,
+  type WorksheetImage,
   type WorksheetDoc,
   type WorksheetTemplate,
 } from '../services'
@@ -54,7 +54,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
   const [selectedGrade, setSelectedGrade] = useState<number>(3)
   const [includeZhuyin, setIncludeZhuyin] = useState<boolean>(true)
-  const [generatedImages, setGeneratedImages] = useState<Record<string, ImageResult>>({})
+  const [worksheetImages, setWorksheetImages] = useState<Record<string, WorksheetImage>>({})
   const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('character-practice')
   const [worksheetDoc, setWorksheetDoc] = useState<WorksheetDoc | null>(null)
 
@@ -220,8 +220,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedGrade,
         includeZhuyin,
         setIncludeZhuyin,
-        generatedImages,
-        setGeneratedImages,
+        worksheetImages,
+        setWorksheetImages,
         selectedTemplate,
         setSelectedTemplate,
         worksheetDoc,

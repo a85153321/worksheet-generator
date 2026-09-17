@@ -21,29 +21,17 @@ export type {
   GeminiReadingClientOptions,
   GeminiReadingPassageInput,
 } from './gemini-reading-client'
-export {
-  buildGeminiImageGenerateContentUrl,
-  createGeminiImageClient,
-  DEFAULT_GEMINI_IMAGE_MODEL,
-  GEMINI_IMAGE_GENERATE_CONTENT_ENDPOINT,
-} from './gemini-image-client'
-export type { GeneratedImageData, GeminiImageClientOptions } from './gemini-image-client'
 export { calculateInputHash } from './hash'
 export type { HashInput } from './hash'
 export {
   clearAnalysisCache,
-  clearImageCache,
   clearReadingPassageCache,
   deleteAnalysisCache,
-  deleteImageCache,
   deleteReadingPassageCache,
   getAnalysisCache,
-  getImageCache,
   getReadingPassageCache,
   putAnalysisCache,
-  putImageCache,
   putReadingPassageCache,
 } from './indexed-db'
-export type { CachedImage } from './indexed-db'
 export { calculateOutputDimensions, preprocessImage } from './image-processing'
 export { inspectPdf, renderSelectedPdfPages } from './pdf-processing'

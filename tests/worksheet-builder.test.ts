@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { appErrorSchema, characterAnalysisSchema } from '../src/domain'
 import type { AnalysisResult } from '../src/domain'
-import type { ImageResult, WorksheetSection, WorksheetTemplate } from '../src/services'
+import type { WorksheetImage, WorksheetSection, WorksheetTemplate } from '../src/services'
 import {
   buildWorksheet,
   findCharacterPaginationIssues,
@@ -28,13 +28,12 @@ const analysis: AnalysisResult = {
   ],
 }
 
-const image: ImageResult = {
+const image: WorksheetImage = {
   id: 'image-bird',
   character: '鳥',
-  prompt: '小鳥在藍天下飛翔',
   url: 'data:image/png;base64,aW1hZ2U=',
   mimeType: 'image/png',
-  source: 'cache',
+  source: 'upload',
   createdAt: '2026-09-16T00:00:00.000Z',
 }
 

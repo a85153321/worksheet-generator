@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createGeminiReadingClient } from '../src/infrastructure'
+import {
+  createGeminiReadingClient,
+  DEFAULT_GEMINI_READING_MODEL,
+} from '../src/infrastructure'
 
 const input = {
   prompt: '生成短文',
@@ -25,6 +28,18 @@ describe('Gemini reading client', () => {
 
     expect(result).toEqual({ ok: true, value: { title: '上學日', text: '小明開心到學校學習。' } })
     expect(request).toHaveBeenCalledTimes(1)
+    expect(DEFAULT_GEMINI_READING_MODEL).toBe('gemini-3.8-flash')
+    expect(String(request.mock.calls[0]?.[0])).toContain(
+      '/v1beta/models/gemini-3.8-flash:generateContent',
+    )
+    const body = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+    expect(body).toMatchObject({
+      contents: [{ role: 'user', parts: [{ text: '生成短文' }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseJsonSchema: { type: 'object' },
+      },
+    })
   })
 
   it('performs only one controlled repair for an invalid passage', async () => {
@@ -59,5 +74,28 @@ describe('Gemini reading client', () => {
       expect(result.ok).toBe(false)
       expect(request).toHaveBeenCalledTimes(1)
     }
+  })
+
+  it('distinguishes malformed requests and exposes a safe Gemini error summary', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      error: { status: 'INVALID_ARGUMENT', message: 'Unknown field responseFoo' },
+    }), { status: 400 }))
+
+    const result = await createGeminiReadingClient({ apiKey: 'secret-key', fetch: request })
+      .generatePassage(input)
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: {
+        type: 'validation',
+        details: {
+          httpStatus: 400,
+          requestSent: true,
+          geminiStatus: 'INVALID_ARGUMENT',
+          geminiMessage: 'Unknown field responseFoo',
+        },
+      },
+    })
+    expect(JSON.stringify(result)).not.toContain('secret-key')
   })
 })

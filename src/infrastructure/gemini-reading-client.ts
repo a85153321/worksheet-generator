@@ -1,6 +1,6 @@
 import type { AppError, ElementaryGrade, Result } from '../domain'
 
-export const DEFAULT_GEMINI_READING_MODEL = 'gemini-3.5-flash'
+export const DEFAULT_GEMINI_READING_MODEL = 'gemini-3.8-flash'
 export const GEMINI_READING_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -32,17 +32,40 @@ function url(options: GeminiReadingClientOptions): string {
   return `${(options.endpoint ?? GEMINI_READING_ENDPOINT).replace(/\/+$/, '')}/${model}:generateContent`
 }
 
-function classifyError(status: number, body: string): AppError {
+function errorSummary(body: string, apiKey: string): { geminiStatus?: string; geminiMessage: string } {
+  let geminiStatus: string | undefined
+  let message = body
+  try {
+    const parsed = JSON.parse(body) as { error?: { status?: string; message?: string } }
+    geminiStatus = parsed.error?.status
+    message = parsed.error?.message ?? body
+  } catch {
+    // Gemini 偶爾可能回傳純文字錯誤；保留安全截斷後的摘要。
+  }
+  return {
+    geminiStatus,
+    geminiMessage: message.replaceAll(apiKey, '[REDACTED]').slice(0, 500),
+  }
+}
+
+function classifyError(status: number, body: string, apiKey: string): AppError {
+  const summary = errorSummary(body, apiKey)
+  const details = { httpStatus: status, requestSent: true, ...summary }
   if (status === 401 || status === 403 || body.includes('API_KEY_INVALID')) {
-    return { type: 'authentication', message: 'Gemini API Key 無效或沒有權限。', retryable: false }
+    return { type: 'authentication', message: `Gemini 認證失敗（HTTP ${status}）。`, retryable: false, details }
   }
   if (status === 429) {
-    return { type: 'quota', message: 'Gemini 短文生成配額或速率限制已達上限。', retryable: false }
+    return { type: 'quota', message: 'Gemini 短文生成配額或速率限制已達上限（HTTP 429）。', retryable: false, details }
   }
   if (status === 408 || status >= 500) {
-    return { type: 'network', message: 'Gemini 短文生成服務暫時無法使用。', retryable: true, statusCode: status }
+    return { type: 'network', message: `Gemini 短文生成服務暫時無法使用（HTTP ${status}）。`, retryable: true, statusCode: status, details }
   }
-  return { type: 'validation', message: `Gemini 拒絕了短文生成請求（HTTP ${status}）。`, retryable: false }
+  const reason = status === 400
+    ? '短文生成請求格式不符合 Gemini API 規格'
+    : status === 404
+      ? 'Gemini 短文模型或 endpoint 不存在'
+      : 'Gemini 拒絕了短文生成請求'
+  return { type: 'validation', message: `${reason}（HTTP ${status}）：${summary.geminiMessage}`, retryable: false, details }
 }
 
 function textLength(text: string): number {
@@ -94,11 +117,11 @@ export function createGeminiReadingClient(options: GeminiReadingClientOptions) {
           body: JSON.stringify(body),
         })
         if (response.ok) return { ok: true, value: await response.json() as GeminiResponse }
-        const error = classifyError(response.status, await response.text())
+        const error = classifyError(response.status, await response.text(), options.apiKey)
         if (error.type !== 'network' || attempt === 1) return { ok: false, error }
       } catch {
         if (attempt === 1) {
-          return { ok: false, error: { type: 'network', message: '無法連線至 Gemini 短文生成服務。', retryable: true } }
+          return { ok: false, error: { type: 'network', message: '請求已嘗試送出，但無法連線至 Gemini 短文生成服務。', retryable: true, details: { requestSent: true } } }
         }
       }
     }

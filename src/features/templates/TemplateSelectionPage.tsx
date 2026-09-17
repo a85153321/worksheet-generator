@@ -5,7 +5,12 @@ import {
   generateReadingPassage,
   type WorksheetTemplate,
 } from '../../services'
-import type { CharacterAnalysis, ElementaryGrade, ReadingPassage } from '../../domain'
+import type {
+  CharacterAnalysis,
+  ElementaryGrade,
+  ReadingPassage,
+  ReadingPassageLength,
+} from '../../domain'
 
 interface TemplateOption {
   id: WorksheetTemplate
@@ -65,7 +70,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     badge: '閱讀思維',
     targetGrade: '適合國小二至六年級',
     description: '依教材生字由 AI 生成連貫短文，並由本機組裝生字詞義理解選擇題，深化閱讀素養',
-    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '字數依年級自動調整'],
+    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '可自選短文字數'],
     icon: '📖',
     wireframeType: 'reading',
   },
@@ -79,7 +84,7 @@ export const TemplateSelectionPage: React.FC = () => {
     setSelectedTemplate,
     worksheetDoc,
     setWorksheetDoc,
-    generatedImages,
+    worksheetImages,
     navigate,
     selectedGrade,
     hasApiKey,
@@ -91,16 +96,18 @@ export const TemplateSelectionPage: React.FC = () => {
   const [showEnlargedPreview, setShowEnlargedPreview] = useState(false)
   const [isGeneratingPassage, setIsGeneratingPassage] = useState(false)
   const [readingPassage, setReadingPassage] = useState<ReadingPassage | null>(null)
+  const [targetCharacters, setTargetCharacters] = useState<ReadingPassageLength>(50)
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
   const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
-  const generatedCount = Object.keys(generatedImages).length
+  const uploadedImageCount = Object.keys(worksheetImages).length
   const confirmedCharacters = characters
     .filter((item) => item.editableState.status === 'confirmed')
     .map((item) => item.character)
   const activeReadingPassage = readingPassage
     && readingPassage.grade === selectedGrade
+    && readingPassage.maxCharacters === targetCharacters
     && readingPassage.includedCharacters.length === new Set(confirmedCharacters).size
     && readingPassage.includedCharacters.every((character) => confirmedCharacters.includes(character))
     ? readingPassage
@@ -143,7 +150,7 @@ export const TemplateSelectionPage: React.FC = () => {
     setSuccessNotice(null)
 
     try {
-      const imageList = Object.values(generatedImages)
+      const imageList = Object.values(worksheetImages)
       const res = await buildWorksheet(analysisResult, selectedTemplate, {
         images: imageList,
         grade: selectedGrade as ElementaryGrade,
@@ -182,6 +189,7 @@ export const TemplateSelectionPage: React.FC = () => {
     const result = await generateReadingPassage({
       analysis: analysisResult,
       grade: selectedGrade as ElementaryGrade,
+      targetCharacters,
     })
     setIsGeneratingPassage(false)
     if (!result.ok) {
@@ -721,7 +729,7 @@ export const TemplateSelectionPage: React.FC = () => {
               ⚡ 載入無辨析生字（測試空狀態）
             </button>
             <div className="tag tag-info" style={{ fontSize: '0.85rem', padding: '0.35rem 0.75rem' }}>
-              目前生字庫：{characters.length} 個字 ｜ 已生成插圖：{generatedCount} 張
+              目前生字庫：{characters.length} 個字 ｜ 已上傳插圖：{uploadedImageCount} 張
             </div>
             {worksheetDoc && (
               <span className="tag tag-success" style={{ fontSize: '0.85rem', padding: '0.35rem 0.75rem' }}>
@@ -939,7 +947,7 @@ export const TemplateSelectionPage: React.FC = () => {
               • <strong>本次動作預估處理範圍</strong>：目標年級為國小 <strong>{selectedGrade} 年級</strong>，已確認納入之生字為 <strong>{confirmedCharacters.length}</strong> 個（{confirmedCharacters.length > 0 ? confirmedCharacters.join('、') : '尚無確認生字'}）。
             </p>
             <p style={{ margin: 0 }}>
-              • <strong>年級字數規範</strong>：依低中高年級規範自動限制短文字數（一至二年級 ≤ 30 字、三年級 ≤ 50 字、四至六年級 ≤ 60 字），短文必須自然包含全部生字，並由本機自動組裝生字詞義理解選擇題（無問答題）。
+              • <strong>短文字數</strong>：由教師自行選擇正文上限；年級僅用於調整用詞難度。短文必須自然包含全部生字，並由本機組裝選擇題。
             </p>
             <p style={{ margin: 0 }}>
               • <strong>主動觸發機制</strong>：短文生成絕不在切換或選擇此模板時自動呼叫，必須由您主動點擊下方「生成閱讀短文」按鈕觸發。
@@ -964,7 +972,7 @@ export const TemplateSelectionPage: React.FC = () => {
                 gap: '0.5rem',
               }}
             >
-              <span>🔑 <strong>目前為 Mock 模式</strong>：未設定個人 Gemini API Key，生成短文將由本機模擬生成，不消耗真實配額。</span>
+              <span>🔑 尚未設定 Gemini API Key；請先完成設定，才能生成閱讀短文。</span>
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -977,11 +985,23 @@ export const TemplateSelectionPage: React.FC = () => {
           )}
 
           <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <label htmlFor="reading-target-length" style={{ fontWeight: 600 }}>短文上限：</label>
+            <select
+              id="reading-target-length"
+              value={targetCharacters}
+              onChange={(event) => setTargetCharacters(Number(event.target.value) as ReadingPassageLength)}
+              disabled={isGeneratingPassage}
+            >
+              <option value={30}>30 字以內</option>
+              <option value={50}>50 字以內</option>
+              <option value={60}>60 字以內</option>
+              <option value={100}>100 字以內</option>
+            </select>
             <button
               type="button"
               className="btn btn-primary"
               onClick={handleGenerateReadingPassage}
-              disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0}
+              disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0 || !hasApiKey}
               style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', fontWeight: 600 }}
             >
               {isGeneratingPassage ? (

@@ -3,14 +3,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { AnalysisResult } from '../src/domain'
 import {
   clearAnalysisCache,
-  clearImageCache,
   clearReadingPassageCache,
   deleteReadingPassageCache,
-  deleteImageCache,
-  getImageCache,
   getReadingPassageCache,
   putAnalysisCache,
-  putImageCache,
   putReadingPassageCache,
 } from '../src/infrastructure'
 import { analyzeMaterial, buildAnalysisCacheKey, getCachedAnalysis } from '../src/services'
@@ -34,23 +30,7 @@ const cachedAnalysis: AnalysisResult = {
 
 beforeEach(async () => {
   await clearAnalysisCache()
-  await clearImageCache()
   await clearReadingPassageCache()
-})
-
-describe('image cache', () => {
-  it('can delete a cached generated image', async () => {
-    await putImageCache({
-      key: 'prompt-style-hash',
-      data: new Blob(['image'], { type: 'image/png' }),
-      mimeType: 'image/png',
-      createdAt: '2026-09-16T00:00:00.000Z',
-    })
-
-    expect(await getImageCache('prompt-style-hash')).not.toBeNull()
-    await deleteImageCache('prompt-style-hash')
-    expect(await getImageCache('prompt-style-hash')).toBeNull()
-  })
 })
 
 describe('analysis cache', () => {

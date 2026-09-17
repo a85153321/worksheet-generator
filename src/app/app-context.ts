@@ -1,6 +1,6 @@
 import { createContext } from 'react'
 import type { AnalysisResult, AppError } from '../domain'
-import type { ImageResult, WorksheetDoc, WorksheetTemplate } from '../services'
+import type { WorksheetDoc, WorksheetImage, WorksheetTemplate } from '../services'
 import type { AppRoute } from './routes'
 
 export interface UploadedFileInfo {
@@ -44,8 +44,8 @@ export interface AppContextType {
   setSelectedGrade: (grade: number) => void
   includeZhuyin: boolean
   setIncludeZhuyin: React.Dispatch<React.SetStateAction<boolean>>
-  generatedImages: Record<string, ImageResult>
-  setGeneratedImages: React.Dispatch<React.SetStateAction<Record<string, ImageResult>>>
+  worksheetImages: Record<string, WorksheetImage>
+  setWorksheetImages: React.Dispatch<React.SetStateAction<Record<string, WorksheetImage>>>
   selectedTemplate: WorksheetTemplate
   setSelectedTemplate: (tpl: WorksheetTemplate) => void
   worksheetDoc: WorksheetDoc | null

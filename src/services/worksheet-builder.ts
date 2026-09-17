@@ -1,7 +1,7 @@
 import type { AnalysisResult, AppError, CharacterAnalysis, Result } from '../domain'
 import type {
   BuildWorksheetOptions,
-  ImageResult,
+  WorksheetImage,
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
@@ -69,7 +69,7 @@ function sentenceSection(item: CharacterAnalysis, index: number): WorksheetSecti
 function pictureSection(
   item: CharacterAnalysis,
   index: number,
-  images: ReadonlyMap<string, ImageResult>,
+  images: ReadonlyMap<string, WorksheetImage>,
 ): WorksheetSection | null {
   const suggestion = item.imageSuggestion
   const image = images.get(item.character)
@@ -81,7 +81,7 @@ function pictureSection(
     instructions: '看圖後，寫出對應的生字或詞語。',
     item: {
       character: item.character,
-      prompt: suggestion?.prompt ?? image?.prompt ?? `與「${item.character}」相關的教學圖片`,
+      prompt: suggestion?.prompt ?? `與「${item.character}」相關的教學圖片`,
       rationale: suggestion?.rationale ?? '教師選擇的看圖練習。',
       image: image ? { id: image.id, url: image.url, mimeType: image.mimeType } : null,
       needsImage: !image,
@@ -156,7 +156,7 @@ function readingComprehensionSection(
 function buildSections(
   analysis: AnalysisResult,
   template: WorksheetTemplate,
-  images: ReadonlyMap<string, ImageResult>,
+  images: ReadonlyMap<string, WorksheetImage>,
 ): WorksheetSection[] {
   const sections: WorksheetSection[] = []
   analysis.characters.forEach((item, index) => {

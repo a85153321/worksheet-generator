@@ -9,6 +9,13 @@ export const elementaryGradeSchema = z.union([
   z.literal(6),
 ])
 
+export const readingPassageLengthSchema = z.union([
+  z.literal(30),
+  z.literal(50),
+  z.literal(60),
+  z.literal(100),
+])
+
 export const readingPassageSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1),
@@ -20,4 +27,5 @@ export const readingPassageSchema = z.object({
 })
 
 export type ElementaryGrade = z.infer<typeof elementaryGradeSchema>
+export type ReadingPassageLength = z.infer<typeof readingPassageLengthSchema>
 export type ReadingPassage = z.infer<typeof readingPassageSchema>

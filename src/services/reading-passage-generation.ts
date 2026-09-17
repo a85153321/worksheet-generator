@@ -18,18 +18,12 @@ import type {
 
 const PROMPT_VERSION = 'reading-passage-v1'
 
-export function readingPassageCharacterLimit(grade: number): number {
-  if (grade <= 2) return 30
-  if (grade === 3) return 50
-  return 60
-}
-
 export function buildStandardizedReadingPrompt(input: GenerateReadingPassageInput): string {
   const characters = input.analysis.characters
     .filter((item) => item.editableState.status === 'confirmed')
     .map((item) => ({ character: item.character, words: item.words }))
   const requiredCharacters = characters.map((item) => item.character)
-  const maxCharacters = readingPassageCharacterLimit(input.grade)
+  const maxCharacters = input.targetCharacters
   return [
     '請生成一篇臺灣國小閱讀理解短文。',
     `年級：國小${input.grade}年級。`,
@@ -93,7 +87,7 @@ export function createGenerateReadingPassageUseCase(
     }
 
     const requiredCharacters = [...new Set(confirmedCharacters.map((item) => item.character))]
-    const maxCharacters = readingPassageCharacterLimit(input.grade)
+    const maxCharacters = input.targetCharacters
     if (requiredCharacters.length > maxCharacters) {
       return {
         ok: false,

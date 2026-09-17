@@ -3,7 +3,6 @@ import type { AnalysisResult } from '../src/domain'
 import {
   buildStandardizedReadingPrompt,
   createGenerateReadingPassageUseCase,
-  readingPassageCharacterLimit,
 } from '../src/services'
 
 const analysis: AnalysisResult = {
@@ -50,16 +49,11 @@ function dependencies() {
 }
 
 describe('generateReadingPassage', () => {
-  it.each([[1, 30], [2, 30], [3, 50], [4, 60], [5, 60], [6, 60]])(
-    'uses the grade %i character limit',
-    (grade, expected) => expect(readingPassageCharacterLimit(grade)).toBe(expected),
-  )
-
   it('uses only teacher-confirmed characters in the standardized prompt', () => {
-    const prompt = buildStandardizedReadingPrompt({ analysis, grade: 3 })
+    const prompt = buildStandardizedReadingPrompt({ analysis, grade: 3, targetCharacters: 100 })
     expect(prompt).toContain('必須自然包含全部生字：學')
     expect(prompt).not.toContain('生字：學、習')
-    expect(prompt).toContain('50字')
+    expect(prompt).toContain('100字')
   })
 
   it('returns a cache hit without reading the API key or calling Gemini', async () => {
@@ -75,7 +69,7 @@ describe('generateReadingPassage', () => {
     })
     const generate = createGenerateReadingPassageUseCase(deps)
 
-    const result = await generate({ analysis, grade: 3 })
+    const result = await generate({ analysis, grade: 3, targetCharacters: 50 })
 
     expect(result).toMatchObject({ ok: true, value: { source: 'cache' } })
     expect(deps.getApiKey).not.toHaveBeenCalled()
@@ -86,7 +80,7 @@ describe('generateReadingPassage', () => {
     const deps = dependencies()
     const generate = createGenerateReadingPassageUseCase(deps)
 
-    const result = await generate({ analysis, grade: 3 })
+    const result = await generate({ analysis, grade: 3, targetCharacters: 50 })
 
     expect(result).toMatchObject({
       ok: true,
@@ -109,7 +103,7 @@ describe('generateReadingPassage', () => {
       })),
     }
 
-    const result = await generate({ analysis: unconfirmed, grade: 3 })
+    const result = await generate({ analysis: unconfirmed, grade: 3, targetCharacters: 50 })
 
     expect(result).toMatchObject({ ok: false, error: { type: 'no-eligible-characters' } })
     expect(deps.calculateHash).not.toHaveBeenCalled()
