@@ -35,7 +35,7 @@ export const AnalyzingPage: React.FC = () => {
       <div className="card-header" style={{ textAlign: 'center' }}>
         <h1 className="card-title" style={{ justifyContent: 'center' }}>本機辭典查詢完成</h1>
         <p className="card-subtitle">
-          已從教育部《國語辭典簡編本》查得 {analysisResult.characters.length} 個生字的注音、部首、筆畫、詞語與例句候選。
+          已從教育部《國語辭典簡編本》查得 {analysisResult.characters.length} 個生字的注音、部首、筆畫、語詞與例句候選。
         </p>
       </div>
       <div className="btn-group" style={{ justifyContent: 'center' }}>

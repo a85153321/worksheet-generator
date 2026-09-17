@@ -13,7 +13,7 @@ const SECTIONS_PER_PAGE = 6
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
   'character-practice': '生字',
-  'word-practice': '詞語',
+  'word-practice': '語詞',
   'sentence-practice': '句子',
   'picture-practice': '看圖',
 }
@@ -42,10 +42,10 @@ function wordSection(item: CharacterAnalysis, index: number): WorksheetSection |
   return {
     kind: 'word',
     id: sectionId('word', item.character, index),
-    instructions: '讀一讀詞語，並在空白處各寫一次。',
+    instructions: '讀一讀語詞，並在空白處各寫一次。',
     item: {
       character: item.character,
-      words: item.wordCandidates.map((text) => ({ text, practiceLineCount: 1 })),
+      words: item.wordCandidates.slice(0, 3).map((text) => ({ text, practiceLineCount: 1 })),
     },
   }
 }
@@ -58,7 +58,7 @@ function sentenceSection(item: CharacterAnalysis, index: number): WorksheetSecti
     instructions: '讀一讀例句，再仿寫一句完整的句子。',
     item: {
       character: item.character,
-      sentences: item.sentenceCandidates.map((text) => ({ text, answerLineCount: 2 })),
+      sentences: item.sentenceCandidates.slice(0, 2).map((text) => ({ text, answerLineCount: 2 })),
     },
   }
 }
@@ -74,7 +74,7 @@ function pictureSection(
   return {
     kind: 'picture',
     id: sectionId('picture', item.character, index),
-    instructions: '看圖後，寫出對應的生字或詞語。',
+    instructions: '看圖後，寫出對應的生字或語詞。',
     item: {
       character: item.character,
       prompt: `教師為「${item.character}」上傳的教學圖片`,

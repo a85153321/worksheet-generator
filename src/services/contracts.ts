@@ -108,7 +108,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '詞語' | '句子' | '看圖'
+  templateLabel: '生字' | '語詞' | '句子' | '看圖'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {

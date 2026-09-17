@@ -71,7 +71,7 @@ export const UploadPage: React.FC = () => {
 
       <div className="callout callout-info" style={{ marginTop: '1rem' }}>
         <div className="callout-title">本機辭典查詢</div>
-        <p>部首、筆畫、注音、詞語候選與例句候選均由隨專案提供的辭典資料查出，全程離線執行。</p>
+        <p>部首、筆畫、注音、語詞候選與例句候選均由隨專案提供的辭典資料查出，全程離線執行。</p>
       </div>
 
       <div className="btn-group" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>

@@ -40,7 +40,7 @@ export const PrintPreviewPage: React.FC = () => {
 
   const templateNameMap: Record<WorksheetTemplate, string> = {
     'character-practice': '生字田字格練習單',
-    'word-practice': '詞語積木擴展單',
+    'word-practice': '語詞積木擴展單',
     'sentence-practice': '句型仿寫應用單',
     'picture-practice': '看圖識字練習單',
   }
@@ -272,10 +272,10 @@ export const PrintPreviewPage: React.FC = () => {
             </div>
 
             <div style={{ fontSize: '13px', color: '#334155', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
-              <strong>【常用詞語造詞參考】：</strong>
+              <strong>【常用語詞造詞參考】：</strong>
               <span>
                 {item.wordCandidates && item.wordCandidates.length > 0
-                  ? item.wordCandidates.join('、')
+                  ? item.wordCandidates.slice(0, 3).join('、')
                   : '________________、________________'}
               </span>
             </div>
@@ -285,7 +285,7 @@ export const PrintPreviewPage: React.FC = () => {
     )
   }
 
-  // 2. 渲染詞語積木擴展單 (word-practice)
+  // 2. 渲染語詞積木擴展單 (word-practice)
   const renderWordPractice = (pageSections: WorksheetSection[]) => {
     const wordSections = pageSections.filter((s): s is WordWorksheetSection => s.kind === 'word')
     const items = wordSections.length > 0
@@ -294,19 +294,19 @@ export const PrintPreviewPage: React.FC = () => {
           return {
             character: s.item.character,
             zhuyin: detail?.zhuyin || '',
-            words: s.item.words,
+            words: s.item.words.slice(0, 3),
           }
         })
       : fallbackCharacters.map((c) => ({
           character: c.character,
           zhuyin: c.zhuyin,
-          words: c.wordCandidates.map((text) => ({ text, practiceLineCount: 1 })),
+          words: (c.wordCandidates || []).slice(0, 3).map((text) => ({ text, practiceLineCount: 1 })),
         }))
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div className="sheet-instruction-banner">
-          <strong>【貳、詞語積木擴展與習寫】</strong> 讀一讀詞語積木，在書寫格端正寫一次，並完成延伸造詞。
+          <strong>【貳、語詞積木擴展與習寫】</strong> 讀一讀語詞積木，在書寫格端正寫一次，並完成延伸造詞。
         </div>
 
         {items.map((item, idx) => (
@@ -340,20 +340,20 @@ export const PrintPreviewPage: React.FC = () => {
             </div>
 
             <div className="sheet-word-list">
-              {item.words.map((w, wIdx) => (
+              {item.words.slice(0, 3).map((w, wIdx) => (
                 <div key={wIdx} className="sheet-word-item">
                   <div className="sheet-word-badge">
                     {w.text}
                   </div>
 
-                  {/* 為詞語中的每個字提供習寫田字格 */}
+                  {/* 為語詞中的每個字提供習寫田字格 */}
                   <div className="sheet-word-boxes">
                     {Array.from(w.text).map((c, cIdx) => (
                       <div
                         key={cIdx}
                         className="sheet-tian-grid sm"
                         style={{ width: '42px', height: '42px' }}
-                        aria-label={`詞語習寫格：${c}`}
+                        aria-label={`語詞習寫格：${c}`}
                       ></div>
                     ))}
                   </div>
@@ -380,11 +380,11 @@ export const PrintPreviewPage: React.FC = () => {
     const items = sentenceSections.length > 0
       ? sentenceSections.map((s) => ({
           character: s.item.character,
-          sentences: s.item.sentences,
+          sentences: s.item.sentences.slice(0, 2),
         }))
       : fallbackCharacters.map((c) => ({
           character: c.character,
-          sentences: c.sentenceCandidates.map((text) => ({ text, answerLineCount: 2 })),
+          sentences: (c.sentenceCandidates || []).slice(0, 2).map((text) => ({ text, answerLineCount: 2 })),
         }))
 
     return (
@@ -402,7 +402,7 @@ export const PrintPreviewPage: React.FC = () => {
               <span className="sheet-score-box">教師評閱：[ 優 ． 良 ． 可 ] 簽章：_______</span>
             </div>
 
-            {item.sentences.map((s, sIdx) => (
+            {item.sentences.slice(0, 2).map((s, sIdx) => (
               <div key={sIdx} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div className="sheet-sentence-example">
                   <strong>📖 課文情境例句：</strong>

@@ -37,7 +37,7 @@ const borderDashed = {
 
 const templateNameMap: Record<string, string> = {
   'character-practice': '生字田字格練習單',
-  'word-practice': '詞語積木擴展單',
+  'word-practice': '語詞積木擴展單',
   'sentence-practice': '句型仿寫應用單',
   'picture-practice': '看圖識字練習單',
 }
@@ -145,7 +145,7 @@ function renderCharacterSections(
   sections.forEach((sec, idx) => {
     const item = sec.item
     const analysis = charMap.get(item.character)
-    const words = analysis?.wordCandidates || []
+    const words = (analysis?.wordCandidates || []).slice(0, 3)
 
     result.push(
       new Paragraph({
@@ -197,6 +197,7 @@ function renderCharacterSections(
           }),
         ],
       }),
+
       // 描字 (淺灰字)
       new TableCell({
         width: { size: cellWidthDxa, type: WidthType.DXA },
@@ -265,7 +266,7 @@ function renderCharacterSections(
         spacing: { before: 60, after: 140 },
         children: [
           new TextRun({
-            text: '【常用詞語造詞參考】：',
+            text: '【常用語詞造詞參考】：',
             bold: true,
             size: 20,
             font: FONT_FAMILY,
@@ -286,13 +287,13 @@ function renderCharacterSections(
 }
 
 /**
- * 2. 渲染詞語積木 (word-practice)
+ * 2. 渲染語詞積木 (word-practice)
  */
 function renderWordSections(
   sections: WordWorksheetSection[],
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
-    createInstructionBanner('【貳、詞語積木擴展與習寫】 讀一讀詞語積木，在書寫格端正寫一次，並完成延伸造詞。'),
+    createInstructionBanner('【貳、語詞積木擴展與習寫】 讀一讀語詞積木，在書寫格端正寫一次，並完成延伸造詞。'),
   ]
 
   sections.forEach((sec) => {
@@ -313,7 +314,7 @@ function renderWordSections(
       }),
     )
 
-    const rows: TableRow[] = item.words.map((w) => {
+    const rows: TableRow[] = item.words.slice(0, 3).map((w) => {
       const charBoxes = Array.from(w.text).map(() => {
         return new TableCell({
           width: { size: 480, type: WidthType.DXA },
@@ -437,7 +438,7 @@ function renderSentenceSections(
       }),
     )
 
-    item.sentences.forEach((s) => {
+    item.sentences.slice(0, 2).forEach((s) => {
       result.push(
         new Paragraph({
           spacing: { before: 60, after: 60 },

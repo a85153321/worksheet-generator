@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
-import { updateAnalysisResult } from '../../services'
+import { lookupCharacterFromDictionary, updateAnalysisResult } from '../../services'
 
 const defaultSampleAnalysis: AnalysisResult = {
   characters: [
@@ -83,6 +83,8 @@ export const ReviewPage: React.FC = () => {
   })
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isAddingNew, setIsAddingNew] = useState(false)
+  const [wordDrawNotice, setWordDrawNotice] = useState<string | null>(null)
+  const [sentenceDrawNotice, setSentenceDrawNotice] = useState<string | null>(null)
 
   // 儲存狀態與錯誤狀態 (Requirement 3)
   const [isSaving, setIsSaving] = useState(false)
@@ -195,13 +197,15 @@ export const ReviewPage: React.FC = () => {
     setIsAddingNew(false)
     setFieldErrors({})
     setSaveError(null)
+    setWordDrawNotice(null)
+    setSentenceDrawNotice(null)
     setEditForm({
       character: item.character,
       zhuyin: item.zhuyin,
       radical: item.radical,
       strokeCount: item.strokeCount,
-      words: item.wordCandidates.join('、'),
-      exampleSentence: item.sentenceCandidates.join('\n'),
+      words: item.wordCandidates.slice(0, 3).join('、'),
+      exampleSentence: item.sentenceCandidates.slice(0, 2).join('\n'),
     })
   }
 
@@ -210,6 +214,8 @@ export const ReviewPage: React.FC = () => {
     setEditingIndex(null)
     setFieldErrors({})
     setSaveError(null)
+    setWordDrawNotice(null)
+    setSentenceDrawNotice(null)
     setEditForm({
       character: '',
       zhuyin: '',
@@ -218,6 +224,72 @@ export const ReviewPage: React.FC = () => {
       words: '',
       exampleSentence: '',
     })
+  }
+
+  // 隨機抽選語詞（從辭典完整候選隨機挑選未加入者）
+  const handleDrawRandomWord = () => {
+    const char = editForm.character.trim()
+    if (!char) {
+      setWordDrawNotice('請先輸入生字')
+      return
+    }
+    const lookup = lookupCharacterFromDictionary(char)
+    const fullCandidates = lookup?.wordCandidates || []
+    if (fullCandidates.length === 0) {
+      setWordDrawNotice('已無更多候選')
+      return
+    }
+    const currentWords = new Set(
+      editForm.words
+        .split(/[,、，\s]/)
+        .map((w) => w.trim())
+        .filter(Boolean),
+    )
+    const unselected = fullCandidates.filter((w) => !currentWords.has(w.trim()))
+    if (unselected.length === 0) {
+      setWordDrawNotice('已無更多候選')
+      return
+    }
+    const picked = unselected[Math.floor(Math.random() * unselected.length)]
+    const currentTrimmed = editForm.words.trim()
+    const newWords = currentTrimmed
+      ? `${currentTrimmed.replace(/、$/, '')}、${picked}`
+      : picked
+    setEditForm((prev) => ({ ...prev, words: newWords }))
+    setWordDrawNotice(null)
+  }
+
+  // 隨機抽選例句（從辭典完整候選隨機挑選未加入者）
+  const handleDrawRandomSentence = () => {
+    const char = editForm.character.trim()
+    if (!char) {
+      setSentenceDrawNotice('請先輸入生字')
+      return
+    }
+    const lookup = lookupCharacterFromDictionary(char)
+    const fullCandidates = lookup?.sentenceCandidates || []
+    if (fullCandidates.length === 0) {
+      setSentenceDrawNotice('已無更多候選')
+      return
+    }
+    const currentSentences = new Set(
+      editForm.exampleSentence
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+    const unselected = fullCandidates.filter((s) => !currentSentences.has(s.trim()))
+    if (unselected.length === 0) {
+      setSentenceDrawNotice('已無更多候選')
+      return
+    }
+    const picked = unselected[Math.floor(Math.random() * unselected.length)]
+    const currentTrimmed = editForm.exampleSentence.trim()
+    const newSentences = currentTrimmed
+      ? `${currentTrimmed}\n${picked}`
+      : picked
+    setEditForm((prev) => ({ ...prev, exampleSentence: newSentences }))
+    setSentenceDrawNotice(null)
   }
 
   // 表單前置欄位檢查
@@ -366,7 +438,7 @@ export const ReviewPage: React.FC = () => {
           <div>
             <h1 className="card-title">🔍 步驟 3：生字查詢結果審核與編輯</h1>
             <p className="card-subtitle">
-              教師享有最終編輯審核權：逐字核對注音、部首、筆畫、詞語候選與例句候選，所有修改即時儲存
+              教師享有最終編輯審核權：逐字核對注音、部首、筆畫、語詞候選與例句候選，所有修改即時儲存
             </p>
           </div>
           <button
@@ -535,28 +607,66 @@ export const ReviewPage: React.FC = () => {
             </div>
           </div>
           <div style={{ marginTop: '0.75rem' }}>
-            <label htmlFor="new-words-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>詞語候選（頓號、逗號分隔）：</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <label htmlFor="new-words-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>語詞候選（頓號、逗號分隔）：</label>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}
+                onClick={handleDrawRandomWord}
+                disabled={isSaving}
+              >
+                🎲 隨機抽選
+              </button>
+            </div>
             <input
               id="new-words-input"
               type="text"
               value={editForm.words}
-              onChange={(e) => setEditForm({ ...editForm, words: e.target.value })}
+              onChange={(e) => {
+                setEditForm({ ...editForm, words: e.target.value })
+                setWordDrawNotice(null)
+              }}
               placeholder="例如：春天、春風、春暖花開"
               disabled={isSaving}
               style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
             />
+            {wordDrawNotice && (
+              <div style={{ fontSize: '0.8rem', color: '#d97706', marginTop: '4px', fontWeight: 500 }} role="status">
+                ⚠️ {wordDrawNotice}
+              </div>
+            )}
           </div>
           <div style={{ marginTop: '0.75rem' }}>
-            <label htmlFor="new-sentence-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <label htmlFor="new-sentence-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}
+                onClick={handleDrawRandomSentence}
+                disabled={isSaving}
+              >
+                🎲 隨機抽選
+              </button>
+            </div>
             <textarea
               id="new-sentence-input"
               rows={3}
               value={editForm.exampleSentence}
-              onChange={(e) => setEditForm({ ...editForm, exampleSentence: e.target.value })}
+              onChange={(e) => {
+                setEditForm({ ...editForm, exampleSentence: e.target.value })
+                setSentenceDrawNotice(null)
+              }}
               placeholder="例如：春天來了，公園裡開滿了五顏六色的花朵。"
               disabled={isSaving}
               style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
             />
+            {sentenceDrawNotice && (
+              <div style={{ fontSize: '0.8rem', color: '#d97706', marginTop: '4px', fontWeight: 500 }} role="status">
+                ⚠️ {sentenceDrawNotice}
+              </div>
+            )}
           </div>
 
           <div className="btn-group" style={{ marginTop: '1rem' }}>
@@ -587,7 +697,7 @@ export const ReviewPage: React.FC = () => {
         </div>
       )}
 
-      {/* 逐字呈現生字、注音、部首、筆畫、詞語、例句 (Requirement 1) */}
+      {/* 逐字呈現生字、注音、部首、筆畫、語詞、例句 (Requirement 1) */}
       <div className="char-grid" role="region" aria-label="生字分析結果清單">
         {characters.map((item, idx) => {
           const isEditingThis = editingIndex === idx
@@ -724,25 +834,65 @@ export const ReviewPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>詞語候選（頓號、逗號分隔）：</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <label htmlFor={`edit-words-${idx}`} style={{ fontSize: '0.8rem', fontWeight: 600 }}>語詞候選（頓號、逗號分隔）：</label>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}
+                        onClick={handleDrawRandomWord}
+                        disabled={isSaving}
+                      >
+                        🎲 隨機抽選
+                      </button>
+                    </div>
                     <input
+                      id={`edit-words-${idx}`}
                       type="text"
                       value={editForm.words}
-                      onChange={(e) => setEditForm({ ...editForm, words: e.target.value })}
+                      onChange={(e) => {
+                        setEditForm({ ...editForm, words: e.target.value })
+                        setWordDrawNotice(null)
+                      }}
                       disabled={isSaving}
                       style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
+                    {wordDrawNotice && (
+                      <div style={{ fontSize: '0.8rem', color: '#d97706', marginTop: '4px', fontWeight: 500 }} role="status">
+                        ⚠️ {wordDrawNotice}
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <label htmlFor={`edit-sentence-${idx}`} style={{ fontSize: '0.8rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}
+                        onClick={handleDrawRandomSentence}
+                        disabled={isSaving}
+                      >
+                        🎲 隨機抽選
+                      </button>
+                    </div>
                     <textarea
+                      id={`edit-sentence-${idx}`}
                       rows={3}
                       value={editForm.exampleSentence}
-                      onChange={(e) => setEditForm({ ...editForm, exampleSentence: e.target.value })}
+                      onChange={(e) => {
+                        setEditForm({ ...editForm, exampleSentence: e.target.value })
+                        setSentenceDrawNotice(null)
+                      }}
                       disabled={isSaving}
                       style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
                     />
+                    {sentenceDrawNotice && (
+                      <div style={{ fontSize: '0.8rem', color: '#d97706', marginTop: '4px', fontWeight: 500 }} role="status">
+                        ⚠️ {sentenceDrawNotice}
+                      </div>
+                    )}
                   </div>
 
                   <div className="btn-group" style={{ marginTop: '0.5rem' }}>
@@ -777,16 +927,16 @@ export const ReviewPage: React.FC = () => {
                 /* 正常呈現狀態 */
                 <div style={{ marginTop: '0.5rem' }}>
                   <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem' }}>
-                    <strong>詞語候選：</strong> {item.wordCandidates.length > 0 ? item.wordCandidates.join('、') : '（無詞語）'}
+                    <strong>語詞候選：</strong> {item.wordCandidates.slice(0, 3).length > 0 ? item.wordCandidates.slice(0, 3).join('、') : '（無語詞）'}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     <strong>例句候選：</strong>
-                    {item.sentenceCandidates.length > 0 ? (
-                      item.sentenceCandidates.length === 1 ? (
+                    {item.sentenceCandidates.slice(0, 2).length > 0 ? (
+                      item.sentenceCandidates.slice(0, 2).length === 1 ? (
                         <span> {item.sentenceCandidates[0]}</span>
                       ) : (
                         <ol style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
-                          {item.sentenceCandidates.map((sentence, sIdx) => (
+                          {item.sentenceCandidates.slice(0, 2).map((sentence, sIdx) => (
                             <li key={sIdx}>{sentence}</li>
                           ))}
                         </ol>

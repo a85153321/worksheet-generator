@@ -33,11 +33,11 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
   },
   {
     id: 'word-practice',
-    title: '詞語積木擴展單',
+    title: '語詞積木擴展單',
     badge: '中高年級',
     targetGrade: '適合國小三至五年級',
-    description: '引導學生從單字擴展為詞語、多詞辨析與語意聯想',
-    features: ['詞語擴詞積木格', '生字詞義填空連線', '詞語語意延伸練習'],
+    description: '引導學生從單字擴展為語詞、多詞辨析與語意聯想',
+    features: ['語詞擴詞積木格', '生字詞義填空連線', '語意延伸練習'],
     icon: '📚',
     wireframeType: 'word',
   },
@@ -229,14 +229,14 @@ export const TemplateSelectionPage: React.FC = () => {
             <div className="wireframe-row">
               <div className="wireframe-box" style={{ fontWeight: 700 }}>字</div>
               <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                <div style={{ height: '20px', border: '1px solid #94a3b8', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[詞語一]</div>
+                <div style={{ height: '20px', border: '1px solid #94a3b8', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[語詞一]</div>
                 <div style={{ height: '20px', border: '1px dashed #cbd5e1', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[填空]</div>
               </div>
             </div>
             <div className="wireframe-row">
               <div className="wireframe-box" style={{ fontWeight: 700 }}>詞</div>
               <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                <div style={{ height: '20px', border: '1px solid #94a3b8', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[詞語二]</div>
+                <div style={{ height: '20px', border: '1px solid #94a3b8', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[語詞二]</div>
                 <div style={{ height: '20px', border: '1px dashed #cbd5e1', borderRadius: '2px', padding: '0 4px', fontSize: '9px', display: 'flex', alignItems: 'center' }}>[填空]</div>
               </div>
             </div>
@@ -433,10 +433,10 @@ export const TemplateSelectionPage: React.FC = () => {
 
                   {selectedTemplate === 'word-practice' && (
                     <div>
-                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600, color: '#334155' }}>【詞語積木延伸】</div>
+                      <div style={{ fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600, color: '#334155' }}>【語詞積木延伸】</div>
                       <div style={{ display: 'flex', gap: isEnlarged ? '10px' : '6px', marginTop: isEnlarged ? '6px' : '3px', flexWrap: 'wrap' }}>
                         <span style={{ border: '1px solid #cbd5e1', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', fontWeight: 600 }}>
-                          {item.wordCandidates?.[0] || '詞語一'}
+                          {item.wordCandidates?.[0] || '語詞一'}
                         </span>
                         <span style={{ border: '1px dashed #94a3b8', padding: isEnlarged ? '4px 12px' : '1px 6px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '14px' : '11px', color: '#94a3b8' }}>
                           [ 造詞填空：__________________ ]

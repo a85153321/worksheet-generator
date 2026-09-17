@@ -24,7 +24,7 @@ export const ROUTE_METAS: Record<AppRoute, RouteMeta> = {
     path: 'analyzing',
     title: '辭典查詢結果',
     stepNumber: 2,
-    description: '查詢注音、部首、筆畫、詞語與例句',
+    description: '查詢注音、部首、筆畫、語詞與例句',
   },
   review: {
     path: 'review',
@@ -42,7 +42,7 @@ export const ROUTE_METAS: Record<AppRoute, RouteMeta> = {
     path: 'templates',
     title: '學習單模板',
     stepNumber: 5,
-    description: '挑選生字、詞語、句型或看圖版型',
+    description: '挑選生字、語詞、句型或看圖版型',
   },
   preview: {
     path: 'preview',
