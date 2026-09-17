@@ -4,6 +4,7 @@ import type { CharacterAnalysis, AppError } from '../../domain'
 import { VerticalZhuyin, TianzigeWithZhuyin } from '../../components/VerticalZhuyin'
 import {
   buildWorksheet,
+  exportWorksheetToDocx,
   type WorksheetSection,
   type CharacterWorksheetSection,
   type WordWorksheetSection,
@@ -32,6 +33,7 @@ export const PrintPreviewPage: React.FC = () => {
     (selectedGrade ?? 3) <= 2 ? 'bopomofo' : 'standard'
   )
   const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [isExportingDocx, setIsExportingDocx] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
   const [emptyStateError, setEmptyStateError] = useState<Extract<
@@ -131,6 +133,27 @@ export const PrintPreviewPage: React.FC = () => {
       setExportError('匯出 PDF 時發生錯誤，請確認瀏覽器支援或改用「🖨️ 瀏覽器列印」另存 PDF。')
     } finally {
       setIsExportingPdf(false)
+    }
+  }
+
+  // 純前端瀏覽器端 Word (.docx) 匯出 (完全在用戶端執行，不呼叫任何外部後端或雲端服務)
+  const handleExportDocx = async () => {
+    if (!worksheetDoc) return
+    setIsExportingDocx(true)
+    setExportError(null)
+    setExportSuccess(null)
+
+    try {
+      const cleanTitle = (worksheetDoc.title || templateNameMap[activeTemplate] || '學習單').replace(/[\\/:*?"<>|]/g, '_')
+      const fileName = `${cleanTitle}.docx`
+      await exportWorksheetToDocx(worksheetDoc, fileName)
+      setExportSuccess(`✅ 已成功於瀏覽器端生成「${fileName}」並開始下載！（純本機 Word 運算，未傳輸至任何外部伺服器）`)
+      setTimeout(() => setExportSuccess(null), 6000)
+    } catch (err) {
+      console.error('DOCX export error:', err)
+      setExportError('匯出 Word 檔 (.docx) 時發生錯誤，請確認瀏覽器支援或稍後重試。')
+    } finally {
+      setIsExportingDocx(false)
     }
   }
 
@@ -837,6 +860,23 @@ export const PrintPreviewPage: React.FC = () => {
                 </>
               ) : (
                 '📥 下載 PDF 學習單'
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ padding: '0.65rem 1.35rem', fontSize: '1rem', backgroundColor: '#1d4ed8' }}
+              onClick={handleExportDocx}
+              disabled={isExportingDocx || Boolean(emptyStateError) || !worksheetDoc}
+              aria-label="在瀏覽器端本機生成並下載 Word docx 檔案"
+            >
+              {isExportingDocx ? (
+                <>
+                  <span className="spinner-sm" aria-hidden="true"></span>
+                  <span>正在生成 Word 檔（本機運算中）...</span>
+                </>
+              ) : (
+                '📝 下載 Word 檔 (.docx)'
               )}
             </button>
             <button

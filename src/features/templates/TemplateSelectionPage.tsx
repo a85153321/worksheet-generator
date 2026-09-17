@@ -64,8 +64,8 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     title: '閱讀理解評量單',
     badge: '閱讀思維',
     targetGrade: '適合國小二至六年級',
-    description: '依教材短文與例句設計文意理解選擇題與開放式問答，深化閱讀素養',
-    features: ['情境短文閱讀文本', '生字詞義理解選擇題', '文意深究開放式問答'],
+    description: '依教材生字由 AI 生成連貫短文，並由本機組裝生字詞義理解選擇題，深化閱讀素養',
+    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '字數依年級自動調整'],
     icon: '📖',
     wireframeType: 'reading',
   },
@@ -82,6 +82,7 @@ export const TemplateSelectionPage: React.FC = () => {
     generatedImages,
     navigate,
     selectedGrade,
+    hasApiKey,
   } = useApp()
 
   const [isBuilding, setIsBuilding] = useState(false)
@@ -929,24 +930,110 @@ export const TemplateSelectionPage: React.FC = () => {
       </section>
 
       {selectedTemplate === 'reading-comprehension' && (
-        <div className="callout callout-warning" style={{ marginTop: '1.25rem' }}>
-          <div className="callout-title">✨ 生成連貫閱讀短文（需明確觸發）</div>
-          <p>
-            本動作會使用國小 {selectedGrade} 年級設定與教師確認保留的生字，先查本機快取；
-            僅在快取未命中時送出 1 次 Gemini 文字生成請求，可能使用您的 quota。
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleGenerateReadingPassage}
-            disabled={isGeneratingPassage || isEmpty}
-          >
-            {isGeneratingPassage ? '正在生成閱讀短文…' : activeReadingPassage ? '重新取得閱讀短文' : '生成閱讀短文'}
-          </button>
-          {activeReadingPassage && (
-            <p style={{ marginTop: '0.75rem' }}>
-              <strong>{activeReadingPassage.title}</strong>：{activeReadingPassage.text}
+        <div className="callout callout-warning" style={{ marginTop: '1.5rem', padding: '1.25rem' }}>
+          <div className="callout-title" style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            ✨ 閱讀短文生成設定與 AI Quota 提示（需明確觸發）
+          </div>
+          <div style={{ fontSize: '0.88rem', color: '#1e293b', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <p style={{ margin: 0 }}>
+              • <strong>本次動作預估處理範圍</strong>：目標年級為國小 <strong>{selectedGrade} 年級</strong>，已確認納入之生字為 <strong>{confirmedCharacters.length}</strong> 個（{confirmedCharacters.length > 0 ? confirmedCharacters.join('、') : '尚無確認生字'}）。
             </p>
+            <p style={{ margin: 0 }}>
+              • <strong>年級字數規範</strong>：依低中高年級規範自動限制短文字數（一至二年級 ≤ 30 字、三年級 ≤ 50 字、四至六年級 ≤ 60 字），短文必須自然包含全部生字，並由本機自動組裝生字詞義理解選擇題（無問答題）。
+            </p>
+            <p style={{ margin: 0 }}>
+              • <strong>主動觸發機制</strong>：短文生成絕不在切換或選擇此模板時自動呼叫，必須由您主動點擊下方「生成閱讀短文」按鈕觸發。
+            </p>
+            <p style={{ margin: 0, color: '#92400e' }}>
+              • <strong>Quota 與本機快取說明</strong>：優先查詢本機 IndexedDB 快取（命中時 0 請求、0 Quota）；若快取未命中僅發送 1 次 Gemini 文字生成請求。實際用量請以 Google AI Studio 官方後台為主。
+            </p>
+          </div>
+
+          {!hasApiKey && (
+            <div
+              style={{
+                marginTop: '0.75rem',
+                padding: '0.5rem 0.75rem',
+                backgroundColor: '#fef3c7',
+                borderRadius: '4px',
+                border: '1px dashed #d97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <span>🔑 <strong>目前為 Mock 模式</strong>：未設定個人 Gemini API Key，生成短文將由本機模擬生成，不消耗真實配額。</span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                onClick={() => navigate('settings')}
+              >
+                前往金鑰設定
+              </button>
+            </div>
+          )}
+
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleGenerateReadingPassage}
+              disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0}
+              style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', fontWeight: 600 }}
+            >
+              {isGeneratingPassage ? (
+                <>
+                  <span className="spinner-sm" aria-hidden="true"></span>
+                  <span>正在生成閱讀短文（約需 1~3 秒）…</span>
+                </>
+              ) : activeReadingPassage ? (
+                '🔄 重新生成閱讀短文'
+              ) : (
+                '✨ 生成閱讀短文'
+              )}
+            </button>
+            {!activeReadingPassage && !isGeneratingPassage && (
+              <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 600 }}>
+                ⚠️ 建立閱讀理解評量單前，請先點擊按鈕生成閱讀短文
+              </span>
+            )}
+          </div>
+
+          {activeReadingPassage && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <strong style={{ fontSize: '1rem', color: '#0f172a' }}>
+                  📖 【{activeReadingPassage.title}】
+                </strong>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', fontSize: '0.8rem' }}>
+                  <span className="tag tag-info">國小 {activeReadingPassage.grade} 年級</span>
+                  <span className="tag tag-success">
+                    正文字數：{[...activeReadingPassage.text.replace(/\s/gu, '')].length} / {activeReadingPassage.maxCharacters} 字
+                  </span>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>
+                {activeReadingPassage.text}
+              </p>
+              <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px dashed #e2e8f0', fontSize: '0.82rem', color: '#64748b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span>涵蓋生字：<strong>{activeReadingPassage.includedCharacters.join('、')}</strong></span>
+                <span style={{ color: '#0369a1', fontWeight: 600 }}>
+                  ✓ 短文已就緒，本機將自動組裝生字詞義選擇題（無問答題）
+                </span>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -962,23 +1049,30 @@ export const TemplateSelectionPage: React.FC = () => {
           ← 上一步：配圖選擇
         </button>
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ padding: '0.75rem 1.8rem', fontSize: '1.05rem', fontWeight: 700 }}
-          onClick={handleCreateWorksheet}
-          disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
-          aria-label={`套用「${currentOption.title}」並建立學習單`}
-        >
-          {isBuilding ? (
-            <>
-              <span className="spinner-sm" aria-hidden="true"></span>
-              <span>正在組裝學習單資料 (buildWorksheet)...</span>
-            </>
-          ) : (
-            `🚀 套用「${currentOption.title}」並建立學習單 →`
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.8rem', fontSize: '1.05rem', fontWeight: 700 }}
+            onClick={handleCreateWorksheet}
+            disabled={isBuilding || isEmpty || (selectedTemplate === 'reading-comprehension' && !activeReadingPassage)}
+            aria-label={`套用「${currentOption.title}」並建立學習單`}
+          >
+            {isBuilding ? (
+              <>
+                <span className="spinner-sm" aria-hidden="true"></span>
+                <span>正在組裝學習單資料 (buildWorksheet)...</span>
+              </>
+            ) : (
+              `🚀 套用「${currentOption.title}」並建立學習單 →`
+            )}
+          </button>
+          {selectedTemplate === 'reading-comprehension' && !activeReadingPassage && (
+            <span style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600 }}>
+              ⚠️ 請先點擊上方「生成閱讀短文」按鈕生成文本後方可建立學習單
+            </span>
           )}
-        </button>
+        </div>
       </div>
 
       {/* 放大預覽 Modal Lightbox (Requirement 1: 預覽模板) */}

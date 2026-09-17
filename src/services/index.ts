@@ -6,6 +6,11 @@ export {
 } from './use-cases'
 export { buildWorksheet } from './worksheet-builder'
 export {
+  createDocxDocument,
+  generateDocxBlob,
+  exportWorksheetToDocx,
+} from './docx-builder'
+export {
   buildStandardizedReadingPrompt,
   createGenerateReadingPassageUseCase,
   generateReadingPassage,
