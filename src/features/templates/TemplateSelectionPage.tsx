@@ -108,7 +108,7 @@ export const TemplateSelectionPage: React.FC = () => {
   // 串接 buildWorksheet use case (Requirement 2)
   const handleCreateWorksheet = async () => {
     if (!analysisResult || analysisResult.characters.length === 0) {
-      setBuildError('目前沒有可用的生字分析結果，請先載入示範生字或返回教材上傳。')
+      setBuildError('目前沒有可用的生字查詢結果，請先載入示範生字或返回輸入生字。')
       return
     }
 
@@ -527,10 +527,10 @@ export const TemplateSelectionPage: React.FC = () => {
       {isEmpty && (
         <div className="callout callout-warning" role="region" aria-label="無生字提示">
           <div className="callout-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span>⚠️ 目前尚未有分析後的生字資料</span>
+            <span>⚠️ 目前尚未有查詢後的生字資料</span>
           </div>
           <p style={{ marginTop: '0.3rem' }}>
-            依據系統規則，建立學習單至少需要 1 個生字。您可以返回教材上傳選頁分析，或直接點擊下方按鈕載入三上國語示範生字資料以進行模板排版測試。
+            依據系統規則，建立學習單至少需要 1 個生字。您可以返回輸入生字頁查詢，或直接點擊下方按鈕載入三上國語示範生字資料以進行模板排版測試。
           </p>
           <div className="btn-group" style={{ marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <button
@@ -547,7 +547,7 @@ export const TemplateSelectionPage: React.FC = () => {
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
               onClick={() => navigate('upload')}
             >
-              ← 返回教材上傳選頁
+              ← 返回輸入生字
             </button>
           </div>
         </div>
@@ -691,7 +691,7 @@ export const TemplateSelectionPage: React.FC = () => {
               📄 即時版面模擬預覽：【{currentOption.title}】
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.2rem', margin: 0 }}>
-              以下為帶入當前教材資料後的 A4 縮小排版模擬；正式排版列印請進入下一步驟
+              以下為帶入當前生字資料後的 A4 縮小排版模擬；正式排版列印請進入下一步驟
             </p>
           </div>
 

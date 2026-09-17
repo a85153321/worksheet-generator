@@ -12,8 +12,8 @@ const defaultSampleAnalysis: AnalysisResult = {
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
       sentenceCandidates: ['我每天到學校學習新知識。'],
-      confidence: 0.96,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -27,8 +27,8 @@ const defaultSampleAnalysis: AnalysisResult = {
       strokeCount: 11,
       wordCandidates: ['學習', '練習', '習慣'],
       sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
-      confidence: 0.88,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -45,8 +45,8 @@ const defaultSampleAnalysis: AnalysisResult = {
         '我們一起到公園玩耍。',
         '只要努力練習，一定能把字寫好。',
       ],
-      confidence: 0.98,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: {
         status: 'draft',
         isEditable: true,
@@ -146,9 +146,9 @@ export const ReviewPage: React.FC = () => {
           <div className="empty-state-icon" aria-hidden="true">
             📭
           </div>
-          <h2 className="empty-state-title">目前尚無生字分析成果</h2>
+          <h2 className="empty-state-title">目前尚無生字查詢成果</h2>
           <p className="empty-state-desc">
-            尚未進行教材分析，或生字清單已被全部移除。您可以返回上傳頁重新選頁分析，或載入國語示範生字資料進行審核。
+            尚未進行生字查詢，或生字清單已被全部移除。您可以返回輸入生字頁重新輸入，或載入國語示範生字資料進行審核。
           </p>
           <div className="btn-group" style={{ justifyContent: 'center' }}>
             <button
@@ -157,7 +157,7 @@ export const ReviewPage: React.FC = () => {
               onClick={() => navigate('upload')}
               disabled={isSaving}
             >
-              ← 返回教材上傳
+              ← 返回輸入生字
             </button>
             <button
               type="button"
@@ -201,7 +201,7 @@ export const ReviewPage: React.FC = () => {
       radical: item.radical,
       strokeCount: item.strokeCount,
       words: item.wordCandidates.join('、'),
-      exampleSentence: item.sentenceCandidates[0] || '',
+      exampleSentence: item.sentenceCandidates.join('\n'),
     })
   }
 
@@ -248,6 +248,11 @@ export const ReviewPage: React.FC = () => {
       .map((w) => w.trim())
       .filter(Boolean)
 
+    const parsedSentences = editForm.exampleSentence
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+
     if (isAddingNew) {
       const newChar: CharacterAnalysis = {
         character: editForm.character.trim(),
@@ -255,9 +260,9 @@ export const ReviewPage: React.FC = () => {
         radical: editForm.radical.trim(),
         strokeCount: editForm.strokeCount,
         wordCandidates: parsedWords.length > 0 ? parsedWords : [editForm.character.trim()],
-        sentenceCandidates: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
+        sentenceCandidates: parsedSentences.length > 0 ? parsedSentences : [],
         confidence: 1.0,
-        source: { page: 1, block: '教師自訂新增' },
+        source: { page: null, block: '教師自訂新增' },
         editableState: {
           status: 'confirmed',
           isEditable: true,
@@ -279,7 +284,7 @@ export const ReviewPage: React.FC = () => {
         radical: editForm.radical.trim(),
         strokeCount: editForm.strokeCount,
         wordCandidates: parsedWords,
-        sentenceCandidates: editForm.exampleSentence.trim() ? [editForm.exampleSentence.trim()] : [],
+        sentenceCandidates: parsedSentences.length > 0 ? parsedSentences : [],
         editableState: {
           ...current.editableState,
           status: 'edited',
@@ -359,9 +364,9 @@ export const ReviewPage: React.FC = () => {
       <div className="card-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="card-title">🔍 步驟 3：分析結果審核與編輯</h1>
+            <h1 className="card-title">🔍 步驟 3：生字查詢結果審核與編輯</h1>
             <p className="card-subtitle">
-              教師享有最終編輯審核權：逐字核對注音、部首、筆畫、詞語、例句，所有修改即時儲存
+              教師享有最終編輯審核權：逐字核對注音、部首、筆畫、詞語候選與例句候選，所有修改即時儲存
             </p>
           </div>
           <button
@@ -530,7 +535,7 @@ export const ReviewPage: React.FC = () => {
             </div>
           </div>
           <div style={{ marginTop: '0.75rem' }}>
-            <label htmlFor="new-words-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>詞語（頓號、逗號分隔）：</label>
+            <label htmlFor="new-words-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>詞語候選（頓號、逗號分隔）：</label>
             <input
               id="new-words-input"
               type="text"
@@ -542,15 +547,15 @@ export const ReviewPage: React.FC = () => {
             />
           </div>
           <div style={{ marginTop: '0.75rem' }}>
-            <label htmlFor="new-sentence-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>教學例句：</label>
-            <input
+            <label htmlFor="new-sentence-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+            <textarea
               id="new-sentence-input"
-              type="text"
+              rows={3}
               value={editForm.exampleSentence}
               onChange={(e) => setEditForm({ ...editForm, exampleSentence: e.target.value })}
               placeholder="例如：春天來了，公園裡開滿了五顏六色的花朵。"
               disabled={isSaving}
-              style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
             />
           </div>
 
@@ -719,7 +724,7 @@ export const ReviewPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>詞語（頓號、逗號分隔）：</label>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>詞語候選（頓號、逗號分隔）：</label>
                     <input
                       type="text"
                       value={editForm.words}
@@ -730,13 +735,13 @@ export const ReviewPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>例句：</label>
-                    <input
-                      type="text"
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>例句候選（可輸入多則例句，每行一則）：</label>
+                    <textarea
+                      rows={3}
                       value={editForm.exampleSentence}
                       onChange={(e) => setEditForm({ ...editForm, exampleSentence: e.target.value })}
                       disabled={isSaving}
-                      style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                      style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
                     />
                   </div>
 
@@ -772,13 +777,26 @@ export const ReviewPage: React.FC = () => {
                 /* 正常呈現狀態 */
                 <div style={{ marginTop: '0.5rem' }}>
                   <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem' }}>
-                    <strong>詞語：</strong> {item.wordCandidates.join('、')}
+                    <strong>詞語候選：</strong> {item.wordCandidates.length > 0 ? item.wordCandidates.join('、') : '（無詞語）'}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-                    <strong>例句：</strong> {item.sentenceCandidates[0] || '（無例句）'}
+                    <strong>例句候選：</strong>
+                    {item.sentenceCandidates.length > 0 ? (
+                      item.sentenceCandidates.length === 1 ? (
+                        <span> {item.sentenceCandidates[0]}</span>
+                      ) : (
+                        <ol style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
+                          {item.sentenceCandidates.map((sentence, sIdx) => (
+                            <li key={sIdx}>{sentence}</li>
+                          ))}
+                        </ol>
+                      )
+                    ) : (
+                      '（無例句）'
+                    )}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
-                    來源：第 {item.source.page ?? 1} 頁 ｜ {item.source.block ?? '課文段落'}
+                    來源：{item.source.page != null ? `第 ${item.source.page} 頁 ｜ ` : ''}{item.source.block ?? '教育部《國語辭典簡編本》'}
                   </div>
 
                   <div className="btn-group">
@@ -843,7 +861,7 @@ export const ReviewPage: React.FC = () => {
           onClick={() => navigate('upload')}
           disabled={isSaving}
         >
-          ← 返回教材上傳選頁
+          ← 返回輸入生字
         </button>
         <button
           type="button"

@@ -157,8 +157,8 @@ export const PrintPreviewPage: React.FC = () => {
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
       sentenceCandidates: ['我每天到學校學習新知識。'],
-      confidence: 0.96,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
@@ -168,8 +168,8 @@ export const PrintPreviewPage: React.FC = () => {
       strokeCount: 11,
       wordCandidates: ['學習', '練習', '習慣'],
       sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
-      confidence: 0.92,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
@@ -179,8 +179,8 @@ export const PrintPreviewPage: React.FC = () => {
       strokeCount: 1,
       wordCandidates: ['一起', '一定', '一樣', '第一'],
       sentenceCandidates: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
-      confidence: 0.98,
-      source: { page: 1, block: '第一段' },
+      confidence: 1.0,
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ]
