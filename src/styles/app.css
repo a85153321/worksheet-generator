@@ -584,16 +584,17 @@ textarea:focus-visible {
   position: relative;
 }
 
-/* 學習單字型模式：低年級（一、二年級）自動套用芫荽注音，中高年級使用標楷體 */
-.worksheet-font-standard {
+/* 學習單字型模式：由使用者直接指定標楷體或芫荽注音 */
+.worksheet-font-standard,
+.a4-sheet.worksheet-font-standard {
   font-family: var(--font-worksheet-standard);
+  --current-zhuyin-font: var(--font-worksheet-standard);
 }
 
 .worksheet-font-bopomofo,
-.a4-sheet.worksheet-font-bopomofo,
-.a4-sheet.worksheet-grade-1,
-.a4-sheet.worksheet-grade-2 {
+.a4-sheet.worksheet-font-bopomofo {
   font-family: var(--font-worksheet-bopomofo);
+  --current-zhuyin-font: var(--font-worksheet-bopomofo);
 }
 
 .sheet-footer {
@@ -760,17 +761,34 @@ textarea:focus-visible {
   box-sizing: border-box;
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
+  padding: 1px 0;
+}
+
+.tian-zhuyin-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 .tian-zhuyin-light-dot {
   position: absolute;
-  top: 1px;
+  top: -8px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: #b91c1c;
   line-height: 1;
+}
+
+.tian-zhuyin-symbols-group {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .tian-zhuyin-symbols {
@@ -778,9 +796,9 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 0.92;
+  line-height: 0.95;
   font-size: 11px;
-  font-family: var(--font-worksheet-bopomofo);
+  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
   color: #b91c1c;
   font-weight: 700;
 }
@@ -792,12 +810,13 @@ textarea:focus-visible {
 
 .tian-zhuyin-side-tone {
   position: absolute;
-  right: 1px;
-  bottom: 2px;
-  font-size: 11px;
+  right: -7px;
+  bottom: 1px;
+  font-size: 10px;
   font-weight: 700;
   color: #b91c1c;
   line-height: 1;
+  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
 }
 
 .tianzige-bottom-label {
@@ -810,8 +829,9 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  vertical-align: baseline;
+  vertical-align: middle;
   position: relative;
+  padding-right: 0.35em;
 }
 
 .zhuyin-base-char {
@@ -826,8 +846,15 @@ textarea:focus-visible {
   justify-content: center;
   position: relative;
   margin-left: 2px;
-  height: 1em;
   vertical-align: middle;
+}
+
+.zhuyin-symbols-group {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .zhuyin-symbols {
@@ -837,7 +864,7 @@ textarea:focus-visible {
   justify-content: center;
   line-height: 0.92;
   font-size: 0.4em;
-  font-family: var(--font-worksheet-bopomofo);
+  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
 }
 
 .zhuyin-sym {
@@ -847,21 +874,23 @@ textarea:focus-visible {
 
 .zhuyin-light-dot {
   position: absolute;
-  top: -0.15em;
+  top: -0.22em;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.32em;
+  font-size: 0.35em;
   font-weight: 700;
   line-height: 1;
+  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
 }
 
 .zhuyin-side-tone {
   position: absolute;
-  right: -0.32em;
-  bottom: 0.08em;
+  right: -0.55em;
+  bottom: 0.05em;
   font-size: 0.38em;
   font-weight: 700;
   line-height: 1;
+  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
 }
 
 .zhuyin-size-sm .zhuyin-symbols { font-size: 0.36em; }

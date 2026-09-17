@@ -39,18 +39,20 @@ export const VerticalZhuyin: React.FC<VerticalZhuyinProps> = ({
             ˙
           </span>
         )}
-        <span className="zhuyin-symbols" aria-hidden="true">
-          {symbols.map((sym, idx) => (
-            <span key={idx} className="zhuyin-sym">
-              {sym}
-            </span>
-          ))}
-        </span>
-        {tone >= 2 && tone <= 4 && (
-          <span className={`zhuyin-side-tone tone-${tone}`} aria-hidden="true">
-            {toneMark}
+        <span className="zhuyin-symbols-group">
+          <span className="zhuyin-symbols" aria-hidden="true">
+            {symbols.map((sym, idx) => (
+              <span key={idx} className="zhuyin-sym">
+                {sym}
+              </span>
+            ))}
           </span>
-        )}
+          {tone >= 2 && tone <= 4 && (
+            <span className={`zhuyin-side-tone tone-${tone}`} aria-hidden="true">
+              {toneMark}
+            </span>
+          )}
+        </span>
       </span>
     </span>
   )
@@ -91,7 +93,7 @@ export const TianzigeWithZhuyin: React.FC<TianzigeWithZhuyinProps> = ({
             isDemonstration
               ? `示範字：${character}`
               : isTracing
-                ? `描紅格：${character}`
+                ? `描字格：${character}`
                 : `習寫格 ${practiceNumber ?? ''}`
           }
         >
@@ -101,26 +103,30 @@ export const TianzigeWithZhuyin: React.FC<TianzigeWithZhuyinProps> = ({
         {/* 示範格右側附帶直式注音欄 */}
         {hasZhuyinCol && (
           <div className="sheet-tian-zhuyin-column" aria-label={`讀音：${zhuyin}`}>
-            {tone === 5 && <span className="tian-zhuyin-light-dot">˙</span>}
-            <div className="tian-zhuyin-symbols">
-              {symbols.map((sym, idx) => (
-                <span key={idx} className="tian-zhuyin-sym">
-                  {sym}
-                </span>
-              ))}
+            <div className="tian-zhuyin-content">
+              {tone === 5 && <span className="tian-zhuyin-light-dot">˙</span>}
+              <div className="tian-zhuyin-symbols-group">
+                <div className="tian-zhuyin-symbols">
+                  {symbols.map((sym, idx) => (
+                    <span key={idx} className="tian-zhuyin-sym">
+                      {sym}
+                    </span>
+                  ))}
+                </div>
+                {tone >= 2 && tone <= 4 && (
+                  <span className={`tian-zhuyin-side-tone tone-${tone}`}>
+                    {toneMark}
+                  </span>
+                )}
+              </div>
             </div>
-            {tone >= 2 && tone <= 4 && (
-              <span className={`tian-zhuyin-side-tone tone-${tone}`}>
-                {toneMark}
-              </span>
-            )}
           </div>
         )}
       </div>
 
       {/* 底部標籤 */}
       <span className="tianzige-bottom-label">
-        {isDemonstration ? '示範' : isTracing ? '描紅' : practiceNumber}
+        {isDemonstration ? '示範' : isTracing ? '描字' : practiceNumber}
       </span>
     </div>
   )

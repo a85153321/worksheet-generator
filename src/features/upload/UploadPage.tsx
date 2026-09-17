@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useApp } from '../../app/index'
 import type { UploadedFileInfo } from '../../app/app-context'
-import { ANALYSIS_SKILL_TAGS, type AnalysisSkillTag } from '../../domain'
 
 // 簡易從 PDF 二進位資料偵測頁數
 async function detectPdfPageCount(file: Blob): Promise<number> {
@@ -34,8 +33,6 @@ export const UploadPage: React.FC = () => {
     analysisError,
     setAnalysisError,
     isAnalyzing,
-    skillTags,
-    setSkillTags,
     includeZhuyin,
     setIncludeZhuyin,
     runAnalysis,
@@ -113,24 +110,6 @@ export const UploadPage: React.FC = () => {
     })
   }
 
-  // 載入示範 PDF 教材（多頁選頁）
-  const handleLoadSamplePdf = () => {
-    setAnalysisError(null)
-    const dummyPdfBlob = new Blob(['%PDF-1.4 /Type /Pages /Count 3 ... mock pdf data ...'], {
-      type: 'application/pdf',
-    })
-
-    setUploadedFile({
-      name: '國語三上_單元一_課本講義.pdf',
-      size: 1024 * 620,
-      mimeType: 'application/pdf',
-      blob: dummyPdfBlob,
-      isPdf: true,
-      pageCount: 3,
-      selectedPages: [1, 2], // 預設勾選第 1 與第 2 頁
-    })
-  }
-
   // 測試驗證失敗路徑
   const handleLoadEmptyFileError = () => {
     const emptyBlob = new Blob([], { type: 'image/png' })
@@ -172,27 +151,6 @@ export const UploadPage: React.FC = () => {
 
   const clearPageSelection = () => {
     setSelectedPages([])
-  }
-
-  // 功能標籤選取切換
-  const toggleSkillTag = (tag: AnalysisSkillTag) => {
-    if (skillTags.includes(tag)) {
-      setSkillTags(skillTags.filter((t) => t !== tag))
-    } else {
-      setSkillTags([...skillTags, tag])
-    }
-  }
-
-  const handleSelectAllSkills = () => {
-    setSkillTags([...ANALYSIS_SKILL_TAGS])
-  }
-
-  const handleClearSkills = () => {
-    setSkillTags([])
-  }
-
-  const handleDefaultSkills = () => {
-    setSkillTags(['生字練習', '語詞練習', '句型練習'])
   }
 
   // 昂貴操作：點擊時才觸發 runAnalysis
@@ -311,15 +269,6 @@ export const UploadPage: React.FC = () => {
           aria-label="載入單頁圖片教材示範"
         >
           🖼️ 載入示範圖片教材（學、習）
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={handleLoadSamplePdf}
-          disabled={isAnalyzing}
-          aria-label="載入多頁 PDF 教材示範"
-        >
-          📑 載入示範多頁 PDF 教材（共 3 頁供選頁）
         </button>
         <button
           type="button"
@@ -479,45 +428,12 @@ export const UploadPage: React.FC = () => {
             </div>
           )}
 
-          {/* 功能標籤與注音開關設定面板 (Requirement 1 & 2) */}
-          <div className="skill-tags-panel" role="region" aria-label="學習單功能標籤與注音設定">
-            <div className="skill-tags-header">
-              <div className="skill-tags-header-left">
-                <span className="skill-tags-title">
-                  🎯 學習單功能標籤：
-                </span>
-                <div className="skill-quick-btns">
-                  <button
-                    type="button"
-                    className="skill-quick-btn"
-                    onClick={handleDefaultSkills}
-                    disabled={isAnalyzing}
-                    title="選取常用預設標籤：生字練習、語詞練習、句型練習"
-                  >
-                    常用預設
-                  </button>
-                  <button
-                    type="button"
-                    className="skill-quick-btn"
-                    onClick={handleSelectAllSkills}
-                    disabled={isAnalyzing}
-                    title="全選功能標籤"
-                  >
-                    全選
-                  </button>
-                  <button
-                    type="button"
-                    className="skill-quick-btn"
-                    onClick={handleClearSkills}
-                    disabled={isAnalyzing}
-                    title="清空所有功能標籤"
-                  >
-                    清空
-                  </button>
-                </div>
-              </div>
-
-              {/* 獨立「顯示注音」勾選開關 (Requirement 2) */}
+          {/* 學習單注音偏好設定面板 */}
+          <div className="skill-tags-panel" style={{ padding: '0.85rem 1.15rem' }} role="region" aria-label="學習單注音設定">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                🔤 學習單注音偏好設定：
+              </span>
               <label
                 className={`zhuyin-toggle-wrapper ${!includeZhuyin ? 'off' : ''}`}
                 htmlFor="upload-include-zhuyin"
@@ -536,55 +452,16 @@ export const UploadPage: React.FC = () => {
                 </span>
               </label>
             </div>
-
-            {/* 19 個可勾選標籤 Chip 群組 (Requirement 1) */}
-            <div
-              className="skill-chips-group"
-              role="group"
-              aria-label="國語學習單教學功能標籤清單"
-            >
-              {ANALYSIS_SKILL_TAGS.map((tag) => {
-                const isSelected = skillTags.includes(tag)
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`skill-chip ${isSelected ? 'selected' : ''}`}
-                    onClick={() => toggleSkillTag(tag)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault()
-                        toggleSkillTag(tag)
-                      }
-                    }}
-                    role="checkbox"
-                    aria-checked={isSelected}
-                    disabled={isAnalyzing}
-                    tabIndex={0}
-                    aria-label={`功能標籤：${tag}，${isSelected ? '已勾選' : '未勾選'}`}
-                  >
-                    <span className="skill-chip-check" aria-hidden="true">
-                      {isSelected ? '✓' : '+'}
-                    </span>
-                    <span>{tag}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* 注音提示說明 */}
             <div
               style={{
-                marginTop: '0.85rem',
-                paddingTop: '0.75rem',
-                borderTop: '1px dashed var(--color-border)',
+                marginTop: '0.5rem',
                 fontSize: '0.82rem',
                 color: 'var(--color-text-muted)',
               }}
             >
               {includeZhuyin
-                ? '💡 已開啟注音，A4 學習單將以直式注音排版呈現於國字右側。'
-                : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位。'}
+                ? '💡 已開啟注音，A4 學習單將以直式注音排版呈現於國字右側。可在預覽頁隨時切換。'
+                : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位。可在預覽頁隨時切換。'}
             </div>
           </div>
         </div>
@@ -623,16 +500,6 @@ export const UploadPage: React.FC = () => {
                 <span style={{ color: '#dc2626', fontWeight: 600 }}>
                   不顯示注音（無佔位空格）
                 </span>
-              )}
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong>已選功能標籤：</strong>{' '}
-              {skillTags.length > 0 ? (
-                <span style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
-                  {skillTags.join('、')}
-                </span>
-              ) : (
-                <span style={{ color: 'var(--color-text-muted)' }}>未選（僅進行核心生字分析）</span>
               )}
             </div>
           </div>
