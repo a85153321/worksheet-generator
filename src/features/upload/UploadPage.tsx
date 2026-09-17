@@ -523,18 +523,18 @@ export const UploadPage: React.FC = () => {
               <strong>處理檔案：</strong> {uploadedFile.name}（{uploadedFile.isPdf ? 'PDF 文件' : '圖片'}）
             </div>
             <div>
-              <strong>預估處理頁數：</strong>{' '}
+              <strong>處理頁數：</strong>{' '}
               {uploadedFile.isPdf
                 ? `${analysisScope.pageCount} 頁（第 ${analysisScope.selectedPages.join('、')} 頁）`
                 : '1 頁'}
             </div>
             <div>
-              <strong>預估提取項目：</strong> 約 {analysisScope.estimatedItemsMin} ~ {analysisScope.estimatedItemsMax} 個國語生字及詞句
+              <strong>預估提取項目：</strong> 將依教材內容辨識生字數量
             </div>
           </div>
 
           <p className="scope-disclaimer">
-            ℹ️ 守則提醒：此處明確顯示預估處理之頁數與選取項目數，供教師評估本次分析規模；本系統絕不承諾或猜測第三方 AI 之實際 Quota / Token 費用。
+            ℹ️ 守則提醒：此處明確顯示已選取之教材頁數，供教師評估本次分析規模；本系統絕不承諾或猜測第三方 AI 之實際 Quota / Token 費用。
           </p>
         </div>
       )}

@@ -113,7 +113,9 @@ export const AnalyzingPage: React.FC = () => {
           {isCompleted
             ? '生字、注音、部首、筆畫與詞句已依年級結構化收錄'
             : isAnalyzing
-            ? '系統正在進行影像預處理、比對本機快取並呼叫多模態分析服務...'
+            ? analysisInputMode === 'typed'
+              ? '系統正在比對 CNS11643 標準字庫並呼叫純文字結構化分析服務...'
+              : '系統正在進行影像預處理、比對本機快取並呼叫多模態分析服務...'
             : '本操作屬於昂貴 AI 調用，系統不自動發起；請確認預估處理範圍後點選啟動'}
         </p>
       </div>
@@ -133,23 +135,23 @@ export const AnalyzingPage: React.FC = () => {
             {analysisInputMode === 'typed' ? `直接輸入（${typedCharacters.join('、')}）` : uploadedFile?.name || '國語教材'}
           </div>
           <div>
-            <strong>預估處理頁數：</strong>{' '}
+            <strong>處理頁數：</strong>{' '}
             {analysisInputMode === 'typed'
-              ? '不需影像處理'
+              ? '不需影像處理（純文字輸入）'
               : uploadedFile?.isPdf
               ? `${analysisScope.pageCount} 頁（第 ${analysisScope.selectedPages.join('、')} 頁）`
               : '1 頁（單頁圖片）'}
           </div>
           <div>
-            <strong>預估提取項目：</strong> 約 {analysisScope.estimatedItemsMin} ~ {analysisScope.estimatedItemsMax} 個國語生字及教學例句
-          </div>
-          <div>
-            <strong>年級目標：</strong> 國小 {analysisScope.grade} 年級
+            <strong>預估提取項目：</strong>{' '}
+            {analysisInputMode === 'typed'
+              ? `${typedCharacters.length} 個國語生字`
+              : '將依教材內容辨識生字數量'}
           </div>
         </div>
 
         <p className="scope-disclaimer">
-          ℹ️ 規範聲明：此處僅明確顯示預估處理之頁數與選取項目數量，供教師掌握本次呼叫規模；本系統嚴格遵守規範，絕不猜測或承諾第三方 API 之實際 Token / Quota 費用。
+          ℹ️ 規範聲明：此處僅明確顯示已確定之處理頁數或輸入字數，供教師掌握本次呼叫規模；本系統嚴格遵守規範，絕不猜測或承諾第三方 API 之實際 Token / Quota 費用。
         </p>
       </div>
 
@@ -158,26 +160,51 @@ export const AnalyzingPage: React.FC = () => {
         <div className="progress-container">
           <div className="spinner" aria-hidden="true" role="status"></div>
           <p style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '1.25rem' }}>
-            正在分析選取的 {analysisScope.pageCount} 頁教材內容，請稍候...
+            {analysisInputMode === 'typed'
+              ? `正在分析輸入的 ${typedCharacters.length} 個生字內容，請稍候...`
+              : `正在分析選取的 ${analysisScope.pageCount} 頁教材內容，請稍候...`}
           </p>
 
           <ul className="step-checklist" role="list" aria-label="分析進度階段">
-            <li className="step-checklist-item done">
-              <span>✓</span>
-              <span>1. 預處理教材影像（旋轉裁切壓縮）並計算雜湊特徵碼</span>
-            </li>
-            <li className="step-checklist-item done">
-              <span>✓</span>
-              <span>2. 查詢 IndexedDB 快取記錄（避免重複消耗配額）</span>
-            </li>
-            <li className="step-checklist-item current">
-              <span>●</span>
-              <span>3. 呼叫 analyzeMaterial 提取生字、注音、部首、筆畫與例句</span>
-            </li>
-            <li className="step-checklist-item">
-              <span>○</span>
-              <span>4. Zod Schema 嚴格型別驗證與結構化草稿產出</span>
-            </li>
+            {analysisInputMode === 'typed' ? (
+              <>
+                <li className="step-checklist-item done">
+                  <span>✓</span>
+                  <span>1. 整理輸入生字並去除重複字元與標點符號</span>
+                </li>
+                <li className="step-checklist-item done">
+                  <span>✓</span>
+                  <span>2. 離線查詢 CNS11643 字庫補齊標準注音、部首與筆畫（0 Quota）</span>
+                </li>
+                <li className="step-checklist-item current">
+                  <span>●</span>
+                  <span>3. 呼叫 analyzeTypedCharacters 產生常用造詞與情境例句</span>
+                </li>
+                <li className="step-checklist-item">
+                  <span>○</span>
+                  <span>4. Zod Schema 嚴格型別驗證與結構化草稿產出</span>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="step-checklist-item done">
+                  <span>✓</span>
+                  <span>1. 預處理教材影像（旋轉裁切壓縮）並計算雜湊特徵碼</span>
+                </li>
+                <li className="step-checklist-item done">
+                  <span>✓</span>
+                  <span>2. 查詢 IndexedDB 快取記錄（避免重複消耗配額）</span>
+                </li>
+                <li className="step-checklist-item current">
+                  <span>●</span>
+                  <span>3. 呼叫 analyzeMaterial 提取生字、注音、部首、筆畫與例句</span>
+                </li>
+                <li className="step-checklist-item">
+                  <span>○</span>
+                  <span>4. Zod Schema 嚴格型別驗證與結構化草稿產出</span>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       )}
