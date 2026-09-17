@@ -22,7 +22,7 @@ const defaultSampleAnalysis: AnalysisResult = {
       editableState: {
         status: 'draft',
         isEditable: true,
-        needsReview: false,
+        needsReview: true,
       },
     },
     {
@@ -65,7 +65,7 @@ const defaultSampleAnalysis: AnalysisResult = {
       editableState: {
         status: 'draft',
         isEditable: true,
-        needsReview: false,
+        needsReview: true,
       },
     },
   ],
@@ -210,7 +210,7 @@ export const ReviewPage: React.FC = () => {
 
   // 統計生字狀態
   const totalCount = characters.length
-  const needsReviewCount = characters.filter((c) => c.editableState.needsReview).length
+  const needsReviewCount = characters.filter((c) => c.editableState.status !== 'confirmed').length
   const confirmedCount = characters.filter((c) => c.editableState.status === 'confirmed').length
   const editedCount = characters.filter((c) => c.editableState.status === 'edited').length
 
@@ -335,16 +335,36 @@ export const ReviewPage: React.FC = () => {
     await saveAnalysisData({ characters: updatedChars })
   }
 
-  // 一鍵全部標記為已確認
-  const handleConfirmAll = async () => {
-    const updatedChars = characters.map((item) => ({
+  // 單一項目取消確認，改回待審核狀態
+  const handleUnconfirmItem = async (index: number) => {
+    const updatedChars = [...characters]
+    const item = updatedChars[index]
+    updatedChars[index] = {
       ...item,
       editableState: {
         ...item.editableState,
-        status: 'confirmed' as const,
-        needsReview: false,
+        status: 'draft',
+        needsReview: true,
       },
-    }))
+    }
+    await saveAnalysisData({ characters: updatedChars })
+  }
+
+  // 一鍵將所有「待審核」生字標記為已確認（已確認的項目維持不變）
+  const handleConfirmAll = async () => {
+    const updatedChars = characters.map((item) => {
+      if (item.editableState.status === 'confirmed') {
+        return item
+      }
+      return {
+        ...item,
+        editableState: {
+          ...item.editableState,
+          status: 'confirmed' as const,
+          needsReview: false,
+        },
+      }
+    })
     await saveAnalysisData({ characters: updatedChars })
   }
 
@@ -442,18 +462,16 @@ export const ReviewPage: React.FC = () => {
           )}
         </div>
 
-        {needsReviewCount > 0 && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
-            onClick={handleConfirmAll}
-            disabled={isSaving}
-            aria-label="一鍵將所有生字標記為已確認"
-          >
-            ✓ 全部標記為已確認
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+          onClick={handleConfirmAll}
+          disabled={isSaving || needsReviewCount === 0}
+          aria-label="一鍵將所有待審核生字標記為已確認"
+        >
+          ✓ 全部確認
+        </button>
       </div>
 
       {/* needsReview 項目提示橫幅 (Requirement 1) */}
@@ -596,7 +614,6 @@ export const ReviewPage: React.FC = () => {
           const isEditingThis = editingIndex === idx
           const isConfirmed = item.editableState.status === 'confirmed'
           const isEdited = item.editableState.status === 'edited'
-          const needsReview = item.editableState.needsReview
 
           return (
             <article
@@ -605,18 +622,16 @@ export const ReviewPage: React.FC = () => {
               style={{
                 borderWidth: '2px',
                 borderStyle: 'solid',
-                borderColor: needsReview
-                  ? '#f59e0b'
-                  : isConfirmed
+                borderColor: isConfirmed
                   ? '#10b981'
                   : isEdited
                   ? '#6366f1'
-                  : 'var(--color-border)',
-                backgroundColor: needsReview
-                  ? '#fffbeb'
-                  : 'var(--color-surface)',
+                  : '#f59e0b',
+                backgroundColor: isConfirmed
+                  ? 'var(--color-surface)'
+                  : '#fffbeb',
               }}
-              aria-label={`生字卡片：${item.character}，${needsReview ? '需要審核' : '正常'}`}
+              aria-label={`生字卡片：${item.character}，${isConfirmed ? '已確認' : '待審核'}`}
             >
               {/* 卡片標頭：生字、注音、部首、筆畫 */}
               <div className="char-card-header">
@@ -635,9 +650,17 @@ export const ReviewPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 清楚標示 needsReview 與狀態標籤 (Requirement 1) */}
+                {/* 清楚標示狀態標籤 */}
                 <div style={{ textAlign: 'right' }}>
-                  {needsReview && (
+                  {isConfirmed ? (
+                    <span className="tag tag-success" style={{ display: 'block', marginBottom: '4px' }}>
+                      ✓ 已確認
+                    </span>
+                  ) : isEdited ? (
+                    <span className="tag tag-info" style={{ display: 'block' }}>
+                      ✏️ 已編輯
+                    </span>
+                  ) : (
                     <span
                       className="tag tag-warning"
                       style={{
@@ -649,16 +672,6 @@ export const ReviewPage: React.FC = () => {
                       }}
                     >
                       ⚠️ 待審核
-                    </span>
-                  )}
-                  {isConfirmed && (
-                    <span className="tag tag-success" style={{ display: 'block', marginBottom: '4px' }}>
-                      ✓ 已確認
-                    </span>
-                  )}
-                  {isEdited && !isConfirmed && (
-                    <span className="tag tag-info" style={{ display: 'block' }}>
-                      ✏️ 已編輯
                     </span>
                   )}
                 </div>
@@ -806,7 +819,18 @@ export const ReviewPage: React.FC = () => {
                       ✏️ 編輯
                     </button>
 
-                    {!isConfirmed && (
+                    {isConfirmed ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '0.3rem 0.65rem', fontSize: '0.82rem' }}
+                        onClick={() => handleUnconfirmItem(idx)}
+                        disabled={isSaving}
+                        aria-label={`取消確認生字「${item.character}」`}
+                      >
+                        ↩️ 取消確認
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         className="btn btn-secondary"
