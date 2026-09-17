@@ -16,9 +16,7 @@ const sampleAnalysis: AnalysisResult = {
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
       sentenceCandidates: ['我每天到學校學習新知識。'],
-      confidence: 0.98,
       source: { page: 1, block: '第一段' },
-      editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
       character: '習',
@@ -27,9 +25,7 @@ const sampleAnalysis: AnalysisResult = {
       strokeCount: 11,
       wordCandidates: ['學習', '練習'],
       sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
-      confidence: 0.95,
       source: { page: 1, block: '第一段' },
-      editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ],
 }

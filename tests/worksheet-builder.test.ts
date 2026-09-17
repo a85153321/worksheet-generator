@@ -15,9 +15,7 @@ const analysis: AnalysisResult = {
       strokeCount: 11,
       wordCandidates: ['小鳥', '飛鳥'],
       sentenceCandidates: ['小鳥在天空中飛翔。'],
-      confidence: 0.98,
       source: { page: 1, block: '第二段' },
-      editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ],
 }

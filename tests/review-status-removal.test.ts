@@ -1,0 +1,63 @@
+import { Packer } from 'docx'
+import { describe, expect, it } from 'vitest'
+import { analysisResultSchema, type AnalysisResult } from '../src/domain'
+import {
+  buildWorksheet,
+  createDocxDocument,
+  updateAnalysisResult,
+} from '../src/services'
+
+const analysisWithoutReviewStatus: AnalysisResult = {
+  characters: [
+    {
+      character: '學',
+      zhuyin: 'ㄒㄩㄝˊ',
+      radical: '子',
+      strokeCount: 16,
+      wordCandidates: ['學習', '學生'],
+      sentenceCandidates: ['學生在學校認真學習。'],
+      source: { page: null, block: '教育部《國語辭典簡編本》' },
+    },
+  ],
+}
+
+describe('analysis without review status', () => {
+  it('strips legacy review fields from persisted records', () => {
+    const legacyRecord = {
+      characters: analysisWithoutReviewStatus.characters.map((item) => ({
+        ...item,
+        confidence: 0.5,
+        reviewReasons: ['low-confidence'],
+        editableState: { status: 'confirmed', isEditable: true, needsReview: false },
+      })),
+    }
+
+    const parsed = analysisResultSchema.parse(legacyRecord)
+
+    expect(parsed.characters[0]).not.toHaveProperty('confidence')
+    expect(parsed.characters[0]).not.toHaveProperty('reviewReasons')
+    expect(parsed.characters[0]).not.toHaveProperty('editableState')
+  })
+
+  it('validates, saves teacher edits, and builds worksheet and Word output', async () => {
+    expect(analysisResultSchema.safeParse(analysisWithoutReviewStatus).success).toBe(true)
+
+    const edited: AnalysisResult = {
+      characters: analysisWithoutReviewStatus.characters.map((item) => ({
+        ...item,
+        wordCandidates: [...item.wordCandidates, '學校'],
+      })),
+    }
+    const updateResult = await updateAnalysisResult(edited)
+    expect(updateResult).toEqual({ ok: true, value: edited })
+    if (!updateResult.ok) return
+
+    const worksheetResult = await buildWorksheet(updateResult.value, 'word-practice')
+    expect(worksheetResult.ok).toBe(true)
+    if (!worksheetResult.ok) return
+
+    const document = createDocxDocument(worksheetResult.value)
+    const buffer = await Packer.toBuffer(document)
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
+})

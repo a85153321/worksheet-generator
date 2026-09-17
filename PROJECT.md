@@ -72,9 +72,7 @@ src/
 - `strokeCount`
 - `wordCandidates`
 - `sentenceCandidates`
-- `confidence`
 - `source`
-- `editableState`
 
 跨層操作使用 `Result<T, AppError>`。目前錯誤類型為：
 
@@ -109,7 +107,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 4. Infrastructure 以字詞名精確索引取得單字詞條，再以單一漢字索引取得所有相關詞條。
 5. 由原始詞條組裝注音、部首、總筆畫、`wordCandidates` 與從 `[例]` 擷取的 `sentenceCandidates`。
 6. 使用 Zod 驗證 `AnalysisResult`；任一字查無資料時回傳 `dictionary-not-found` 與 `missingCharacters`。
-7. 教師審核、挑選或修改候選內容，修改後再次通過 schema 驗證。
+7. 教師挑選或修改候選內容，修改後再次通過 schema 驗證。
 8. 教師可從本機上傳自備配圖，再以本機模板建立預覽、Word、列印與 PDF。
 
 整個生字查詢流程不使用 fetch、不連線到外部 API、不需要重試或配額管理。
@@ -135,7 +133,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 | 1：本機辭典核心 | 官方文字資料匯入、字詞號主鍵、字詞名／單字索引與查詢測試 |
 | 2：教材輸入 | 直接輸入生字、去重、格式驗證與明確查無資料狀態 |
 | 3：資料完整性 | 匯入腳本可重現、必要欄位驗證、版本與授權 metadata |
-| 4：教師工作流 | 候選詞語／例句審核、編輯、確認與 schema 再驗證 |
+| 4：教師工作流 | 候選詞語／例句選擇、編輯與 schema 再驗證 |
 | 5：自備配圖 | 教師本機上傳、替換／刪除，不提供自動生成 |
 | 6：學習單引擎 | 生字、詞語、句子與看圖模板 |
 | 7：輸出 | A4 預覽、Word、列印 CSS、PDF 匯出與測試 |

@@ -9,33 +9,17 @@ export const sourceLocationSchema = z
     message: '來源頁面與區塊至少需要提供一項',
   })
 
-export const editableStateSchema = z.object({
-  status: z.enum(['draft', 'edited', 'confirmed']),
-  isEditable: z.boolean(),
-  needsReview: z.boolean(),
-})
-
-export const reviewReasonSchema = z.enum([
-  'low-confidence',
-  'ambiguous-ocr',
-  'uncertain-radical',
-  'uncertain-stroke-count',
-])
-
 export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
   }),
-  // includeZhuyin=false 時保留跨層欄位結構，但允許以空字串節省模型輸出。
+  // includeZhuyin=false 時保留跨層欄位結構，但允許空字串。
   zhuyin: z.string().trim(),
   radical: z.string().trim().min(1),
   strokeCount: z.number().int().positive(),
   wordCandidates: z.array(z.string().trim().min(1)),
   sentenceCandidates: z.array(z.string().trim().min(1)),
-  confidence: z.number().min(0).max(1),
-  reviewReasons: z.array(reviewReasonSchema).optional(),
   source: sourceLocationSchema,
-  editableState: editableStateSchema,
 })
 
 export const analysisResultSchema = z.object({
@@ -43,7 +27,5 @@ export const analysisResultSchema = z.object({
 })
 
 export type SourceLocation = z.infer<typeof sourceLocationSchema>
-export type EditableState = z.infer<typeof editableStateSchema>
-export type ReviewReason = z.infer<typeof reviewReasonSchema>
 export type CharacterAnalysis = z.infer<typeof characterAnalysisSchema>
 export type AnalysisResult = z.infer<typeof analysisResultSchema>

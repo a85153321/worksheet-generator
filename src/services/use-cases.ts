@@ -1,6 +1,5 @@
 import {
   analysisResultSchema,
-  applyAnalysisReviewRules,
   type AnalysisResult,
   type AppError,
   type Result,
@@ -68,13 +67,7 @@ export function analyzeTypedCharacters(
         strokeCount: dictionary.strokeCount,
         wordCandidates: dictionary.wordCandidates,
         sentenceCandidates: dictionary.sentenceCandidates,
-        confidence: 1,
         source: { page: null, block: '教育部《國語辭典簡編本》' },
-        editableState: {
-          status: 'draft' as const,
-          isEditable: true,
-          needsReview: false,
-        },
       }
     }),
   }
@@ -109,7 +102,6 @@ export async function updateAnalysisResult(
     }
   }
 
-  const reviewedResult = applyAnalysisReviewRules(parsed.data)
-  if (contentHash) await putAnalysisCache(contentHash, reviewedResult)
-  return { ok: true, value: reviewedResult }
+  if (contentHash) await putAnalysisCache(contentHash, parsed.data)
+  return { ok: true, value: parsed.data }
 }
