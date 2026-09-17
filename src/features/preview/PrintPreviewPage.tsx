@@ -1003,8 +1003,6 @@ export const PrintPreviewPage: React.FC = () => {
                 <div className="sheet-header-top">
                   <h2 className="sheet-title">{activeTitle}</h2>
                   <div className="sheet-header-meta">
-                    <span>國小 {selectedGrade} 年級</span>
-                    <span className="sheet-header-meta-sep">｜</span>
                     <span>國語單元評量</span>
                     <span className="sheet-header-meta-sep">｜</span>
                     <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>

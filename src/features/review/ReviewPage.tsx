@@ -853,9 +853,9 @@ export const ReviewPage: React.FC = () => {
           style={{ padding: '0.65rem 1.6rem', fontSize: '1rem' }}
           onClick={() => navigate('images')}
           disabled={isSaving || isEmpty}
-          aria-label="前往下一步：配圖選擇"
+          aria-label="前往下一步：上傳配圖"
         >
-          下一步：配圖選擇 →
+          下一步：上傳配圖 →
         </button>
       </div>
     </div>

@@ -41,9 +41,9 @@ export const ROUTE_METAS: Record<AppRoute, RouteMeta> = {
   },
   images: {
     path: 'images',
-    title: '圖片選擇',
+    title: '上傳配圖',
     stepNumber: 4,
-    description: '依教學需求勾選配圖並生成插圖',
+    description: '依教學需求為生字上傳本機自備教學插圖',
   },
   templates: {
     path: 'templates',

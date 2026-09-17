@@ -70,7 +70,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     badge: '閱讀思維',
     targetGrade: '適合國小二至六年級',
     description: '依教材生字由 AI 生成連貫短文，並由本機組裝生字詞義理解選擇題，深化閱讀素養',
-    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '可自選短文字數'],
+    features: ['連貫情境閱讀文本', '生字詞義理解選擇題', '自選短文字數上限'],
     icon: '📖',
     wireframeType: 'reading',
   },
@@ -984,42 +984,73 @@ export const TemplateSelectionPage: React.FC = () => {
             </div>
           )}
 
-          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <label htmlFor="reading-target-length" style={{ fontWeight: 600 }}>短文上限：</label>
-            <select
-              id="reading-target-length"
-              value={targetCharacters}
-              onChange={(event) => setTargetCharacters(Number(event.target.value) as ReadingPassageLength)}
-              disabled={isGeneratingPassage}
-            >
-              <option value={30}>30 字以內</option>
-              <option value={50}>50 字以內</option>
-              <option value={60}>60 字以內</option>
-              <option value={100}>100 字以內</option>
-            </select>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleGenerateReadingPassage}
-              disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0 || !hasApiKey}
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.95rem', fontWeight: 600 }}
-            >
-              {isGeneratingPassage ? (
-                <>
-                  <span className="spinner-sm" aria-hidden="true"></span>
-                  <span>正在生成閱讀短文（約需 1~3 秒）…</span>
-                </>
-              ) : activeReadingPassage ? (
-                '🔄 重新生成閱讀短文'
-              ) : (
-                '✨ 生成閱讀短文'
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>📏 短文字數上限選項：</span>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {([
+                  { value: 30, label: '30 字以內（低年級／初學）' },
+                  { value: 50, label: '50 字以內（三年級標準）' },
+                  { value: 60, label: '60 字以內（中高年級進階）' },
+                  { value: 100, label: '100 字以內（完整情境段落）' },
+                ] as const).map((opt) => (
+                  <label
+                    key={opt.value}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      cursor: 'pointer',
+                      fontSize: '0.86rem',
+                      fontWeight: targetCharacters === opt.value ? 700 : 500,
+                      color: targetCharacters === opt.value ? 'var(--color-primary-dark)' : 'var(--color-text-main)',
+                      backgroundColor: targetCharacters === opt.value ? '#eff6ff' : '#ffffff',
+                      border: targetCharacters === opt.value ? '1.5px solid var(--color-primary)' : '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      padding: '0.35rem 0.65rem',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="reading-target-length"
+                      value={opt.value}
+                      checked={targetCharacters === opt.value}
+                      onChange={() => setTargetCharacters(opt.value)}
+                      disabled={isGeneratingPassage}
+                      style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleGenerateReadingPassage}
+                disabled={isGeneratingPassage || isEmpty || confirmedCharacters.length === 0 || !hasApiKey}
+                style={{ padding: '0.55rem 1.4rem', fontSize: '0.95rem', fontWeight: 600 }}
+              >
+                {isGeneratingPassage ? (
+                  <>
+                    <span className="spinner-sm" aria-hidden="true"></span>
+                    <span>正在生成閱讀短文（約需 1~3 秒）…</span>
+                  </>
+                ) : activeReadingPassage ? (
+                  '🔄 重新依設定生成閱讀短文'
+                ) : (
+                  '✨ 生成閱讀短文'
+                )}
+              </button>
+              {!activeReadingPassage && !isGeneratingPassage && (
+                <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 600 }}>
+                  ⚠️ 建立閱讀理解評量單前，請先點擊按鈕生成閱讀短文
+                </span>
               )}
-            </button>
-            {!activeReadingPassage && !isGeneratingPassage && (
-              <span style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: 600 }}>
-                ⚠️ 建立閱讀理解評量單前，請先點擊按鈕生成閱讀短文
-              </span>
-            )}
+            </div>
           </div>
 
           {activeReadingPassage && (
@@ -1066,7 +1097,7 @@ export const TemplateSelectionPage: React.FC = () => {
           onClick={() => navigate('images')}
           disabled={isBuilding}
         >
-          ← 上一步：配圖選擇
+          ← 上一步：上傳配圖
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>

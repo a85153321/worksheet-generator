@@ -72,7 +72,7 @@ function createPageHeader(
       spacing: { before: 0, after: 120 },
       children: [
         new TextRun({
-          text: `版型：${templateTitle} ｜ 國小 ${doc.grade} 年級`,
+          text: `國語單元評量 ｜ ${templateTitle}`,
           size: 20,
           font: FONT_FAMILY,
           color: '64748B',
@@ -318,15 +318,45 @@ function renderWordSections(
     )
 
     const rows: TableRow[] = item.words.map((w) => {
+      const charBoxes = Array.from(w.text).map(() => {
+        return new TableCell({
+          width: { size: 480, type: WidthType.DXA },
+          borders: {
+            top: borderDashed,
+            bottom: borderDashed,
+            left: borderDashed,
+            right: borderDashed,
+          },
+          margins: { top: 60, bottom: 60, left: 60, right: 60 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: ' ',
+                  size: 20,
+                  font: FONT_FAMILY,
+                }),
+              ],
+            }),
+          ],
+        })
+      })
+
+      const boxesTable = new Table({
+        rows: [new TableRow({ children: charBoxes })],
+      })
+
       return new TableRow({
         children: [
           new TableCell({
-            width: { size: 28, type: WidthType.PERCENTAGE },
+            width: { size: 22, type: WidthType.PERCENTAGE },
             shading: { type: ShadingType.CLEAR, fill: 'F0F9FF' },
             borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
             margins: { top: 80, bottom: 80, left: 100, right: 100 },
             children: [
               new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
                     text: `【${w.text}】`,
@@ -340,14 +370,20 @@ function renderWordSections(
             ],
           }),
           new TableCell({
-            width: { size: 72, type: WidthType.PERCENTAGE },
+            width: { size: 28, type: WidthType.PERCENTAGE },
+            borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
+            margins: { top: 60, bottom: 60, left: 80, right: 80 },
+            children: [boxesTable],
+          }),
+          new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE },
             borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
             margins: { top: 80, bottom: 80, left: 100, right: 100 },
             children: [
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '書寫練習：____________________  延伸造詞：____________________',
+                    text: '延伸造詞：________________________',
                     size: 20,
                     font: FONT_FAMILY,
                     color: '64748B',
@@ -429,7 +465,19 @@ function renderSentenceSections(
           spacing: { before: 40, after: 40 },
           children: [
             new TextRun({
-              text: '✍️ 句型仿寫 ① ____________________________________________________________________',
+              text: '✍️ 句型仿寫（請運用上述句型或生活經驗仿寫一句完整的句子）：',
+              bold: true,
+              size: 20,
+              font: FONT_FAMILY,
+              color: '334155',
+            }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { before: 40, after: 40 },
+          children: [
+            new TextRun({
+              text: '① ____________________________________________________________________',
               size: 20,
               font: FONT_FAMILY,
               color: '475569',
@@ -807,46 +855,99 @@ function renderPictureSections(
   sections: PictureWorksheetSection[],
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
-    createInstructionBanner('【伍、看圖識字與表達】 觀察情境，寫出對應的生字，並造出一個完整的句子。'),
+    createInstructionBanner('【伍、看圖識字與表達】 觀察圖片中的情境，寫出對應的生字，並造出一個完整的句子。'),
   ]
 
   sections.forEach((sec) => {
     const item = sec.item
 
+    const picRow = new TableRow({
+      children: [
+        new TableCell({
+          width: { size: 28, type: WidthType.PERCENTAGE },
+          borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
+          shading: { type: ShadingType.CLEAR, fill: 'F8FAFC' },
+          margins: { top: 120, bottom: 120, left: 80, right: 80 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: '🖼️ 教學插圖區',
+                  size: 20,
+                  font: FONT_FAMILY,
+                  color: '94A3B8',
+                }),
+              ],
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 40, after: 0 },
+              children: [
+                new TextRun({
+                  text: `【 ${item.character} 】`,
+                  bold: true,
+                  size: 24,
+                  font: FONT_FAMILY,
+                  color: '0F172A',
+                }),
+              ],
+            }),
+          ],
+        }),
+        new TableCell({
+          width: { size: 72, type: WidthType.PERCENTAGE },
+          borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
+          margins: { top: 100, bottom: 100, left: 120, right: 120 },
+          children: [
+            new Paragraph({
+              spacing: { before: 20, after: 60 },
+              children: [
+                new TextRun({
+                  text: '看圖寫字：[      ]   （部首：________ ｜ 筆畫：________ 畫）',
+                  bold: true,
+                  size: 22,
+                  font: FONT_FAMILY,
+                  color: '1E293B',
+                }),
+              ],
+            }),
+            new Paragraph({
+              spacing: { before: 40, after: 40 },
+              children: [
+                new TextRun({
+                  text: '看圖造詞與造句：',
+                  bold: true,
+                  size: 20,
+                  font: FONT_FAMILY,
+                  color: '334155',
+                }),
+              ],
+            }),
+            new Paragraph({
+              spacing: { before: 20, after: 20 },
+              children: [
+                new TextRun({
+                  text: '____________________________________________________________________',
+                  size: 20,
+                  font: FONT_FAMILY,
+                  color: '64748B',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    })
+
     result.push(
       new Paragraph({
-        spacing: { before: 160, after: 80 },
-        children: [
-          new TextRun({
-            text: `生字：【 ${item.character} 】`,
-            bold: true,
-            size: 24,
-            font: FONT_FAMILY,
-            color: '0F172A',
-          }),
-        ],
+        spacing: { before: 100, after: 0 },
+        children: [],
       }),
-      new Paragraph({
-        spacing: { before: 40, after: 40 },
-        children: [
-          new TextRun({
-            text: '看圖寫字：（部首：________ ｜ 筆畫：________ 畫）',
-            size: 20,
-            font: FONT_FAMILY,
-            color: '475569',
-          }),
-        ],
-      }),
-      new Paragraph({
-        spacing: { before: 40, after: 120 },
-        children: [
-          new TextRun({
-            text: '看圖造詞與造句：____________________________________________________',
-            size: 20,
-            font: FONT_FAMILY,
-            color: '475569',
-          }),
-        ],
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [picRow],
       }),
     )
   })
@@ -929,7 +1030,7 @@ export function createDocxDocument(doc: WorksheetDoc): Document {
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: `第 ${pageIdx + 1} 頁 ／ 共 ${totalPages} 頁（A4 格式）`,
+                    text: `國小 AI 學習單生成器（Local-First 免費教師版）· ${templateTitle}    第 ${pageIdx + 1} 頁 / 共 ${totalPages} 頁`,
                     size: 18,
                     font: FONT_FAMILY,
                     color: '94A3B8',

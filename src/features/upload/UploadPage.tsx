@@ -33,8 +33,6 @@ export const UploadPage: React.FC = () => {
     analysisError,
     setAnalysisError,
     isAnalyzing,
-    includeZhuyin,
-    setIncludeZhuyin,
     runAnalysis,
     navigate,
     hasApiKey,
@@ -427,45 +425,6 @@ export const UploadPage: React.FC = () => {
               )}
             </div>
           )}
-
-          {/* 獨立注音開關；模板於分析完成後選擇。 */}
-          <div className="skill-tags-panel" role="region" aria-label="注音設定">
-            <div className="skill-tags-header">
-              <span className="skill-tags-title">🔤 注音設定：</span>
-
-              {/* 獨立「顯示注音」勾選開關 (Requirement 2) */}
-              <label
-                className={`zhuyin-toggle-wrapper ${!includeZhuyin ? 'off' : ''}`}
-                htmlFor="upload-include-zhuyin"
-              >
-                <input
-                  type="checkbox"
-                  id="upload-include-zhuyin"
-                  className="zhuyin-checkbox-input"
-                  checked={includeZhuyin}
-                  onChange={(e) => setIncludeZhuyin(e.target.checked)}
-                  disabled={isAnalyzing}
-                  aria-label="獨立注音設定：是否顯示注音"
-                />
-                <span className="zhuyin-toggle-label-text">
-                  {includeZhuyin ? '顯示注音：已開啟' : '顯示注音：已關閉'}
-                </span>
-              </label>
-            </div>
-
-            {/* 注音提示說明 */}
-            <div
-              style={{
-                marginTop: '0.5rem',
-                fontSize: '0.82rem',
-                color: 'var(--color-text-muted)',
-              }}
-            >
-              {includeZhuyin
-                ? '💡 已開啟注音，A4 學習單將以直式注音排版呈現於國字右側。可在預覽頁隨時切換。'
-                : '💡 已關閉注音，A4 學習單完全不渲染注音版位，不留任何空白佔位。可在預覽頁隨時切換。'}
-            </div>
-          </div>
         </div>
       )}
 
@@ -491,18 +450,6 @@ export const UploadPage: React.FC = () => {
             </div>
             <div>
               <strong>預估提取項目：</strong> 約 {analysisScope.estimatedItemsMin} ~ {analysisScope.estimatedItemsMax} 個國語生字及詞句
-            </div>
-            <div>
-              <strong>注音模式：</strong>{' '}
-              {includeZhuyin ? (
-                <span style={{ color: '#166534', fontWeight: 600 }}>
-                  顯示注音（直式排版）
-                </span>
-              ) : (
-                <span style={{ color: '#dc2626', fontWeight: 600 }}>
-                  不顯示注音（無佔位空格）
-                </span>
-              )}
             </div>
           </div>
 
