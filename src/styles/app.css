@@ -14,6 +14,13 @@
   unicode-range: U+FF1A, U+3001, U+FF0C, U+3002, U+FF1B, U+FF01, U+FF1F, U+3010, U+3011, U+300C, U+300D, U+FF08, U+FF09, U+2014, U+FF5C;
 }
 
+/* 針對注音調號 (ˊˇˋ˙·) 指定標準穩定字體，確保跨平台 (Windows/macOS/Linux/Android/iOS) 字符皆完整包含且不落入西文變音符號 */
+@font-face {
+  font-family: 'WorksheetTone';
+  src: local('DFKai-SB'), local('標楷體'), local('BiauKai'), local('Kaiti TC'), local('STKaiti'), local('TW-Kai'), local('Microsoft JhengHei'), local('PingFang TC'), local('Noto Sans TC');
+  unicode-range: U+02CA, U+02C7, U+02CB, U+02D9, U+00B7;
+}
+
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC',
     'PingFang TC', 'Microsoft JhengHei', sans-serif;
@@ -21,11 +28,14 @@
   /* 學習單字型堆疊：
      - 全形標點符號優先透過 WorksheetPunct 採用穩定置中對齊之 CJK 標點
      - 全站以標楷體為標準字體，一二年級優先套用芫荽注音
+     - 聲調符號優先透過 WorksheetTone 鎖定標準 CJK 楷體/黑體，避免字體缺字與 fallback 錯位
      - 具備健壯的跨平台 CJK 系統字體 fallback 堆疊（Mac/Windows/Linux），絕不依賴會造成排版錯位的 Western serif */
   --font-worksheet-punct: 'WorksheetPunct', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
-  --font-worksheet-standard: 'WorksheetPunct', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'STKaiti',
+  --font-zhuyin-tone: 'WorksheetTone', 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'STKaiti',
     'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
-  --font-worksheet-bopomofo: 'WorksheetPunct', 'BpmfIansui', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC',
+  --font-worksheet-standard: 'WorksheetPunct', 'WorksheetTone', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'STKaiti',
+    'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  --font-worksheet-bopomofo: 'WorksheetPunct', 'WorksheetTone', 'BpmfIansui', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC',
     'STKaiti', 'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
 
   --color-bg: #f8fafc;
@@ -761,7 +771,8 @@ textarea:focus-visible {
   box-sizing: border-box;
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
-  padding: 1px 0;
+  padding: 0;
+  overflow: visible;
 }
 
 .tian-zhuyin-content {
@@ -770,17 +781,21 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   position: relative;
+  width: 100%;
 }
 
 .tian-zhuyin-light-dot {
   position: absolute;
-  top: -8px;
+  top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #b91c1c;
   line-height: 1;
+  font-family: var(--font-zhuyin-tone);
+  pointer-events: none;
+  user-select: none;
 }
 
 .tian-zhuyin-symbols-group {
@@ -789,6 +804,7 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-right: 2.5px;
 }
 
 .tian-zhuyin-symbols {
@@ -796,7 +812,7 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 0.95;
+  line-height: 0.96;
   font-size: 11px;
   font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
   color: #b91c1c;
@@ -810,13 +826,30 @@ textarea:focus-visible {
 
 .tian-zhuyin-side-tone {
   position: absolute;
-  right: -7px;
-  bottom: 1px;
-  font-size: 10px;
+  right: -6px;
+  bottom: 2px;
+  font-size: 8.5px;
   font-weight: 700;
   color: #b91c1c;
   line-height: 1;
-  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
+  font-family: var(--font-zhuyin-tone);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tian-zhuyin-side-tone.tone-2 {
+  bottom: 3px;
+  right: -6px;
+}
+
+.tian-zhuyin-side-tone.tone-3 {
+  bottom: 2.5px;
+  right: -6.5px;
+}
+
+.tian-zhuyin-side-tone.tone-4 {
+  bottom: 2.5px;
+  right: -5.5px;
 }
 
 .tianzige-bottom-label {
@@ -880,17 +913,36 @@ textarea:focus-visible {
   font-size: 0.35em;
   font-weight: 700;
   line-height: 1;
-  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
+  font-family: var(--font-zhuyin-tone);
+  pointer-events: none;
+  user-select: none;
 }
 
 .zhuyin-side-tone {
   position: absolute;
   right: -0.55em;
-  bottom: 0.05em;
-  font-size: 0.38em;
+  bottom: 0.08em;
+  font-size: 0.35em;
   font-weight: 700;
   line-height: 1;
-  font-family: var(--current-zhuyin-font, var(--font-worksheet-standard));
+  font-family: var(--font-zhuyin-tone);
+  pointer-events: none;
+  user-select: none;
+}
+
+.zhuyin-side-tone.tone-2 {
+  bottom: 0.12em;
+  right: -0.55em;
+}
+
+.zhuyin-side-tone.tone-3 {
+  bottom: 0.08em;
+  right: -0.58em;
+}
+
+.zhuyin-side-tone.tone-4 {
+  bottom: 0.08em;
+  right: -0.52em;
 }
 
 .zhuyin-size-sm .zhuyin-symbols { font-size: 0.36em; }
