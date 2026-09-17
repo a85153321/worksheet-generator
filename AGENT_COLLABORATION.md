@@ -41,7 +41,7 @@ Codex 負責「結構、資料與可靠性」，交付可被 UI 消費的穩定�
 必做項目：
 
 - 在 `src/domain/` 維護 Zod schemas、資料型別與資料轉換。
-- 在 `src/services/` 提供明確的 use cases，例如 `analyzeMaterial`、`getCachedAnalysis`、`generateReadingPassage`、`buildWorksheet`。
+- 在 `src/services/` 提供明確的 use cases，例如 `analyzeMaterial`、`analyzeTypedCharacters`、`getCachedAnalysis`、`generateReadingPassage`、`buildWorksheet`。
 - 在 `src/infrastructure/` 封裝 Gemini、IndexedDB、hash、檔案處理；避免把實作洩漏給 UI。
 - 設計 `Result<T, AppError>` 或等效錯誤契約，讓 UI 能顯示可理解、可行動的訊息。
 - 撰寫單元／整合測試，覆蓋 schema、快取命中、retry 上限與 API Key 不外洩。
@@ -58,7 +58,7 @@ Antigravity 負責「前端介面與教師工作流」，將 Codex 提供的資�
 - 建立頁面與元件：Key 設定、教材上傳、頁面選擇、分析進度、審核編輯、圖片選擇、模板選擇、A4 預覽與輸出。
 - 維持繁體中文、鍵盤可操作、清楚的 loading／empty／error／quota 狀態。
 - 僅經由 services 或專用 hooks 取得資料與發起動作。
-- 將「分析」、「閱讀短文生成」等昂貴行為設成使用者明確按鈕，不在 mount、輸入變更或自動重繪時觸發。
+- 將「圖片分析」、「直接輸入生字分析」、「閱讀短文生成」等昂貴行為設成使用者明確按鈕，不在 mount、輸入變更或自動重繪時觸發。
 - 依 Codex schema 呈現低信心與 `needsReview`，並保留教師修改能力。
 - 針對 desktop、tablet 與列印情境驗證版面。
 

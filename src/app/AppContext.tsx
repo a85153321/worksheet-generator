@@ -6,6 +6,7 @@ import type {
 } from '../domain'
 import {
   analyzeMaterial,
+  analyzeTypedCharacters,
   buildAnalysisCacheKey,
   clearApiKey as removeStoredApiKey,
   getApiKey,
@@ -52,6 +53,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [analysisError, setAnalysisError] = useState<AppError | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
+  const [analysisInputMode, setAnalysisInputMode] = useState<'material' | 'typed'>('material')
+  const [typedCharacters, setTypedCharacters] = useState<string[]>([])
   const [selectedGrade, setSelectedGrade] = useState<number>(3)
   const [includeZhuyin, setIncludeZhuyin] = useState<boolean>(true)
   const [worksheetImages, setWorksheetImages] = useState<Record<string, WorksheetImage>>({})
@@ -114,9 +117,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedPages: pages,
       estimatedItemsMin: Math.max(1, pageCount * 2),
       estimatedItemsMax: pageCount * 4,
+      grade: selectedGrade,
       includeZhuyin,
     }
-  }, [uploadedFile, includeZhuyin])
+  }, [uploadedFile, includeZhuyin, selectedGrade])
 
   /**
    * 執行教材分析 use case 流程：
@@ -125,6 +129,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * 3. 呼叫 analyzeMaterial 取得驗證後結構化結果
    */
   const runAnalysis = async (overrideFile?: UploadedFileInfo): Promise<boolean> => {
+    setAnalysisInputMode('material')
     const targetFile = overrideFile !== undefined ? overrideFile : uploadedFile
 
     setIsAnalyzing(true)
@@ -150,6 +155,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const pagesKey = activePages.sort((a, b) => a - b).join(',')
       const contentHash = `hash-${encodeURIComponent(targetFile.name)}-${targetFile.size}-p${pagesKey}`
       const analysisContext: AnalysisContextInput = {
+        grade: selectedGrade,
         language: 'zh-TW',
         includeZhuyin,
       }
@@ -197,6 +203,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  const runTypedAnalysis = async (characters: string[]): Promise<boolean> => {
+    setAnalysisInputMode('typed')
+    setTypedCharacters(characters)
+    setUploadedFile(null)
+    setIsAnalyzing(true)
+    setAnalysisError(null)
+    try {
+      const result = await analyzeTypedCharacters({
+        characters,
+        context: { language: 'zh-TW', includeZhuyin, grade: selectedGrade },
+      })
+      if (result.ok) {
+        setAnalysisResult(result.value)
+        setAnalysisError(null)
+        setIsAnalyzing(false)
+        return true
+      }
+      setAnalysisError(result.error)
+      setIsAnalyzing(false)
+      return false
+    } catch (error) {
+      setAnalysisError({
+        type: 'network',
+        message: error instanceof Error ? error.message : '分析生字時發生非預期錯誤。',
+        retryable: true,
+      })
+      setIsAnalyzing(false)
+      return false
+    }
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -227,6 +264,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         worksheetDoc,
         setWorksheetDoc,
         runAnalysis,
+        analysisInputMode,
+        typedCharacters,
+        runTypedAnalysis,
       }}
     >
       {children}

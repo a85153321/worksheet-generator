@@ -35,9 +35,9 @@ const validAnalysis = {
   characters: [
     {
       character: '學',
-      zhuyin: 'ㄒㄩㄝˊ',
-      radical: '子',
-      strokeCount: 16,
+      zhuyin: '錯誤模型值',
+      radical: '錯',
+      strokeCount: 1,
       words: ['學習'],
       exampleSentences: ['我喜歡學習。'],
       confidence: 0.95,
@@ -74,10 +74,16 @@ describe('API Key storage integration', () => {
     })
 
     expect(result.ok).toBe(true)
+    expect(result.ok && result.value.characters[0]).toMatchObject({
+      zhuyin: 'ㄒㄩㄝˊ',
+      radical: '子',
+      strokeCount: 16,
+    })
     expect(request).toHaveBeenCalledTimes(1)
     expect(request.mock.calls[0]?.[1]?.headers).toMatchObject({
       'x-goog-api-key': 'saved-gemini-key',
     })
+    expect(String(request.mock.calls[0]?.[1]?.body)).not.toContain('strokeCount')
   })
 
   it('migrates the legacy UI storage key to the canonical key', () => {

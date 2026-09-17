@@ -34,11 +34,13 @@ export const UploadPage: React.FC = () => {
     setAnalysisError,
     isAnalyzing,
     runAnalysis,
+    runTypedAnalysis,
     navigate,
     hasApiKey,
   } = useApp()
 
   const [isDragging, setIsDragging] = useState(false)
+  const [typedInput, setTypedInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileProcess = async (file: File) => {
@@ -158,6 +160,12 @@ export const UploadPage: React.FC = () => {
     runAnalysis()
   }
 
+  const handleTypedAnalysis = () => {
+    const characters = [...typedInput].filter((character) => /\p{Script=Han}/u.test(character))
+    navigate('analyzing')
+    void runTypedAnalysis(characters)
+  }
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B (空檔案)'
     if (bytes < 1024) return `${bytes} B`
@@ -175,6 +183,34 @@ export const UploadPage: React.FC = () => {
         <p className="card-subtitle">
           支援圖片與 PDF 文件上傳；PDF 具備頁面縮圖勾選功能，精準控制分析範圍
         </p>
+      </div>
+
+      <div className="scope-card" style={{ marginTop: '1.5rem' }}>
+        <div className="scope-card-header">
+          <strong>⌨️ 或直接輸入生字</strong>
+          <span className="tag tag-info">本機查注音／部首／筆畫</span>
+        </div>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+          可連續輸入或用空白、頓號分隔。系統只會在按下按鈕後，呼叫一次 Gemini 產生造詞與例句。
+        </p>
+        <textarea
+          value={typedInput}
+          onChange={(event) => setTypedInput(event.target.value)}
+          rows={3}
+          placeholder="例如：學、習、快、樂"
+          aria-label="直接輸入生字"
+          style={{ width: '100%', marginTop: '0.75rem', padding: '0.75rem' }}
+        />
+        <div className="btn-group" style={{ justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={isAnalyzing || !/\p{Script=Han}/u.test(typedInput)}
+            onClick={handleTypedAnalysis}
+          >
+            🚀 分析輸入的生字 →
+          </button>
+        </div>
       </div>
 
       {/* API Key 狀態提醒 */}

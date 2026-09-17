@@ -19,6 +19,11 @@ export interface AnalyzeMaterialInput {
   context?: AnalysisContextInput
 }
 
+export interface AnalyzeTypedCharactersInput {
+  characters: readonly string[]
+  context?: AnalysisContextInput
+}
+
 export interface WorksheetImage {
   id: string
   character: string

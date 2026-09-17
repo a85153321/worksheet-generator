@@ -1,0 +1,27 @@
+## Handoff
+
+- Owner: Codex
+- Goal: 以 CNS11643 本機查表取代 Gemini 的注音／部首／筆畫輸出，並新增直接輸入生字流程。
+- Changed files:
+  - `src/infrastructure/data/cns11643-character-info.json`: CNS11643 精簡衍生資料。
+  - `src/infrastructure/data/README.md`: 來源、授權與顯名聲明。
+  - `src/infrastructure/character-info.ts`: `lookupCharacterInfo` 與注音格式化。
+  - `src/infrastructure/gemini-client.ts`: 圖片分析縮為 OCR＋詞語＋例句，新增純文字分析方法。
+  - `src/services/contracts.ts`, `src/services/use-cases.ts`, `src/services/index.ts`: 新增 `AnalyzeTypedCharactersInput` 與 `analyzeTypedCharacters`。
+  - `src/app/*`, `src/features/upload/UploadPage.tsx`, `src/features/analyzing/AnalyzingPage.tsx`: 最小 UI 串接與明確觸發按鈕。
+  - `scripts/build-cns11643-character-data.mjs`: 可重現的官方資料整理腳本。
+  - `tests/character-info.test.ts`, `tests/gemini-client.test.ts`: 查表、快取、請求範圍與直接輸入測試。
+- Contract change:
+  - 新增 `analyzeTypedCharacters(input: AnalyzeTypedCharactersInput): Promise<Result<AnalysisResult, AppError>>`。
+  - 新增 `lookupCharacterInfo(character): CharacterInfo | null`；`CharacterInfo.zhuyin` 為所有官方讀音的陣列。
+  - `analyzeMaterial` 的公開輸入與輸出簽名不變；內部 Gemini 回覆已縮為 draft，再由 service 補齊完整契約。
+- Data source / license:
+  - 數位發展部「CNS11643 中文標準交換碼全字庫」。
+  - 政府資料開放授權條款－第 1 版；允許不限目的免費重製、散布、編輯、改作與開發產品／服務，需標示來源。
+- Quota behavior:
+  - 圖片／PDF：快取未命中時一次 Gemini 多模態呼叫；圖片另計視覺 tokens。
+  - 直接輸入：快取未命中時一次 Gemini 純文字呼叫；沒有圖片 tokens，prompt 與回覆也不含注音／部首／筆畫。
+  - 兩者皆只在使用者按鈕觸發，快取命中為零次呼叫；受控格式修復或暫時網路錯誤才可能依既有規則多一次請求。
+- Verified: `npm test -- --run`, `npm run lint`, `npm run build`。
+- Risks / open questions: 打包資料限 Unicode CJK 基本區、Extension A 與相容表意文字；範圍外漢字回傳 `null`，目前不自動 fallback Gemini，避免把字典事實交由模型猜測。
+- Next owner action: Antigravity 可依既有設計系統微調直接輸入區塊；不得改成輸入時自動分析。

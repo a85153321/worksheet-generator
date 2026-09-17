@@ -9,10 +9,13 @@ export const AnalyzingPage: React.FC = () => {
     analysisError,
     isAnalyzing,
     runAnalysis,
+    runTypedAnalysis,
+    analysisInputMode,
+    typedCharacters,
     navigate,
   } = useApp()
 
-  const isEmpty = !uploadedFile && !analysisResult
+  const isEmpty = !uploadedFile && !analysisResult && !isAnalyzing && !analysisError
 
   // 1. 空狀態：尚未上傳任何檔案
   if (isEmpty) {
@@ -82,7 +85,9 @@ export const AnalyzingPage: React.FC = () => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => runAnalysis()}
+            onClick={() => analysisInputMode === 'typed'
+              ? runTypedAnalysis(typedCharacters)
+              : runAnalysis()}
             aria-label="再次重試分析請求"
           >
             🔄 再次重試分析
@@ -124,11 +129,14 @@ export const AnalyzingPage: React.FC = () => {
 
         <div className="scope-grid">
           <div>
-            <strong>教材檔案：</strong> {uploadedFile?.name || '國語教材'}
+            <strong>教材來源：</strong>{' '}
+            {analysisInputMode === 'typed' ? `直接輸入（${typedCharacters.join('、')}）` : uploadedFile?.name || '國語教材'}
           </div>
           <div>
             <strong>預估處理頁數：</strong>{' '}
-            {uploadedFile?.isPdf
+            {analysisInputMode === 'typed'
+              ? '不需影像處理'
+              : uploadedFile?.isPdf
               ? `${analysisScope.pageCount} 頁（第 ${analysisScope.selectedPages.join('、')} 頁）`
               : '1 頁（單頁圖片）'}
           </div>

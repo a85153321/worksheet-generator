@@ -1,9 +1,5 @@
-import { analysisResultSchema } from '../domain'
-import type {
-  AnalysisResult,
-  AppError,
-  Result,
-} from '../domain'
+import { z } from 'zod'
+import type { AppError, Result } from '../domain'
 
 export const DEFAULT_GEMINI_ANALYSIS_MODEL = 'gemini-3.5-flash'
 export const GEMINI_GENERATE_CONTENT_ENDPOINT =
@@ -17,7 +13,22 @@ export function buildGeminiGenerateContentUrl(
   return `${endpoint.replace(/\/+$/, '')}/${modelId}:generateContent`
 }
 
-const analysisJsonSchema = {
+const analysisDraftItemSchema = z.object({
+  character: z.string().refine((value) => [...value].length === 1),
+  words: z.array(z.string().trim().min(1)),
+  exampleSentences: z.array(z.string().trim().min(1)),
+  confidence: z.number().min(0).max(1),
+  reviewReasons: z.array(z.enum(['low-confidence', 'ambiguous-ocr'])).optional(),
+  source: z.object({
+    page: z.number().int().positive().nullable(),
+    block: z.string().trim().min(1).nullable(),
+  }),
+})
+
+const analysisDraftSchema = z.object({ characters: z.array(analysisDraftItemSchema) })
+export type GeminiAnalysisDraft = z.infer<typeof analysisDraftSchema>
+
+const analysisDraftJsonSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['characters'],
@@ -27,92 +38,23 @@ const analysisJsonSchema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: [
-          'character',
-          'zhuyin',
-          'radical',
-          'strokeCount',
-          'words',
-          'exampleSentences',
-          'confidence',
-          'source',
-          'imageSuggestion',
-          'editableState',
-        ],
+        required: ['character', 'words', 'exampleSentences', 'confidence', 'source'],
         properties: {
           character: { type: 'string' },
-          zhuyin: { type: 'string' },
-          radical: { type: 'string' },
-          strokeCount: { type: 'integer', minimum: 1 },
           words: { type: 'array', items: { type: 'string' } },
           exampleSentences: { type: 'array', items: { type: 'string' } },
-          lookalikeCandidates: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['character', 'radical', 'strokeCount'],
-              properties: {
-                character: { type: 'string' },
-                radical: { type: 'string' },
-                strokeCount: { type: 'integer', minimum: 1 },
-              },
-            },
-          },
-          multiPronunciations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['pronunciation', 'word'],
-              properties: {
-                pronunciation: { type: 'string' },
-                word: { type: 'string' },
-              },
-            },
-          },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
           reviewReasons: {
             type: 'array',
-            items: {
-              type: 'string',
-              enum: [
-                'low-confidence',
-                'ambiguous-ocr',
-                'uncertain-radical',
-                'uncertain-stroke-count',
-              ],
-            },
+            items: { type: 'string', enum: ['low-confidence', 'ambiguous-ocr'] },
           },
           source: {
             type: 'object',
+            additionalProperties: false,
             required: ['page', 'block'],
             properties: {
               page: { type: ['integer', 'null'], minimum: 1 },
               block: { type: ['string', 'null'] },
-            },
-          },
-          imageSuggestion: {
-            anyOf: [
-              { type: 'null' },
-              {
-                type: 'object',
-                required: ['prompt', 'rationale', 'selected'],
-                properties: {
-                  prompt: { type: 'string' },
-                  rationale: { type: 'string' },
-                  selected: { type: 'boolean' },
-                },
-              },
-            ],
-          },
-          editableState: {
-            type: 'object',
-            required: ['status', 'isEditable', 'needsReview'],
-            properties: {
-              status: { type: 'string', enum: ['draft', 'edited', 'confirmed'] },
-              isEditable: { type: 'boolean' },
-              needsReview: { type: 'boolean' },
             },
           },
         },
@@ -132,7 +74,12 @@ export interface GeminiAnalysisInput {
   selectedPages?: readonly number[]
   grade?: number
   language?: 'zh-TW'
-  includeZhuyin?: boolean
+}
+
+export interface GeminiTypedCharactersInput {
+  characters: readonly string[]
+  grade?: number
+  language?: 'zh-TW'
 }
 
 export interface GeminiClientOptions {
@@ -143,31 +90,13 @@ export interface GeminiClientOptions {
 }
 
 export function buildGradeAdaptationInstruction(grade?: number): string {
-  if (grade === 1) {
-    return '一年級：只使用日常生活中的基礎二字詞與常見部首；避免成語、抽象詞和修辭；例句使用單一主詞與動作，約 8～12 個中文字。'
-  }
-  if (grade === 2) {
-    return '二年級：使用常見生活詞語與基礎部件概念；避免艱深成語；例句採單一事件，約 10～16 個中文字。'
-  }
-  if (grade === 3) {
-    return '三年級：可使用課堂常見複合詞與簡單因果、轉折連接詞；例句約 15～22 個中文字。'
-  }
-  if (grade === 4) {
-    return '四年級：使用較完整的書面詞彙，可加入常用成語與簡單譬喻；例句約 18～28 個中文字。'
-  }
-  if (grade === 5) {
-    return '五年級：使用進階書面詞彙、常用成語與適量修辭，呈現較完整的情境和因果；例句約 22～35 個中文字。'
-  }
-  if (grade === 6) {
-    return '六年級：使用進階書面語、成語、同反義詞與合宜修辭，詞語可涵蓋抽象概念；例句可包含複句、轉折或因果，約 28～45 個中文字。'
-  }
+  if (grade === 1) return '一年級：只使用日常生活中的基礎二字詞；避免成語、抽象詞和修辭；例句使用單一主詞與動作，約 8～12 個中文字。'
+  if (grade === 2) return '二年級：使用常見生活詞語；避免艱深成語；例句採單一事件，約 10～16 個中文字。'
+  if (grade === 3) return '三年級：可使用課堂常見複合詞與簡單因果、轉折連接詞；例句約 15～22 個中文字。'
+  if (grade === 4) return '四年級：使用較完整的書面詞彙，可加入常用成語與簡單譬喻；例句約 18～28 個中文字。'
+  if (grade === 5) return '五年級：使用進階書面詞彙、常用成語與適量修辭，呈現較完整的情境和因果；例句約 22～35 個中文字。'
+  if (grade === 6) return '六年級：使用進階書面語、成語、同反義詞與合宜修辭，詞語可涵蓋抽象概念；例句可包含複句、轉折或因果，約 28～45 個中文字。'
   return '年級未指定：使用臺灣國小中年級程度的常用詞語與清楚完整的例句。'
-}
-
-export function buildZhuyinInstruction(includeZhuyin = true): string {
-  return includeZhuyin
-    ? '需要注音：每個生字的 zhuyin 必須填入正確的臺灣注音符號，不可留空。'
-    : '不需要注音：不要花費 token 解說或產生注音；仍須保留 zhuyin 欄位，但一律回傳空字串 ""。'
 }
 
 function validationError(message: string): Result<never, AppError> {
@@ -199,126 +128,102 @@ function classifyHttpError(status: number, body: string): AppError {
     return { type: 'quota', message: 'Gemini 配額或速率限制已達上限。', retryable: false }
   }
   if (status === 408 || status >= 500) {
-    return {
-      type: 'network',
-      message: 'Gemini 服務暫時無法使用。',
-      retryable: true,
-      statusCode: status,
-    }
+    return { type: 'network', message: 'Gemini 服務暫時無法使用。', retryable: true, statusCode: status }
   }
   if (status >= 400 && status < 500) {
-    return {
-      type: 'validation',
-      message: `Gemini 拒絕了請求（HTTP ${status}）。`,
-      retryable: false,
-    }
+    return { type: 'validation', message: `Gemini 拒絕了請求（HTTP ${status}）。`, retryable: false }
   }
-  return {
-    type: 'network',
-    message: 'Gemini 服務暫時無法使用。',
-    retryable: true,
-    statusCode: status,
-  }
+  return { type: 'network', message: 'Gemini 服務暫時無法使用。', retryable: true, statusCode: status }
 }
 
 export function createGeminiClient(options: GeminiClientOptions) {
   const request = options.fetch ?? globalThis.fetch
-  const model = options.model ?? DEFAULT_GEMINI_ANALYSIS_MODEL
-  const endpoint = options.endpoint ?? GEMINI_GENERATE_CONTENT_ENDPOINT
-  const generateContentUrl = buildGeminiGenerateContentUrl(model, endpoint)
+  const generateContentUrl = buildGeminiGenerateContentUrl(
+    options.model ?? DEFAULT_GEMINI_ANALYSIS_MODEL,
+    options.endpoint ?? GEMINI_GENERATE_CONTENT_ENDPOINT,
+  )
 
   async function send(body: unknown): Promise<Result<GeminiResponse, AppError>> {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const response = await request(generateContentUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': options.apiKey,
-          },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': options.apiKey },
           body: JSON.stringify(body),
         })
-
         if (response.ok) return { ok: true, value: (await response.json()) as GeminiResponse }
-
-        const bodyText = await response.text()
-        const error = classifyHttpError(response.status, bodyText)
+        const error = classifyHttpError(response.status, await response.text())
         if (error.type !== 'network' || attempt === 1) return { ok: false, error }
       } catch {
         if (attempt === 1) {
-          return {
-            ok: false,
-            error: { type: 'network', message: '無法連線至 Gemini。', retryable: true },
-          }
+          return { ok: false, error: { type: 'network', message: '無法連線至 Gemini。', retryable: true } }
         }
       }
     }
-
     return validationError('Gemini 請求未產生結果。')
   }
 
-  async function parse(response: GeminiResponse): Promise<Result<AnalysisResult, AppError>> {
+  async function parse(response: GeminiResponse): Promise<Result<GeminiAnalysisDraft, AppError>> {
     const text = responseText(response)
     if (!text) return validationError('Gemini 未回傳可用內容。')
     try {
-      const parsed = analysisResultSchema.safeParse(JSON.parse(text))
-      return parsed.success
-        ? { ok: true, value: parsed.data }
-        : validationError('Gemini 回傳格式不符合分析契約。')
+      const parsed = analysisDraftSchema.safeParse(JSON.parse(text))
+      return parsed.success ? { ok: true, value: parsed.data } : validationError('Gemini 回傳格式不符合分析契約。')
     } catch {
       return validationError('Gemini 回傳的內容不是有效 JSON。')
     }
   }
 
+  async function requestDraft(body: unknown): Promise<Result<GeminiAnalysisDraft, AppError>> {
+    const initialResponse = await send(body)
+    if (!initialResponse.ok) return initialResponse
+    const initialParsed = await parse(initialResponse.value)
+    if (initialParsed.ok) return initialParsed
+    const invalidOutput = responseText(initialResponse.value)
+    if (!invalidOutput) return initialParsed
+    const repairResponse = await send({
+      contents: [{ role: 'user', parts: [{ text: `以下 JSON 未通過既定 schema。只修正格式，不新增教材事實：\n${invalidOutput}` }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseJsonSchema: analysisDraftJsonSchema,
+        temperature: 0,
+      },
+    })
+    if (!repairResponse.ok) return repairResponse
+    return parse(repairResponse.value)
+  }
+
+  const generationConfig = {
+    responseMimeType: 'application/json',
+    responseJsonSchema: analysisDraftJsonSchema,
+    temperature: 0.2,
+  }
+
   return {
-    async analyzeMaterial(input: GeminiAnalysisInput): Promise<Result<AnalysisResult, AppError>> {
+    async analyzeMaterial(input: GeminiAnalysisInput): Promise<Result<GeminiAnalysisDraft, AppError>> {
       const encodedData = await blobToBase64(input.data)
-      const context = `年級：${input.grade ?? '未指定'}；語言：${input.language ?? 'zh-TW'}；檔名：${input.fileName}；頁面：${input.selectedPages?.join(', ') || '整份'}`
       const gradeInstruction = buildGradeAdaptationInstruction(input.grade)
-      const zhuyinInstruction = buildZhuyinInstruction(input.includeZhuyin)
-      const initialBody = {
-        systemInstruction: {
-          parts: [{ text: `你是臺灣國小教材分析助手。只回傳符合 schema 的繁體中文資料。依指定年級調整 words、exampleSentences、字形分析及圖片建議。${gradeInstruction} ${zhuyinInstruction} lookalikeCandidates 只能選用教育部常用字表內、國小學生會接觸到的常用字；不得為了部首或筆畫相近而使用生僻字、罕見字或常用字表外字元。若 OCR 有歧義、部首不確定或筆畫數不確定，必須分別加入 ambiguous-ocr、uncertain-radical 或 uncertain-stroke-count 到 reviewReasons，降低 confidence，並將 needsReview 設為 true；不可猜測成確定答案。` }],
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `請用一次完整分析擷取生字、部首、筆畫、詞語、例句、形近字候選、多音字讀音、信心值、來源與圖片建議。${context} 形近字要求：lookalikeCandidates 僅限教育部常用字表內且國小常見的字，不得輸出生僻或罕見候選字。注音要求：${zhuyinInstruction} 教學分級要求：${gradeInstruction}` },
-              { inlineData: { mimeType: input.mimeType, data: encodedData } },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseJsonSchema: analysisJsonSchema,
-          temperature: 0.2,
-        },
-      }
-
-      const initialResponse = await send(initialBody)
-      if (!initialResponse.ok) return initialResponse
-      const initialParsed = await parse(initialResponse.value)
-      if (initialParsed.ok) return initialParsed
-
-      const invalidOutput = responseText(initialResponse.value)
-      if (!invalidOutput) return initialParsed
-
-      const repairResponse = await send({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `以下 JSON 未通過既定 schema。只修正格式，不新增教材事實：\n${invalidOutput}` }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseJsonSchema: analysisJsonSchema,
-          temperature: 0,
-        },
+      const context = `年級：${input.grade ?? '未指定'}；語言：${input.language ?? 'zh-TW'}；檔名：${input.fileName}；頁面：${input.selectedPages?.join(', ') || '整份'}`
+      return requestDraft({
+        systemInstruction: { parts: [{ text: `你是臺灣國小教材分析助手。只負責辨識圖片中的生字，並為每個字產生適齡詞語與情境例句。不要輸出注音、部首或筆畫，這些資料由本機官方字庫補入。只回傳 schema 指定欄位。${gradeInstruction} 若 OCR 有歧義，加入 ambiguous-ocr 到 reviewReasons、降低 confidence；不可猜成確定答案。` }] },
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: `辨識教材中的生字，並產生 words 與 exampleSentences。${context} 教學分級要求：${gradeInstruction}` },
+            { inlineData: { mimeType: input.mimeType, data: encodedData } },
+          ],
+        }],
+        generationConfig,
       })
-      if (!repairResponse.ok) return repairResponse
-      return parse(repairResponse.value)
+    },
+
+    async analyzeTypedCharacters(input: GeminiTypedCharactersInput): Promise<Result<GeminiAnalysisDraft, AppError>> {
+      const gradeInstruction = buildGradeAdaptationInstruction(input.grade)
+      return requestDraft({
+        systemInstruction: { parts: [{ text: `你是臺灣國小國語教學助手。輸入字元已由教師確認，不需 OCR。只為每個指定生字產生適齡 words 與 exampleSentences；不得新增、刪除或替換字元，也不要輸出注音、部首或筆畫。confidence 固定為 1，reviewReasons 省略，source 固定為 {"page":null,"block":"直接輸入"}。${gradeInstruction}` }] },
+        contents: [{ role: 'user', parts: [{ text: `請依原順序處理這些生字：${JSON.stringify(input.characters)}。語言：${input.language ?? 'zh-TW'}。教學分級要求：${gradeInstruction}` }] }],
+        generationConfig,
+      })
     },
   }
 }

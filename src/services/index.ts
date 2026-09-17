@@ -1,5 +1,6 @@
 export {
   analyzeMaterial,
+  analyzeTypedCharacters,
   buildAnalysisCacheKey,
   getCachedAnalysis,
   updateAnalysisResult,
@@ -27,6 +28,7 @@ export type {
 } from '../domain'
 export type {
   AnalyzeMaterialInput,
+  AnalyzeTypedCharactersInput,
   BuildWorksheetOptions,
   CharacterWorksheetSection,
   CharacterDiscriminationWorksheetSection,

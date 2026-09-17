@@ -20,6 +20,7 @@
 Browser (React + TypeScript)
 ├─ UI / worksheet preview / editor
 ├─ local settings (API Key only)
+├─ bundled CNS11643 lookup (zhuyin / radical / stroke count)
 ├─ IndexedDB (document, analysis and reading-passage cache)
 ├─ Gemini client ────────────────────> Gemini API
 └─ local worksheet / print / PDF engine
@@ -69,14 +70,21 @@ src/
 `imageSuggestion` 與 `editableState`。跨層操作以 `Result<T, AppError>` 回傳，
 錯誤類別包含 `validation`、`network`、`authentication` 與 `quota`。
 
+教師可選擇上傳圖片／PDF，或直接輸入生字。兩條路徑都回傳同一個
+`AnalysisResult`；注音、部首與總筆畫一律由隨專案打包的 CNS11643 精簡資料查詢，
+Gemini 不負責產生這三個事實欄位。查不到的字元不得以猜測值補齊，應回傳可操作的
+`validation` 錯誤與 `missingCharacters` 明細。
+
 
 ## 5. Quota-aware 流程
 
 1. 使用者選擇圖片或 PDF 頁面。
 2. 瀏覽器旋轉、裁切、縮放與壓縮；PDF 必須先選頁。
 3. 對已處理輸入計算 hash，先查詢 IndexedDB 分析快取。
-4. 未命中時，發出 **一次** 多模態結構化分析請求，取得完整教材草稿。
-5. Zod 驗證；格式錯誤最多一次受控修復。網路暫時錯誤最多一次重試；認證、配額與 4xx 不重試。
+4. 未命中時，圖片流程發出 **一次** 多模態結構化請求，只辨識生字並產生詞語／例句；
+   直接輸入流程發出 **一次** 純文字結構化請求，只產生詞語／例句。
+5. 以本機 CNS11643 查表補齊注音、部首與筆畫，再做 Zod 驗證；格式錯誤最多一次
+   受控修復。網路暫時錯誤最多一次重試；認證、配額與 4xx 不重試。
 6. 教師審核／修改結果。
 7. 教師可選擇從本機上傳自備配圖；系統不提供 AI 圖片生成。
 8. 閱讀理解短文只在教師於模板預覽階段明確觸發後生成；先依標準化 prompt 查本機快取，
@@ -86,6 +94,9 @@ src/
 ## 6. AI 呼叫規範
 
 - 分析請求必須要求 JSON schema 相容的輸出，並設定清楚的年級、語言與教材情境。
+- Gemini 分析 schema 不包含注音、部首與筆畫；這三欄只能來自本機 CNS11643 查表。
+- `analyzeTypedCharacters` 只可在教師完成輸入並明確按下分析按鈕後執行；輸入變更、
+  mount 或重新 render 不得自動呼叫 Gemini。
 - 年級必須實際影響造詞範圍、詞語難度、例句長度與句型／修辭複雜度；分析快取 key
   必須包含年級與語言，避免切換年級時誤用其他年級的結果。
 - 分析 context 可帶入 `includeZhuyin`；注音關閉時保留 `zhuyin` 欄位但允許空字串。

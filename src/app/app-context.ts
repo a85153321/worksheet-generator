@@ -51,6 +51,9 @@ export interface AppContextType {
   worksheetDoc: WorksheetDoc | null
   setWorksheetDoc: React.Dispatch<React.SetStateAction<WorksheetDoc | null>>
   runAnalysis: (overrideFile?: UploadedFileInfo) => Promise<boolean>
+  analysisInputMode: 'material' | 'typed'
+  typedCharacters: string[]
+  runTypedAnalysis: (characters: string[]) => Promise<boolean>
 }
 
 export const AppContext = createContext<AppContextType | null>(null)

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildGeminiGenerateContentUrl,
   buildGradeAdaptationInstruction,
-  buildZhuyinInstruction,
   createGeminiClient,
   DEFAULT_GEMINI_ANALYSIS_MODEL,
 } from '../src/infrastructure/gemini-client'
@@ -17,15 +16,10 @@ const validAnalysis = {
   characters: [
     {
       character: '學',
-      zhuyin: 'ㄒㄩㄝˊ',
-      radical: '子',
-      strokeCount: 16,
       words: ['學習'],
       exampleSentences: ['我喜歡學習。'],
       confidence: 0.9,
       source: { page: 1, block: '第一段' },
-      imageSuggestion: null,
-      editableState: { status: 'draft', isEditable: true, needsReview: false },
     },
   ],
 }
@@ -37,35 +31,31 @@ function geminiResponse(value: unknown): Response {
 }
 
 describe('Gemini client retry policy', () => {
-  it('restricts lookalike candidates to common elementary-school characters', async () => {
+  it('asks Gemini only for OCR, words and sentences, leaving local fields out', async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
 
     await createGeminiClient({ apiKey: 'secret-key', fetch: request }).analyzeMaterial(input)
 
     const body = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
     const prompt = JSON.stringify(body)
-    expect(prompt).toContain('教育部常用字表')
-    expect(prompt).toContain('國小')
-    expect(prompt).toContain('不得輸出生僻或罕見候選字')
+    expect(prompt).toContain('辨識圖片中的生字')
+    expect(prompt).toContain('不要輸出注音、部首或筆畫')
+    expect(prompt).not.toContain('strokeCount')
+    expect(prompt).not.toContain('zhuyin')
   })
 
-  it('requires populated zhuyin when enabled and accepts an empty field when disabled', async () => {
-    const request = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
-      const includeZhuyin = String(init?.body).includes('zhuyin 必須填入')
-      return geminiResponse({
-        ...validAnalysis,
-        characters: [{ ...validAnalysis.characters[0], zhuyin: includeZhuyin ? 'ㄒㄩㄝˊ' : '' }],
-      })
-    })
+  it('uses a compact text-only request for directly typed characters', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(geminiResponse(validAnalysis))
     const client = createGeminiClient({ apiKey: 'secret-key', fetch: request })
 
-    const withZhuyin = await client.analyzeMaterial({ ...input, includeZhuyin: true })
-    const withoutZhuyin = await client.analyzeMaterial({ ...input, includeZhuyin: false })
+    const result = await client.analyzeTypedCharacters({ characters: ['學'], grade: 1 })
 
-    expect(withZhuyin.ok && withZhuyin.value.characters[0].zhuyin).toBe('ㄒㄩㄝˊ')
-    expect(withoutZhuyin.ok && withoutZhuyin.value.characters[0].zhuyin).toBe('')
-    expect(buildZhuyinInstruction(true)).toContain('不可留空')
-    expect(buildZhuyinInstruction(false)).toContain('空字串')
+    expect(result.ok).toBe(true)
+    const body = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+    const prompt = JSON.stringify(body)
+    expect(prompt).toContain('[\\"學\\"]')
+    expect(prompt).toContain('不需 OCR')
+    expect(prompt).not.toContain('inlineData')
   })
 
   it('adds observably different vocabulary and sentence guidance for grades 1 and 6', async () => {

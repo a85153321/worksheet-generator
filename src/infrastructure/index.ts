@@ -5,13 +5,17 @@ export {
   saveGeminiApiKey,
 } from './api-key-store'
 export {
-  buildZhuyinInstruction,
   buildGeminiGenerateContentUrl,
   createGeminiClient,
   DEFAULT_GEMINI_ANALYSIS_MODEL,
   GEMINI_GENERATE_CONTENT_ENDPOINT,
 } from './gemini-client'
-export type { GeminiAnalysisInput, GeminiClientOptions } from './gemini-client'
+export type {
+  GeminiAnalysisDraft,
+  GeminiAnalysisInput,
+  GeminiClientOptions,
+  GeminiTypedCharactersInput,
+} from './gemini-client'
 export {
   createGeminiReadingClient,
   DEFAULT_GEMINI_READING_MODEL,
@@ -23,6 +27,8 @@ export type {
 } from './gemini-reading-client'
 export { calculateInputHash } from './hash'
 export type { HashInput } from './hash'
+export { formatCharacterZhuyin, lookupCharacterInfo } from './character-info'
+export type { CharacterInfo } from './character-info'
 export {
   clearAnalysisCache,
   clearReadingPassageCache,

@@ -8,19 +8,75 @@ import {
 import {
   calculateInputHash,
   createGeminiClient,
+  formatCharacterZhuyin,
   getAnalysisCache,
   getGeminiApiKey,
+  lookupCharacterInfo,
   putAnalysisCache,
+  type GeminiAnalysisDraft,
 } from '../infrastructure'
 import type {
   AnalyzeMaterialInput,
+  AnalyzeTypedCharactersInput,
 } from './contracts'
 
 export function buildAnalysisCacheKey(
   contentHash: string,
   context?: AnalyzeMaterialInput['context'],
 ): string {
-  return `analysis-v4:${contentHash}:grade=${context?.grade ?? 'unspecified'}:language=${context?.language ?? 'zh-TW'}:zhuyin=${context?.includeZhuyin ?? true}`
+  return `analysis-v5:${contentHash}:grade=${context?.grade ?? 'unspecified'}:language=${context?.language ?? 'zh-TW'}:zhuyin=${context?.includeZhuyin ?? true}`
+}
+
+function enrichDraftWithLocalCharacterData(
+  draft: GeminiAnalysisDraft,
+  includeZhuyin: boolean,
+): Result<AnalysisResult, AppError> {
+  const missingCharacters = draft.characters
+    .map(({ character }) => character)
+    .filter((character) => lookupCharacterInfo(character) === null)
+
+  if (missingCharacters.length > 0) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: `本機 CNS11643 字庫查不到以下字元：${[...new Set(missingCharacters)].join('、')}。請人工確認或改用可查得的字元。`,
+        retryable: false,
+        details: { missingCharacters: [...new Set(missingCharacters)] },
+      },
+    }
+  }
+
+  const enriched = {
+    characters: draft.characters.map((item) => {
+      const local = lookupCharacterInfo(item.character)
+      if (!local) throw new Error('Character lookup changed during enrichment')
+      return {
+        ...item,
+        zhuyin: includeZhuyin ? formatCharacterZhuyin(local) : '',
+        radical: local.radical,
+        strokeCount: local.strokeCount,
+        imageSuggestion: null,
+        editableState: {
+          status: 'draft' as const,
+          isEditable: true,
+          needsReview: (item.reviewReasons?.length ?? 0) > 0,
+        },
+      }
+    }),
+  }
+  const parsed = analysisResultSchema.safeParse(enriched)
+  return parsed.success
+    ? { ok: true, value: parsed.data }
+    : {
+        ok: false,
+        error: {
+          type: 'validation',
+          message: '本機字庫與 Gemini 結果合併後不符合分析契約。',
+          retryable: false,
+          details: { issues: parsed.error.issues },
+        },
+      }
 }
 
 export async function analyzeMaterial(
@@ -66,12 +122,102 @@ export async function analyzeMaterial(
     selectedPages: input.selectedPages,
     grade: input.context?.grade,
     language: input.context?.language,
-    includeZhuyin: input.context?.includeZhuyin,
   })
 
   if (!result.ok) return result
 
-  const reviewedResult = applyAnalysisReviewRules(result.value)
+  const enriched = enrichDraftWithLocalCharacterData(
+    result.value,
+    input.context?.includeZhuyin ?? true,
+  )
+  if (!enriched.ok) return enriched
+
+  const reviewedResult = applyAnalysisReviewRules(enriched.value)
+  await putAnalysisCache(cacheKey, reviewedResult)
+  return { ok: true, value: reviewedResult }
+}
+
+export async function analyzeTypedCharacters(
+  input: AnalyzeTypedCharactersInput,
+): Promise<Result<AnalysisResult, AppError>> {
+  const characters = [...new Set(input.characters.map((character) => character.trim()).filter(Boolean))]
+  const invalidCharacters = characters.filter(
+    (character) => [...character].length !== 1 || !/\p{Script=Han}/u.test(character),
+  )
+  if (characters.length === 0 || invalidCharacters.length > 0) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: characters.length === 0
+          ? '請至少輸入一個生字。'
+          : `直接輸入只接受單一漢字：${invalidCharacters.join('、')}`,
+        retryable: false,
+        details: invalidCharacters.length > 0 ? { invalidCharacters } : undefined,
+      },
+    }
+  }
+
+  const missingCharacters = characters.filter((character) => lookupCharacterInfo(character) === null)
+  if (missingCharacters.length > 0) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: `本機 CNS11643 字庫查不到以下字元：${missingCharacters.join('、')}。請人工確認後再試。`,
+        retryable: false,
+        details: { missingCharacters },
+      },
+    }
+  }
+
+  const contentHash = await calculateInputHash(JSON.stringify(characters))
+  const cacheKey = buildAnalysisCacheKey(`typed:${contentHash}`, input.context)
+  const cached = await getAnalysisCache(cacheKey)
+  if (cached) {
+    const parsedCached = analysisResultSchema.safeParse(cached)
+    if (parsedCached.success) return { ok: true, value: applyAnalysisReviewRules(parsedCached.data) }
+  }
+
+  const apiKey = getGeminiApiKey()
+  if (!apiKey) {
+    return {
+      ok: false,
+      error: {
+        type: 'authentication',
+        message: '請先設定 Gemini API Key。',
+        retryable: false,
+      },
+    }
+  }
+
+  const result = await createGeminiClient({ apiKey }).analyzeTypedCharacters({
+    characters,
+    grade: input.context?.grade,
+    language: input.context?.language,
+  })
+  if (!result.ok) return result
+
+  const returnedCharacters = result.value.characters.map(({ character }) => character)
+  if (returnedCharacters.length !== characters.length ||
+      returnedCharacters.some((character, index) => character !== characters[index])) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: 'Gemini 回傳的生字與教師輸入不一致，已停止合併以避免誤用。',
+        retryable: false,
+        details: { expected: characters, received: returnedCharacters },
+      },
+    }
+  }
+
+  const enriched = enrichDraftWithLocalCharacterData(
+    result.value,
+    input.context?.includeZhuyin ?? true,
+  )
+  if (!enriched.ok) return enriched
+  const reviewedResult = applyAnalysisReviewRules(enriched.value)
   await putAnalysisCache(cacheKey, reviewedResult)
   return { ok: true, value: reviewedResult }
 }
