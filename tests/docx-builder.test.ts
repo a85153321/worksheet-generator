@@ -19,12 +19,6 @@ const sampleAnalysis: AnalysisResult = {
       confidence: 0.98,
       source: { page: 1, block: '第一段' },
       imageSuggestion: null,
-      lookalikeCandidates: [
-        { character: '字', radical: '子', strokeCount: 6 },
-      ],
-      multiPronunciations: [
-        { pronunciation: 'ㄒㄩㄝˊ', word: '學校' },
-      ],
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
     {
@@ -37,8 +31,6 @@ const sampleAnalysis: AnalysisResult = {
       confidence: 0.95,
       source: { page: 1, block: '第一段' },
       imageSuggestion: null,
-      lookalikeCandidates: [],
-      multiPronunciations: [],
       editableState: { status: 'confirmed', isEditable: true, needsReview: false },
     },
   ],
@@ -73,16 +65,6 @@ describe('docx-builder', () => {
     const sentenceDocx = createDocxDocument(sentenceRes.value)
     const sentenceBuf = await Packer.toBuffer(sentenceDocx)
     expect(sentenceBuf.length).toBeGreaterThan(1000)
-  })
-
-  it('creates valid Document for character-discrimination with lookalikes and multi-pronunciations', async () => {
-    const discrimRes = await buildWorksheet(sampleAnalysis, 'character-discrimination', { grade: 3 })
-    expect(discrimRes.ok).toBe(true)
-    if (!discrimRes.ok) return
-
-    const docx = createDocxDocument(discrimRes.value)
-    const buf = await Packer.toBuffer(docx)
-    expect(buf.length).toBeGreaterThan(1000)
   })
 
   it('generateDocxBlob produces a Blob in supported environments', async () => {

@@ -17,7 +17,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'character' | 'word' | 'sentence' | 'discrimination'
+  wireframeType: 'character' | 'word' | 'sentence'
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -27,7 +27,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     badge: '低年級首選',
     targetGrade: '適合國小一至三年級',
     description: '標準田字格習寫、注音標註、筆畫部首與描字空位',
-    features: ['九宮／田字格標準格', '國字筆畫部首標示', '字音字形對照描字'],
+    features: ['九宮／田字格標準格', '國字筆畫部首標示', '注音與生字對照描字'],
     icon: '🈴',
     wireframeType: 'character',
   },
@@ -37,7 +37,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     badge: '中高年級',
     targetGrade: '適合國小三至五年級',
     description: '引導學生從單字擴展為詞語、多詞辨析與語意聯想',
-    features: ['詞語擴詞積木格', '生字詞義填空連線', '多音字詞性辨析'],
+    features: ['詞語擴詞積木格', '生字詞義填空連線', '詞語語意延伸練習'],
     icon: '📚',
     wireframeType: 'word',
   },
@@ -50,16 +50,6 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     features: ['情境教學例句解析', '引導式仿寫空白格', '教師批閱評分欄'],
     icon: '✏️',
     wireframeType: 'sentence',
-  },
-  {
-    id: 'character-discrimination',
-    title: '字音字形辨析單',
-    badge: '辨析精熟',
-    targetGrade: '適合國小三至六年級',
-    description: '比較形近字字形特徵與多音字讀音用法，培養字形辨別與正確讀音能力',
-    features: ['形近字部件結構比較', '多音字語境破音辨析', '手寫辨析習寫練習格'],
-    icon: '🔍',
-    wireframeType: 'discrimination',
   },
 ]
 
@@ -136,14 +126,7 @@ export const TemplateSelectionPage: React.FC = () => {
         // 立即導航至 A4 預覽
         navigate('preview')
       } else {
-        if (res.error.type === 'no-eligible-characters') {
-          // 清除舊文件並導航至 preview 頁，呈現專屬空狀態引導畫面
-          setWorksheetDoc(null)
-          setBuildError(`⚠️ 資料不足無法建立：${res.error.message}`)
-          navigate('preview')
-        } else {
-          setBuildError(res.error.message)
-        }
+        setBuildError(res.error.message)
       }
     } catch {
       setBuildError('建立學習單文件時發生非預期錯誤。')
@@ -152,7 +135,7 @@ export const TemplateSelectionPage: React.FC = () => {
     }
   }
 
-  // 快速載入三上完整示範生字（含形近字、多音字與完整例句）
+  // 快速載入三上完整示範生字
   const handleLoadSampleData = () => {
     setAnalysisResult({
       characters: [
@@ -170,14 +153,6 @@ export const TemplateSelectionPage: React.FC = () => {
             rationale: '用熟悉的校園情境幫助理解「學」。',
             selected: true,
           },
-          lookalikeCandidates: [
-            { character: '字', radical: '子', strokeCount: 6 },
-            { character: '斈', radical: '子', strokeCount: 7 },
-          ],
-          multiPronunciations: [
-            { pronunciation: 'ㄒㄩㄝˊ', word: '學校' },
-            { pronunciation: 'ㄒㄧㄠˋ', word: '學術（校讀音）' },
-          ],
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -198,13 +173,6 @@ export const TemplateSelectionPage: React.FC = () => {
             rationale: '對應習字、練習的生活經驗。',
             selected: true,
           },
-          lookalikeCandidates: [
-            { character: '羽', radical: '羽', strokeCount: 6 },
-            { character: '摺', radical: '手', strokeCount: 14 },
-          ],
-          multiPronunciations: [
-            { pronunciation: 'ㄒㄧˊ', word: '練習' },
-          ],
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -225,42 +193,6 @@ export const TemplateSelectionPage: React.FC = () => {
             rationale: '用「一起玩耍」的生活情境理解「一」。',
             selected: true,
           },
-          lookalikeCandidates: [
-            { character: '二', radical: '二', strokeCount: 2 },
-            { character: '十', radical: '十', strokeCount: 2 },
-          ],
-          multiPronunciations: [
-            { pronunciation: 'ㄧ', word: '第一' },
-            { pronunciation: 'ㄧˊ', word: '一樣' },
-            { pronunciation: 'ㄧˋ', word: '一定' },
-          ],
-          editableState: {
-            status: 'confirmed',
-            isEditable: true,
-            needsReview: false,
-          },
-        },
-      ],
-    })
-    setBuildError(null)
-  }
-
-  // 載入缺少形近字與多音字之生字（供測試 no-eligible-characters 空狀態）
-  const handleLoadIneligibleSampleData = () => {
-    setAnalysisResult({
-      characters: [
-        {
-          character: '一',
-          zhuyin: 'ㄧ',
-          radical: '一',
-          strokeCount: 1,
-          words: ['一起', '一定', '一樣'],
-          exampleSentences: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。'],
-          confidence: 0.98,
-          source: { page: 1, block: '第一段' },
-          imageSuggestion: null,
-          lookalikeCandidates: [],
-          multiPronunciations: [],
           editableState: {
             status: 'confirmed',
             isEditable: true,
@@ -337,28 +269,6 @@ export const TemplateSelectionPage: React.FC = () => {
               <div className="wireframe-lines">
                 <div className="wireframe-line-sm" style={{ backgroundColor: '#94a3b8' }}></div>
                 <div className="wireframe-line-sm" style={{ borderBottom: '1px dashed #94a3b8', height: '1px', backgroundColor: 'transparent' }}></div>
-              </div>
-            </div>
-          </div>
-        )
-      case 'discrimination':
-        return (
-          <div className="template-wireframe" aria-hidden="true">
-            <div className="wireframe-header-line" style={{ width: '50%' }}></div>
-            <div className="wireframe-row">
-              <div className="wireframe-box" style={{ fontWeight: 700, color: '#b91c1c' }}>字</div>
-              <span style={{ fontSize: '9px', color: '#64748b' }}>vs</span>
-              <div className="wireframe-box" style={{ fontWeight: 700, color: '#0284c7' }}>形</div>
-              <div className="wireframe-lines">
-                <div className="wireframe-line-sm" style={{ width: '85%' }}></div>
-                <div className="wireframe-line-sm" style={{ width: '50%' }}></div>
-              </div>
-            </div>
-            <div className="wireframe-row">
-              <div style={{ height: '16px', border: '1px solid #cbd5e1', borderRadius: '2px', padding: '0 3px', fontSize: '8px', display: 'flex', alignItems: 'center', backgroundColor: '#fff' }}>音一</div>
-              <div style={{ height: '16px', border: '1px solid #cbd5e1', borderRadius: '2px', padding: '0 3px', fontSize: '8px', display: 'flex', alignItems: 'center', backgroundColor: '#fff' }}>音二</div>
-              <div className="wireframe-lines">
-                <div className="wireframe-line-sm" style={{ width: '65%' }}></div>
               </div>
             </div>
           </div>
@@ -569,31 +479,6 @@ export const TemplateSelectionPage: React.FC = () => {
                     </div>
                   )}
 
-                  {selectedTemplate === 'character-discrimination' && (
-                    <div>
-                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#b45309', marginBottom: isEnlarged ? '6px' : '3px' }}>
-                        🔍 形近字辨析：
-                      </div>
-                      <div style={{ display: 'flex', gap: isEnlarged ? '10px' : '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span style={{ border: '1px solid #b91c1c', padding: isEnlarged ? '2px 8px' : '1px 5px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#b91c1c' }}>
-                          目標字：{item.character}
-                        </span>
-                        <span style={{ border: '1px solid #0284c7', padding: isEnlarged ? '2px 8px' : '1px 5px', borderRadius: '3px', backgroundColor: '#fff', fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0284c7' }}>
-                          形近字：{item.character === '學' ? '字' : '羽'}
-                        </span>
-                        <span style={{ fontSize: isEnlarged ? '12px' : '11px', color: '#64748b' }}>
-                          造詞填空：________________
-                        </span>
-                      </div>
-                      <div style={{ fontSize: isEnlarged ? '13px' : '11px', fontWeight: 700, color: '#0369a1', marginTop: isEnlarged ? '8px' : '4px' }}>
-                        🔊 多音字辨析：
-                      </div>
-                      <div style={{ fontSize: isEnlarged ? '12px' : '11px', color: '#475569' }}>
-                        常用讀音：{item.zhuyin || '—'} ｜ 語境搭配：{item.words?.[0] || '生詞例詞'}
-                      </div>
-                    </div>
-                  )}
-
                 </div>
               </div>
             )
@@ -633,18 +518,9 @@ export const TemplateSelectionPage: React.FC = () => {
               className="btn btn-secondary btn-sm"
               style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
               onClick={handleLoadSampleData}
-              title="載入包含完整形近字、多音字、造詞造句的示範生字（學、習、一）"
+              title="載入包含完整造詞造句的示範生字（學、習、一）"
             >
               ✨ 立即載入完整示範生字
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem' }}
-              onClick={handleLoadIneligibleSampleData}
-              title="載入無形近字/多音字候選的生字資料，供測試 Codex no-eligible-characters 空狀態"
-            >
-              ⚡ 載入無辨析生字（測試空狀態）
             </button>
             <div className="tag tag-info" style={{ fontSize: '0.85rem', padding: '0.35rem 0.75rem' }}>
               目前生字庫：{characters.length} 個字 ｜ 已上傳插圖：{uploadedImageCount} 張
@@ -675,14 +551,6 @@ export const TemplateSelectionPage: React.FC = () => {
               onClick={handleLoadSampleData}
             >
               ✨ 立即載入完整示範生字（學、習、一）
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
-              onClick={handleLoadIneligibleSampleData}
-            >
-              ⚡ 載入無辨析生字（測試空狀態）
             </button>
             <button
               type="button"

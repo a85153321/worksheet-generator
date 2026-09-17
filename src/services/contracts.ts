@@ -3,8 +3,6 @@ import type {
   AnalysisContextInput,
   CharacterAnalysis,
   ImageProcessingOptions,
-  LookalikeCandidate,
-  MultiPronunciation,
   ElementaryGrade,
 } from '../domain'
 
@@ -52,7 +50,6 @@ export type WorksheetTemplate =
   | 'word-practice'
   | 'sentence-practice'
   | 'picture-practice'
-  | 'character-discrimination'
 
 export type WorksheetBlock = Pick<
   CharacterAnalysis,
@@ -98,23 +95,11 @@ export interface PictureWorksheetSection extends WorksheetSectionBase {
   }
 }
 
-export interface CharacterDiscriminationWorksheetSection extends WorksheetSectionBase {
-  kind: 'character-discrimination'
-  item: {
-    character: CharacterAnalysis['character']
-    zhuyin: CharacterAnalysis['zhuyin']
-    lookalikeCandidates: LookalikeCandidate[]
-    multiPronunciations: MultiPronunciation[]
-    handwritingLineCount: number
-  }
-}
-
 export type WorksheetSection =
   | CharacterWorksheetSection
   | WordWorksheetSection
   | SentenceWorksheetSection
   | PictureWorksheetSection
-  | CharacterDiscriminationWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -132,7 +117,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '詞語' | '句子' | '看圖' | '字音字形辨析'
+  templateLabel: '生字' | '詞語' | '句子' | '看圖'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {

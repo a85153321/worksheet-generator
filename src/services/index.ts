@@ -26,7 +26,6 @@ export type {
   AnalyzeTypedCharactersInput,
   BuildWorksheetOptions,
   CharacterWorksheetSection,
-  CharacterDiscriminationWorksheetSection,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,

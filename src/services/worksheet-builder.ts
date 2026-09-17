@@ -16,7 +16,6 @@ const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> 
   'word-practice': '詞語',
   'sentence-practice': '句子',
   'picture-practice': '看圖',
-  'character-discrimination': '字音字形辨析',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
@@ -87,28 +86,6 @@ function pictureSection(
   }
 }
 
-function characterDiscriminationSection(
-  item: CharacterAnalysis,
-  index: number,
-): WorksheetSection | null {
-  const lookalikeCandidates = item.lookalikeCandidates ?? []
-  const multiPronunciations = item.multiPronunciations ?? []
-  if (lookalikeCandidates.length === 0 && multiPronunciations.length === 0) return null
-
-  return {
-    kind: 'character-discrimination',
-    id: sectionId('character-discrimination', item.character, index),
-    instructions: '比較字形與讀音後，在空白處寫下你的辨析結果。',
-    item: {
-      character: item.character,
-      zhuyin: item.zhuyin,
-      lookalikeCandidates: structuredClone(lookalikeCandidates),
-      multiPronunciations: structuredClone(multiPronunciations),
-      handwritingLineCount: 3,
-    },
-  }
-}
-
 function buildSections(
   analysis: AnalysisResult,
   template: WorksheetTemplate,
@@ -123,11 +100,7 @@ function buildSections(
             ? [wordSection(item, index)]
             : template === 'sentence-practice'
               ? [sentenceSection(item, index)]
-              : template === 'picture-practice'
-                ? [pictureSection(item, index, images)]
-                : template === 'character-discrimination'
-                  ? [characterDiscriminationSection(item, index)]
-                  : []
+              : [pictureSection(item, index, images)]
     sections.push(...candidates.filter((section): section is WorksheetSection => section !== null))
   })
   return sections
@@ -207,17 +180,6 @@ export async function buildWorksheet(
   const images = new Map((options.images ?? []).map((image) => [image.character, image]))
   const sections = buildSections(analysis, template, images)
   if (sections.length === 0) {
-    if (template === 'character-discrimination') {
-      return {
-        ok: false,
-        error: {
-          type: 'no-eligible-characters',
-          template,
-          message: '整份教材的生字都缺少形近字與多音字資料，無法建立字音字形辨析單。',
-          retryable: false,
-        },
-      }
-    }
     return {
       ok: false,
       error: {

@@ -19,7 +19,6 @@ import type {
   WordWorksheetSection,
   SentenceWorksheetSection,
   PictureWorksheetSection,
-  CharacterDiscriminationWorksheetSection,
 } from './contracts'
 
 const FONT_FAMILY = 'DFKai-SB'
@@ -41,7 +40,6 @@ const templateNameMap: Record<string, string> = {
   'word-practice': '詞語積木擴展單',
   'sentence-practice': '句型仿寫應用單',
   'picture-practice': '看圖識字練習單',
-  'character-discrimination': '字音字形辨析單',
 }
 
 /**
@@ -501,229 +499,6 @@ function renderSentenceSections(
 }
 
 /**
- * 4. 渲染字音字形辨析 (character-discrimination)
- */
-function renderDiscriminationSections(
-  sections: CharacterDiscriminationWorksheetSection[],
-): (Paragraph | Table)[] {
-  const result: (Paragraph | Table)[] = [
-    createInstructionBanner('【字音字形辨析評量】 仔細觀察生字之形近字與多音字特徵，辨別字形差異與破音用法，並完成習寫與造詞。'),
-  ]
-
-  sections.forEach((sec) => {
-    const item = sec.item
-    const hasLookalikes = item.lookalikeCandidates && item.lookalikeCandidates.length > 0
-    const hasMultiPron = item.multiPronunciations && item.multiPronunciations.length > 0
-
-    result.push(
-      new Paragraph({
-        spacing: { before: 160, after: 60 },
-        children: [
-          new TextRun({
-            text: `辨析核心：【 ${item.character} 】    `,
-            bold: true,
-            size: 24,
-            font: FONT_FAMILY,
-            color: '0F172A',
-          }),
-          new TextRun({
-            text: `標準讀音：${item.zhuyin || '—'}    教師評閱：[ 優 ． 良 ． 可 ]`,
-            size: 20,
-            font: FONT_FAMILY,
-            color: '475569',
-          }),
-        ],
-      }),
-    )
-
-    if (hasLookalikes) {
-      result.push(
-        new Paragraph({
-          spacing: { before: 60, after: 40 },
-          children: [
-            new TextRun({
-              text: '🔍 形近字字形辨析（比一比部首與筆畫差異，並完成造詞）：',
-              bold: true,
-              size: 20,
-              font: FONT_FAMILY,
-              color: 'B45309',
-            }),
-          ],
-        }),
-      )
-
-      const lookalikeRows: TableRow[] = [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 30, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: 'FEF2F2' },
-              borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
-              margins: { top: 60, bottom: 60, left: 80, right: 80 },
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: `[目標字] ${item.character}`,
-                      bold: true,
-                      size: 22,
-                      font: FONT_FAMILY,
-                      color: 'B91C1C',
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new TableCell({
-              width: { size: 70, type: WidthType.PERCENTAGE },
-              borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
-              margins: { top: 60, bottom: 60, left: 80, right: 80 },
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: '造詞：________________________    造句：________________________',
-                      size: 20,
-                      font: FONT_FAMILY,
-                      color: '64748B',
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      ]
-
-      item.lookalikeCandidates.forEach((c) => {
-        lookalikeRows.push(
-          new TableRow({
-            children: [
-              new TableCell({
-                width: { size: 30, type: WidthType.PERCENTAGE },
-                shading: { type: ShadingType.CLEAR, fill: 'F0F9FF' },
-                borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
-                margins: { top: 60, bottom: 60, left: 80, right: 80 },
-                children: [
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: `[形近字] ${c.character}（${c.radical || '—'}部 / ${c.strokeCount || '—'}畫）`,
-                        bold: true,
-                        size: 20,
-                        font: FONT_FAMILY,
-                        color: '0284C7',
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-              new TableCell({
-                width: { size: 70, type: WidthType.PERCENTAGE },
-                borders: { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin },
-                margins: { top: 60, bottom: 60, left: 80, right: 80 },
-                children: [
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: '造詞：________________________    造句：________________________',
-                        size: 20,
-                        font: FONT_FAMILY,
-                        color: '64748B',
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
-        )
-      })
-
-      result.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: lookalikeRows,
-        }),
-      )
-    }
-
-    if (hasMultiPron) {
-      result.push(
-        new Paragraph({
-          spacing: { before: 100, after: 40 },
-          children: [
-            new TextRun({
-              text: '🔊 多音字語境破音辨析（讀出不同讀音，觀察詞語搭配並練習造句）：',
-              bold: true,
-              size: 20,
-              font: FONT_FAMILY,
-              color: '0369A1',
-            }),
-          ],
-        }),
-      )
-
-      item.multiPronunciations.forEach((p, pIdx) => {
-        result.push(
-          new Paragraph({
-            spacing: { before: 40, after: 40 },
-            children: [
-              new TextRun({
-                text: `讀音 ${pIdx + 1}：【${p.pronunciation}】 詞語：${p.word || '—'}  ｜  造句：________________________________________________`,
-                size: 20,
-                font: FONT_FAMILY,
-                color: '334155',
-              }),
-            ],
-          }),
-        )
-      })
-    }
-
-    // 習寫橫線
-    result.push(
-      new Paragraph({
-        spacing: { before: 80, after: 40 },
-        children: [
-          new TextRun({
-            text: '✍️ 綜合字音字形筆記與辨析習寫：',
-            bold: true,
-            size: 20,
-            font: FONT_FAMILY,
-            color: '334155',
-          }),
-        ],
-      }),
-      new Paragraph({
-        spacing: { before: 40, after: 40 },
-        children: [
-          new TextRun({
-            text: '① ____________________________________________________________________',
-            size: 20,
-            font: FONT_FAMILY,
-            color: '64748B',
-          }),
-        ],
-      }),
-      new Paragraph({
-        spacing: { before: 40, after: 120 },
-        children: [
-          new TextRun({
-            text: '② ____________________________________________________________________',
-            size: 20,
-            font: FONT_FAMILY,
-            color: '64748B',
-          }),
-        ],
-      }),
-    )
-  })
-
-  return result
-}
-
-/**
  * 6. 渲染看圖識字 (picture-practice)
  */
 function renderPictureSections(
@@ -850,10 +625,6 @@ function renderPageSections(
     case 'sentence-practice':
       return renderSentenceSections(
         sections.filter((s): s is SentenceWorksheetSection => s.kind === 'sentence'),
-      )
-    case 'character-discrimination':
-      return renderDiscriminationSections(
-        sections.filter((s): s is CharacterDiscriminationWorksheetSection => s.kind === 'character-discrimination'),
       )
     case 'picture-practice':
       return renderPictureSections(
