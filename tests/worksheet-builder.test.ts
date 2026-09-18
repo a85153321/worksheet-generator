@@ -37,6 +37,7 @@ function sectionKinds(sections: WorksheetSection[]): string[] {
 describe('buildWorksheet', () => {
   it.each<[WorksheetTemplate, string[]]>([
     ['character-practice', ['character']],
+    ['reference-character-practice', ['character']],
     ['word-practice', ['word']],
     ['sentence-practice', ['sentence']],
     ['picture-practice', ['picture']],

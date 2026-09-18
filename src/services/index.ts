@@ -11,6 +11,12 @@ export {
   exportWorksheetToDocx,
 } from './docx-builder'
 export {
+  REFERENCE_QUESTIONS_PER_PAGE,
+  REFERENCE_TEMPLATE_URL,
+  createReferenceTemplateDocxBuffer,
+  generateReferenceTemplateDocxBlob,
+} from './reference-template-docx'
+export {
   inspectUploadedPdf,
   processSelectedPdfPages,
   processUploadedImage,

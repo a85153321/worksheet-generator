@@ -46,6 +46,7 @@ export const PrintPreviewPage: React.FC = () => {
 
   const templateNameMap: Record<WorksheetTemplate, string> = {
     'character-practice': '生字田字格練習單',
+    'reference-character-practice': '範例注音生字學習單',
     'word-practice': '語詞積木擴展單',
     'sentence-practice': '句型仿寫應用單',
     'picture-practice': '看圖識字練習單',
@@ -516,6 +517,7 @@ export const PrintPreviewPage: React.FC = () => {
   const renderContentByTemplate = (pageSections: WorksheetSection[]) => {
     switch (activeTemplate) {
       case 'character-practice':
+      case 'reference-character-practice':
         return renderCharacterPractice(pageSections)
       case 'word-practice':
         return renderWordPractice(pageSections)

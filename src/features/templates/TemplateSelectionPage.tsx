@@ -22,6 +22,16 @@ interface TemplateOption {
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
   {
+    id: 'reference-character-practice',
+    title: '範例注音生字學習單',
+    badge: '教師提供版型',
+    targetGrade: '適合國小一至六年級',
+    description: '以教師提供的第一題 Word 版面為母版，逐題複製並支援 IVS 注音與配圖',
+    features: ['原稿群組圖形與字型', '每題不同生字資料', '自動分頁與自備配圖'],
+    icon: '📝',
+    wireframeType: 'character',
+  },
+  {
     id: 'character-practice',
     title: '生字田字格練習單',
     badge: '低年級首選',
@@ -384,7 +394,7 @@ export const TemplateSelectionPage: React.FC = () => {
 
                 {/* 模板特有內容區 */}
                 <div style={{ flex: 1, minWidth: '220px' }}>
-                  {selectedTemplate === 'character-practice' && (
+                  {(selectedTemplate === 'character-practice' || selectedTemplate === 'reference-character-practice') && (
                     <div>
                       <div style={{ display: 'flex', gap: isEnlarged ? '8px' : '4px', marginBottom: isEnlarged ? '8px' : '4px', flexWrap: 'wrap' }}>
                         <div

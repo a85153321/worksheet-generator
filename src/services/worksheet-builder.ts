@@ -13,6 +13,7 @@ const SECTIONS_PER_PAGE = 6
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
   'character-practice': '生字',
+  'reference-character-practice': '範例生字',
   'word-practice': '語詞',
   'sentence-practice': '句子',
   'picture-practice': '看圖',
@@ -93,7 +94,7 @@ function buildSections(
   const sections: WorksheetSection[] = []
   analysis.characters.forEach((item, index) => {
     const candidates =
-      template === 'character-practice'
+      template === 'character-practice' || template === 'reference-character-practice'
           ? [characterSection(item, index)]
           : template === 'word-practice'
             ? [wordSection(item, index)]
@@ -121,11 +122,12 @@ function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
 function buildPages(
   sections: WorksheetSection[],
   analysis: AnalysisResult,
+  sectionsPerPage = SECTIONS_PER_PAGE,
 ): WorksheetPage[] {
   const characterMap = new Map(analysis.characters.map((item) => [item.character, item]))
   const pages: WorksheetPage[] = []
-  for (let start = 0; start < sections.length; start += SECTIONS_PER_PAGE) {
-    const pageSections = sections.slice(start, start + SECTIONS_PER_PAGE)
+  for (let start = 0; start < sections.length; start += sectionsPerPage) {
+    const pageSections = sections.slice(start, start + sectionsPerPage)
     const seen = new Set<string>()
     const blocks: WorksheetBlock[] = []
     for (const section of pageSections) {
@@ -189,7 +191,11 @@ export async function buildWorksheet(
     }
   }
 
-  const pages = buildPages(sections, analysis)
+  const pages = buildPages(
+    sections,
+    analysis,
+    template === 'reference-character-practice' ? 5 : SECTIONS_PER_PAGE,
+  )
 
   return {
     ok: true,
@@ -204,6 +210,7 @@ export async function buildWorksheet(
       status: 'draft',
       pages,
       sourceAnalysis: structuredClone(analysis),
+      images: options.images ? structuredClone([...options.images]) : undefined,
       createdAt: new Date().toISOString(),
     },
   }

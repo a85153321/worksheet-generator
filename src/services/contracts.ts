@@ -38,6 +38,7 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
 
 export type WorksheetTemplate =
   | 'character-practice'
+  | 'reference-character-practice'
   | 'word-practice'
   | 'sentence-practice'
   | 'picture-practice'
@@ -117,7 +118,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '語詞' | '句子' | '看圖'
+  templateLabel: '生字' | '範例生字' | '語詞' | '句子' | '看圖'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {
@@ -127,5 +128,6 @@ export interface WorksheetDoc {
   status: 'draft' | 'ready'
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult
+  images?: WorksheetImage[]
   createdAt: string
 }

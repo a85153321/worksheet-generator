@@ -23,6 +23,7 @@ import type {
   WorksheetFont,
 } from './contracts'
 import { resolveBopomofoDisplayCharacter } from '../infrastructure'
+import { generateReferenceTemplateDocxBlob } from './reference-template-docx'
 
 export const DOCX_FONT_FULL_NAMES: Record<WorksheetFont, string> = {
   'standard-kai': '標楷體',
@@ -71,6 +72,7 @@ const borderDashed = {
 
 const templateNameMap: Record<string, string> = {
   'character-practice': '生字田字格練習單',
+  'reference-character-practice': '範例注音生字學習單',
   'word-practice': '語詞積木擴展單',
   'sentence-practice': '句型仿寫應用單',
   'picture-practice': '看圖識字練習單',
@@ -652,6 +654,7 @@ function renderPageSections(
 ): (Paragraph | Table)[] {
   switch (doc.template) {
     case 'character-practice':
+    case 'reference-character-practice':
       return renderCharacterSections(
         sections.filter((s): s is CharacterWorksheetSection => s.kind === 'character'),
         doc,
@@ -756,6 +759,9 @@ export async function generateDocxBlob(
   doc: WorksheetDoc,
   options: DocxExportOptions = {},
 ): Promise<Blob> {
+  if (doc.template === 'reference-character-practice') {
+    return generateReferenceTemplateDocxBlob(doc, options)
+  }
   const document = createDocxDocument(doc, options)
   return await Packer.toBlob(document)
 }
