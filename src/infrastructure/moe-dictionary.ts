@@ -21,6 +21,7 @@ export interface DictionaryEntry {
 export interface CharacterDictionaryLookup {
   character: string
   zhuyin: string
+  zhuyinCandidates: string[]
   radical: string
   strokeCount: number
   wordCandidates: string[]
@@ -50,6 +51,13 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values)]
 }
 
+export function chooseDefaultReading(
+  _character: string,
+  zhuyinCandidates: readonly string[],
+): string {
+  return zhuyinCandidates[0] ?? ''
+}
+
 function extractExamples(definition: string): string[] {
   return [...definition.matchAll(/\[例\]\s*([^\n]+)/g)]
     .map((match) => match[1]?.trim() ?? '')
@@ -71,6 +79,7 @@ export function lookupCharacterFromDictionary(
   if (!primaryEntry) return null
 
   const relatedEntries = entriesFromIds(entryIdsByCharacter[normalized])
+  const zhuyinCandidates = unique(exactEntries.map((entry) => entry.zhuyin).filter(Boolean))
   const wordCandidates = unique(
     relatedEntries
       .map((entry) => entry.wordName)
@@ -82,7 +91,8 @@ export function lookupCharacterFromDictionary(
 
   return {
     character: normalized,
-    zhuyin: unique(exactEntries.map((entry) => entry.zhuyin)).join('、'),
+    zhuyin: chooseDefaultReading(normalized, zhuyinCandidates),
+    zhuyinCandidates,
     radical: primaryEntry.radical,
     strokeCount: primaryEntry.strokeCount,
     wordCandidates,

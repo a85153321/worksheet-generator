@@ -8,6 +8,7 @@ const defaultSampleAnalysis: AnalysisResult = {
     {
       character: '學',
       zhuyin: 'ㄒㄩㄝˊ',
+      zhuyinCandidates: ['ㄒㄩㄝˊ'],
       radical: '子',
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
@@ -17,6 +18,7 @@ const defaultSampleAnalysis: AnalysisResult = {
     {
       character: '習',
       zhuyin: 'ㄒㄧˊ',
+      zhuyinCandidates: ['ㄒㄧˊ'],
       radical: '羽',
       strokeCount: 11,
       wordCandidates: ['學習', '練習', '習慣'],
@@ -26,6 +28,7 @@ const defaultSampleAnalysis: AnalysisResult = {
     {
       character: '一',
       zhuyin: 'ㄧ',
+      zhuyinCandidates: ['ㄧ', 'ㄧˊ', 'ㄧˋ'],
       radical: '一',
       strokeCount: 1,
       wordCandidates: ['一起', '一定', '一樣', '第一'],
@@ -41,6 +44,7 @@ const defaultSampleAnalysis: AnalysisResult = {
 interface EditFormState {
   character: string
   zhuyin: string
+  zhuyinCandidates: string[]
   radical: string
   strokeCount: number | ''
   words: string
@@ -58,6 +62,7 @@ export const ReviewPage: React.FC = () => {
   const [editForm, setEditForm] = useState<EditFormState>({
     character: '',
     zhuyin: '',
+    zhuyinCandidates: [],
     radical: '',
     strokeCount: '',
     words: '',
@@ -183,6 +188,7 @@ export const ReviewPage: React.FC = () => {
     setEditForm({
       character: item.character,
       zhuyin: item.zhuyin,
+      zhuyinCandidates: item.zhuyinCandidates,
       radical: item.radical,
       strokeCount: item.strokeCount,
       words: item.wordCandidates.slice(0, 3).join('、'),
@@ -201,6 +207,7 @@ export const ReviewPage: React.FC = () => {
     setEditForm({
       character: '',
       zhuyin: '',
+      zhuyinCandidates: [],
       radical: '',
       strokeCount: '',
       words: '',
@@ -239,6 +246,7 @@ export const ReviewPage: React.FC = () => {
       return {
         ...prev,
         zhuyin: newZhuyin,
+        zhuyinCandidates: lookup.zhuyinCandidates,
         radical: newRadical,
         strokeCount: newStrokeCount,
         words: newWords,
@@ -351,11 +359,16 @@ export const ReviewPage: React.FC = () => {
       .filter(Boolean)
 
     const strokeCount = typeof editForm.strokeCount === 'number' ? editForm.strokeCount : 1
+    const zhuyinCandidates = [...new Set([
+      ...editForm.zhuyinCandidates,
+      editForm.zhuyin.trim(),
+    ].filter(Boolean))]
 
     if (isAddingNew) {
       const newChar: CharacterAnalysis = {
         character: editForm.character.trim(),
         zhuyin: editForm.zhuyin.trim(),
+        zhuyinCandidates,
         radical: editForm.radical.trim(),
         strokeCount,
         wordCandidates: parsedWords.length > 0 ? parsedWords : [editForm.character.trim()],
@@ -374,6 +387,7 @@ export const ReviewPage: React.FC = () => {
         ...current,
         character: editForm.character.trim(),
         zhuyin: editForm.zhuyin.trim(),
+        zhuyinCandidates,
         radical: editForm.radical.trim(),
         strokeCount,
         wordCandidates: parsedWords,
@@ -528,7 +542,12 @@ export const ReviewPage: React.FC = () => {
                 maxLength={1}
                 value={editForm.character}
                 onChange={(e) => {
-                  setEditForm({ ...editForm, character: e.target.value })
+                  setEditForm({
+                    ...editForm,
+                    character: e.target.value,
+                    zhuyin: '',
+                    zhuyinCandidates: [],
+                  })
                   setAutofillNotice(null)
                 }}
                 placeholder="例如：春"
@@ -539,15 +558,29 @@ export const ReviewPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="new-zhuyin-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>注音符號：</label>
-              <input
-                id="new-zhuyin-input"
-                type="text"
-                value={editForm.zhuyin}
-                onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
-                placeholder="例如：ㄔㄨㄣ"
-                disabled={isSaving}
-                style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
-              />
+              {editForm.zhuyinCandidates.length > 0 ? (
+                <select
+                  id="new-zhuyin-input"
+                  value={editForm.zhuyin}
+                  onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
+                  disabled={isSaving}
+                  style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                >
+                  {editForm.zhuyinCandidates.map((candidate) => (
+                    <option key={candidate} value={candidate}>{candidate}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id="new-zhuyin-input"
+                  type="text"
+                  value={editForm.zhuyin}
+                  onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
+                  placeholder="例如：ㄔㄨㄣ"
+                  disabled={isSaving}
+                  style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                />
+              )}
               {fieldErrors.zhuyin && <div className="form-error">{fieldErrors.zhuyin}</div>}
             </div>
             <div>
@@ -723,7 +756,12 @@ export const ReviewPage: React.FC = () => {
                         type="text"
                         maxLength={1}
                         value={editForm.character}
-                        onChange={(e) => setEditForm({ ...editForm, character: e.target.value })}
+                        onChange={(e) => setEditForm({
+                          ...editForm,
+                          character: e.target.value,
+                          zhuyin: '',
+                          zhuyinCandidates: [],
+                        })}
                         disabled={isSaving}
                         style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
@@ -731,13 +769,16 @@ export const ReviewPage: React.FC = () => {
                     </div>
                     <div>
                       <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>注音符號：</label>
-                      <input
-                        type="text"
+                      <select
                         value={editForm.zhuyin}
                         onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
                         disabled={isSaving}
                         style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                      />
+                      >
+                        {editForm.zhuyinCandidates.map((candidate) => (
+                          <option key={candidate} value={candidate}>{candidate}</option>
+                        ))}
+                      </select>
                       {fieldErrors.zhuyin && <div className="form-error">{fieldErrors.zhuyin}</div>}
                     </div>
                     <div>

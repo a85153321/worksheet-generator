@@ -13,13 +13,16 @@ export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
   }),
-  // includeZhuyin=false 時保留跨層欄位結構，但允許空字串。
-  zhuyin: z.string().trim(),
+  zhuyin: z.string().trim().min(1),
+  zhuyinCandidates: z.array(z.string().trim().min(1)).min(1),
   radical: z.string().trim().min(1),
   strokeCount: z.number().int().positive(),
   wordCandidates: z.array(z.string().trim().min(1)),
   sentenceCandidates: z.array(z.string().trim().min(1)),
   source: sourceLocationSchema,
+}).refine(({ zhuyin, zhuyinCandidates }) => zhuyinCandidates.includes(zhuyin), {
+  message: 'zhuyin 必須是 zhuyinCandidates 中的其中一個讀音',
+  path: ['zhuyin'],
 })
 
 export const analysisResultSchema = z.object({

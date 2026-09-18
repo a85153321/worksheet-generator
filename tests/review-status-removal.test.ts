@@ -12,6 +12,7 @@ const analysisWithoutReviewStatus: AnalysisResult = {
     {
       character: '學',
       zhuyin: 'ㄒㄩㄝˊ',
+      zhuyinCandidates: ['ㄒㄩㄝˊ'],
       radical: '子',
       strokeCount: 16,
       wordCandidates: ['學習', '學生'],

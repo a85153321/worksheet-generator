@@ -22,11 +22,11 @@ import type {
   DocxExportOptions,
   WorksheetFont,
 } from './contracts'
+import { resolveBopomofoDisplayCharacter } from '../infrastructure'
 
 export const DOCX_FONT_FULL_NAMES: Record<WorksheetFont, string> = {
   'standard-kai': '標楷體',
   'zihi-kai-zhuyin': 'ㄅ字嗨注音標楷 Regular',
-  'zihi-box-zhuyin': 'ㄅ字嗨注音加框 R',
   'zihi-only-zhuyin': 'ㄅ字嗨注音而已 R',
 }
 
@@ -45,6 +45,17 @@ function docxFont(font: WorksheetFont): DocxFont {
 // docx-builder 以 TextRun 直接建立文件；同步建立期間切換此 run property，
 // 讓所有明確文字與 default style 寫入相同的 w:rFonts。
 let FONT_FAMILY: DocxFont = docxFont('standard-kai')
+let SELECTED_FONT: WorksheetFont = 'standard-kai'
+
+function displayCharacter(doc: WorksheetDoc, character: string): string {
+  if (SELECTED_FONT === 'standard-kai') return character
+  const selectedZhuyin = doc.sourceAnalysis.characters.find(
+    (item) => item.character === character,
+  )?.zhuyin
+  return selectedZhuyin
+    ? resolveBopomofoDisplayCharacter(character, selectedZhuyin)
+    : character
+}
 
 const borderThin = {
   style: BorderStyle.SINGLE,
@@ -175,7 +186,7 @@ function renderCharacterSections(
         spacing: { before: 180, after: 60 },
         children: [
           new TextRun({
-            text: `生字第 ${idx + 1} 題：【 ${item.character} 】  `,
+            text: `生字第 ${idx + 1} 題：【 ${displayCharacter(doc, item.character)} 】  `,
             bold: true,
             size: 24,
             font: FONT_FAMILY,
@@ -210,7 +221,7 @@ function renderCharacterSections(
             alignment: AlignmentType.CENTER,
             children: [
               new TextRun({
-                text: item.character,
+                text: displayCharacter(doc, item.character),
                 bold: true,
                 size: 36,
                 font: FONT_FAMILY,
@@ -236,7 +247,7 @@ function renderCharacterSections(
             alignment: AlignmentType.CENTER,
             children: [
               new TextRun({
-                text: item.character,
+                text: displayCharacter(doc, item.character),
                 size: 32,
                 font: FONT_FAMILY,
                 color: 'CBD5E1',
@@ -314,6 +325,7 @@ function renderCharacterSections(
  */
 function renderWordSections(
   sections: WordWorksheetSection[],
+  doc: WorksheetDoc,
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
     createInstructionBanner('【貳、語詞積木擴展與習寫】 讀一讀語詞積木，在書寫格端正寫一次，並完成延伸造詞。'),
@@ -327,7 +339,7 @@ function renderWordSections(
         spacing: { before: 160, after: 80 },
         children: [
           new TextRun({
-            text: `生字核心：【 ${item.character} 】`,
+            text: `生字核心：【 ${displayCharacter(doc, item.character)} 】`,
             bold: true,
             size: 24,
             font: FONT_FAMILY,
@@ -432,6 +444,7 @@ function renderWordSections(
  */
 function renderSentenceSections(
   sections: SentenceWorksheetSection[],
+  doc: WorksheetDoc,
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
     createInstructionBanner('【參、句型仿寫與情境造句】 細讀課文情境教學例句，分析句型結構，並仿寫完整通順的句子。'),
@@ -445,7 +458,7 @@ function renderSentenceSections(
         spacing: { before: 160, after: 60 },
         children: [
           new TextRun({
-            text: `生字造句應用：【 ${item.character} 】    `,
+            text: `生字造句應用：【 ${displayCharacter(doc, item.character)} 】    `,
             bold: true,
             size: 24,
             font: FONT_FAMILY,
@@ -527,6 +540,7 @@ function renderSentenceSections(
  */
 function renderPictureSections(
   sections: PictureWorksheetSection[],
+  doc: WorksheetDoc,
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
     createInstructionBanner('【伍、看圖識字與表達】 觀察圖片中的情境，寫出對應的生字，並造出一個完整的句子。'),
@@ -559,7 +573,7 @@ function renderPictureSections(
               spacing: { before: 40, after: 0 },
               children: [
                 new TextRun({
-                  text: `【 ${item.character} 】`,
+                  text: `【 ${displayCharacter(doc, item.character)} 】`,
                   bold: true,
                   size: 24,
                   font: FONT_FAMILY,
@@ -645,14 +659,17 @@ function renderPageSections(
     case 'word-practice':
       return renderWordSections(
         sections.filter((s): s is WordWorksheetSection => s.kind === 'word'),
+        doc,
       )
     case 'sentence-practice':
       return renderSentenceSections(
         sections.filter((s): s is SentenceWorksheetSection => s.kind === 'sentence'),
+        doc,
       )
     case 'picture-practice':
       return renderPictureSections(
         sections.filter((s): s is PictureWorksheetSection => s.kind === 'picture'),
+        doc,
       )
     default:
       return renderCharacterSections(
@@ -669,7 +686,8 @@ export function createDocxDocument(
   doc: WorksheetDoc,
   options: DocxExportOptions = {},
 ): Document {
-  FONT_FAMILY = docxFont(options.font ?? 'standard-kai')
+  SELECTED_FONT = options.font ?? 'standard-kai'
+  FONT_FAMILY = docxFont(SELECTED_FONT)
   const templateTitle = templateNameMap[doc.template] || '國語學習單'
   const totalPages = doc.pages.length > 0 ? doc.pages.length : 1
 

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build:bpmf-ivs": "node scripts/build-bpmf-ivs-map.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

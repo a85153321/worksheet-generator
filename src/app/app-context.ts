@@ -12,8 +12,6 @@ export interface AppContextType {
   setAnalysisError: (error: AppError | null) => void
   selectedGrade: number
   setSelectedGrade: (grade: number) => void
-  includeZhuyin: boolean
-  setIncludeZhuyin: React.Dispatch<React.SetStateAction<boolean>>
   worksheetImages: Record<string, WorksheetImage>
   setWorksheetImages: React.Dispatch<React.SetStateAction<Record<string, WorksheetImage>>>
   selectedTemplate: WorksheetTemplate

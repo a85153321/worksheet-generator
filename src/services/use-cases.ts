@@ -62,7 +62,8 @@ export function analyzeTypedCharacters(
       if (!dictionary) throw new Error('Dictionary lookup changed during analysis')
       return {
         character: dictionary.character,
-        zhuyin: input.context?.includeZhuyin === false ? '' : dictionary.zhuyin,
+        zhuyin: dictionary.zhuyin,
+        zhuyinCandidates: dictionary.zhuyinCandidates,
         radical: dictionary.radical,
         strokeCount: dictionary.strokeCount,
         wordCandidates: dictionary.wordCandidates,

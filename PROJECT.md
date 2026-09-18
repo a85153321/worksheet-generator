@@ -68,6 +68,7 @@ src/
 
 - `character`
 - `zhuyin`
+- `zhuyinCandidates`（辭典中該字所有相異讀音；`zhuyin` 為目前選定讀音）
 - `radical`
 - `strokeCount`
 - `wordCandidates`
@@ -85,6 +86,7 @@ src/
 lookupCharacterFromDictionary(character): {
   character: string
   zhuyin: string
+  zhuyinCandidates: string[]
   radical: string
   strokeCount: number
   wordCandidates: string[]
@@ -95,7 +97,7 @@ lookupCharacterFromDictionary(character): {
 analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 ```
 
-`analyzeTypedCharacters` 是同步、本機函式。查無資料不得用猜測值補齊；應回傳 `dictionary-not-found`。`includeZhuyin=false` 時保留 `zhuyin` 欄位但回傳空字串，維持下游契約穩定。
+`analyzeTypedCharacters` 是同步、本機函式。查無資料不得用猜測值補齊；應回傳 `dictionary-not-found`。注音與其他辭典欄位一律隨查詢回傳，不提供省略注音的查詢開關。
 
 圖片與 PDF 預處理契約可保留供教師整理或自行提供素材，但不負責 OCR 或自動分析生字。
 

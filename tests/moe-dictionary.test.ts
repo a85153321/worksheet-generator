@@ -15,6 +15,8 @@ describe('MOE Concised Mandarin Dictionary', () => {
       strokeCount: 16,
     })
     expect(result?.zhuyin).toContain('ㄒㄩㄝˊ')
+    expect(result?.zhuyinCandidates).toContain('ㄒㄩㄝˊ')
+    expect(result?.zhuyinCandidates).toContain(result?.zhuyin)
     expect(result?.wordCandidates).toContain('學習')
     expect(result?.sentenceCandidates.length).toBeGreaterThan(0)
     expect(result?.entryWordNumbers.length).toBeGreaterThan(1)
@@ -53,13 +55,11 @@ describe('MOE Concised Mandarin Dictionary', () => {
     if (!result.ok) expect(appErrorSchema.safeParse(result.error).success).toBe(true)
   })
 
-  it('can omit zhuyin while retaining the stable field shape', () => {
-    const result = analyzeTypedCharacters({
-      characters: ['學'],
-      context: { includeZhuyin: false },
-    })
+  it('returns distinct readings and selects one candidate as the default', () => {
+    const result = lookupCharacterFromDictionary('行')
 
-    expect(result.ok).toBe(true)
-    if (result.ok) expect(result.value.characters[0]?.zhuyin).toBe('')
+    expect(result?.zhuyinCandidates.length).toBeGreaterThan(1)
+    expect(result?.zhuyinCandidates).toContain(result?.zhuyin)
+    expect(result?.zhuyin).not.toContain('、')
   })
 })

@@ -17,6 +17,7 @@ const sampleAnalysis: AnalysisResult = {
     {
       character: '學',
       zhuyin: 'ㄒㄩㄝˊ',
+      zhuyinCandidates: ['ㄒㄩㄝˊ'],
       radical: '子',
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
@@ -26,6 +27,7 @@ const sampleAnalysis: AnalysisResult = {
     {
       character: '習',
       zhuyin: 'ㄒㄧˊ',
+      zhuyinCandidates: ['ㄒㄧˊ'],
       radical: '羽',
       strokeCount: 11,
       wordCandidates: ['學習', '練習'],
@@ -63,6 +65,34 @@ describe('docx-builder', () => {
 
     const buffer = await Packer.toBuffer(docx)
     expect(buffer.length).toBeGreaterThan(1000)
+  })
+
+  it('writes the selected reading IVS into annotated-font character runs', async () => {
+    const analysis: AnalysisResult = {
+      characters: [{
+        ...sampleAnalysis.characters[0],
+        character: '會',
+        zhuyin: 'ㄎㄨㄞˋ',
+        zhuyinCandidates: ['ㄏㄨㄟˋ', 'ㄎㄨㄞˋ'],
+      }],
+    }
+    const result = await buildWorksheet(analysis, 'character-practice', { grade: 3 })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const annotatedBuffer = await Packer.toBuffer(createDocxDocument(result.value, {
+      font: 'zihi-kai-zhuyin',
+    }))
+    const annotatedXml = await (await JSZip.loadAsync(annotatedBuffer))
+      .file('word/document.xml')?.async('string')
+    expect(annotatedXml).toContain(`會${String.fromCodePoint(0xe01e1)}`)
+
+    const standardBuffer = await Packer.toBuffer(createDocxDocument(result.value, {
+      font: 'standard-kai',
+    }))
+    const standardXml = await (await JSZip.loadAsync(standardBuffer))
+      .file('word/document.xml')?.async('string')
+    expect(standardXml).not.toContain(`會${String.fromCodePoint(0xe01e1)}`)
   })
 
   it('creates valid Document for word-practice and sentence-practice', async () => {

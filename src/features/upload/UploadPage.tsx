@@ -4,11 +4,9 @@ import { useApp } from '../../app/index'
 export const UploadPage: React.FC = () => {
   const {
     analysisError,
-    includeZhuyin,
     navigate,
     runTypedAnalysis,
     setAnalysisError,
-    setIncludeZhuyin,
     typedCharacters,
   } = useApp()
   const [typedInput, setTypedInput] = useState(typedCharacters.join('、'))
@@ -59,15 +57,6 @@ export const UploadPage: React.FC = () => {
           ))}
         </div>
       </div>
-
-      <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '1rem' }}>
-        <input
-          type="checkbox"
-          checked={includeZhuyin}
-          onChange={(event) => setIncludeZhuyin(event.target.checked)}
-        />
-        學習單顯示注音
-      </label>
 
       <div className="callout callout-info" style={{ marginTop: '1rem' }}>
         <div className="callout-title">本機辭典查詢</div>

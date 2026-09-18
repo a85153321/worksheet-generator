@@ -11,6 +11,7 @@ const analysis: AnalysisResult = {
     {
       character: '鳥',
       zhuyin: 'ㄋㄧㄠˇ',
+      zhuyinCandidates: ['ㄋㄧㄠˇ'],
       radical: '鳥',
       strokeCount: 11,
       wordCandidates: ['小鳥', '飛鳥'],

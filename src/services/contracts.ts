@@ -45,7 +45,6 @@ export type WorksheetTemplate =
 export type WorksheetFont =
   | 'standard-kai'
   | 'zihi-kai-zhuyin'
-  | 'zihi-box-zhuyin'
   | 'zihi-only-zhuyin'
 
 export interface DocxExportOptions {

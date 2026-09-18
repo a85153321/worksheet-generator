@@ -18,7 +18,6 @@ import {
 const WORKSHEET_FONT_LABELS: Record<WorksheetFont, string> = {
   'standard-kai': '標楷體',
   'zihi-kai-zhuyin': '標楷有注音',
-  'zihi-box-zhuyin': '注音有框',
   'zihi-only-zhuyin': '純注音',
 }
 
@@ -31,8 +30,6 @@ export const PrintPreviewPage: React.FC = () => {
     selectedTemplate,
     navigate,
     selectedGrade,
-    includeZhuyin,
-    setIncludeZhuyin,
   } = useApp()
 
   const [previewFont, setPreviewFont] = useState<WorksheetFont>(
@@ -161,6 +158,7 @@ export const PrintPreviewPage: React.FC = () => {
     {
       character: '學',
       zhuyin: 'ㄒㄩㄝˊ',
+      zhuyinCandidates: ['ㄒㄩㄝˊ'],
       radical: '子',
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
@@ -170,6 +168,7 @@ export const PrintPreviewPage: React.FC = () => {
     {
       character: '習',
       zhuyin: 'ㄒㄧˊ',
+      zhuyinCandidates: ['ㄒㄧˊ'],
       radical: '羽',
       strokeCount: 11,
       wordCandidates: ['學習', '練習', '習慣'],
@@ -179,6 +178,7 @@ export const PrintPreviewPage: React.FC = () => {
     {
       character: '一',
       zhuyin: 'ㄧ',
+      zhuyinCandidates: ['ㄧ', 'ㄧˊ', 'ㄧˋ'],
       radical: '一',
       strokeCount: 1,
       wordCandidates: ['一起', '一定', '一樣', '第一'],
@@ -218,9 +218,7 @@ export const PrintPreviewPage: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div className="sheet-instruction-banner">
           <strong>【壹、生字筆順與田字格習寫】</strong>{' '}
-          {includeZhuyin
-            ? '先讀注音與部首，再依正確筆順在田字格內端正書寫。'
-            : '觀察字形與部首，再依正確筆順在田字格內端正書寫。'}
+          先讀注音與部首，再依正確筆順在田字格內端正書寫。
         </div>
 
         {items.map((item, idx) => (
@@ -237,7 +235,7 @@ export const PrintPreviewPage: React.FC = () => {
                   筆畫：{item.strokeCount || '—'} 畫
                 </span>
               </div>
-              {includeZhuyin && Boolean(item.zhuyin && item.zhuyin.trim()) && (
+              {Boolean(item.zhuyin && item.zhuyin.trim()) && (
                 <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>讀音：</span>
                   <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
@@ -246,12 +244,12 @@ export const PrintPreviewPage: React.FC = () => {
             </div>
 
             <div className="sheet-char-grid-row">
-              {/* 示範大格（國字在田字格內，標準直式注音位於右側注音欄；若 includeZhuyin 為 false 則不渲染右側注音欄，不留空位） */}
+              {/* 示範大格（國字在田字格內，標準直式注音位於右側注音欄） */}
               <TianzigeWithZhuyin
                 character={item.character}
                 zhuyin={item.zhuyin}
                 isDemonstration
-                showZhuyin={includeZhuyin}
+                showZhuyin
               />
 
               {/* 1 格描字格 */}
@@ -333,7 +331,7 @@ export const PrintPreviewPage: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
-                  生字核心：【 {item.character} 】{includeZhuyin && item.zhuyin && item.zhuyin.trim() ? `（${item.zhuyin}）` : ''}
+                  生字核心：【 {item.character} 】{item.zhuyin && item.zhuyin.trim() ? `（${item.zhuyin}）` : ''}
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748b' }}>
                   請依序練習以下生詞，並在右側空白橫線練習擴詞：
@@ -498,7 +496,7 @@ export const PrintPreviewPage: React.FC = () => {
                   </span>
                   <div className="sheet-tian-grid sm" aria-label="看圖寫生字格"></div>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    （{includeZhuyin ? '注音：________ ｜ ' : ''}部首：________）
+                    （注音：________ ｜ 部首：________）
                   </span>
                 </div>
                 <div style={{ fontSize: '13px', color: '#334155' }}>
@@ -542,33 +540,6 @@ export const PrintPreviewPage: React.FC = () => {
               ；本步驟由純前端引擎執行，不會傳送資料到外部服務
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-              {/* 即時切換注音開關 */}
-              <label
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  cursor: 'pointer',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  color: includeZhuyin ? '#166534' : '#64748b',
-                  backgroundColor: includeZhuyin ? '#f0fdf4' : '#f8fafc',
-                  border: includeZhuyin ? '1.5px solid #86efac' : '1px solid var(--color-border)',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  userSelect: 'none',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  id="preview-include-zhuyin"
-                  checked={includeZhuyin}
-                  onChange={(e) => setIncludeZhuyin(e.target.checked)}
-                  style={{ cursor: 'pointer', accentColor: '#16a34a' }}
-                />
-                <span>顯示注音</span>
-              </label>
-
               {/* 直接選擇字體控制 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <label htmlFor="preview-font-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
@@ -592,15 +563,12 @@ export const PrintPreviewPage: React.FC = () => {
                 >
                   <option value="standard-kai">標楷體（標準字體，不顯示注音）</option>
                   <option value="zihi-kai-zhuyin">標楷有注音</option>
-                  <option value="zihi-box-zhuyin">注音有框</option>
                   <option value="zihi-only-zhuyin">純注音</option>
                 </select>
               </div>
 
-              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : previewFont === 'standard-kai' ? '#3b82f6' : '#0d9488', fontWeight: 600 }}>
-                {!includeZhuyin
-                  ? '🚫 已關閉注音（純文字排版，不留空白佔位）'
-                  : `✨ 已套用標準「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
+              <span style={{ fontSize: '0.82rem', color: previewFont === 'standard-kai' ? '#3b82f6' : '#0d9488', fontWeight: 600 }}>
+                {`✨ 已套用標準「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
               </span>
             </div>
           </div>
@@ -728,7 +696,7 @@ export const PrintPreviewPage: React.FC = () => {
 
             {/* 2. 四款字型與官方下載連結 */}
             <div style={{ margin: 0 }}>
-              <strong>🔗 四款字型官方開源下載連結：</strong>
+              <strong>🔗 三款字型官方開源下載連結：</strong>
               字型源自開源專案 <strong>ButTaiwan/bpmfvs</strong>（採 Apache 2.0 / SIL OFL 開源授權，可免費商用、自由嵌入與免費下載）：
               <ul style={{ margin: '0.35rem 0 0.35rem 1.25rem', padding: 0 }}>
                 <li>
@@ -736,9 +704,6 @@ export const PrintPreviewPage: React.FC = () => {
                 </li>
                 <li>
                   <strong>標楷有注音</strong>（字型檔：<code>BpmfZihiKaiStd-Regular.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音標楷 Regular</code>）
-                </li>
-                <li>
-                  <strong>注音有框</strong>（字型檔：<code>BpmfZihiBox-R.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音加框 R</code>）
                 </li>
                 <li>
                   <strong>純注音</strong>（字型檔：<code>BpmfZihiOnly-R.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音而已 R</code>）
@@ -794,13 +759,9 @@ export const PrintPreviewPage: React.FC = () => {
                     <span>國語單元評量</span>
                     <span className="sheet-header-meta-sep">｜</span>
                     <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
-                    {includeZhuyin ? (
-                      previewFont !== 'standard-kai' ? (
-                        <span className="sheet-header-badge">（{WORKSHEET_FONT_LABELS[previewFont]}）</span>
-                      ) : null
-                    ) : (
-                      <span className="sheet-header-badge muted">（無注音版）</span>
-                    )}
+                    {previewFont !== 'standard-kai' ? (
+                      <span className="sheet-header-badge">（{WORKSHEET_FONT_LABELS[previewFont]}）</span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="sheet-info-row">

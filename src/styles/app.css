@@ -12,18 +12,6 @@
 }
 
 @font-face {
-  font-family: 'ㄅ字嗨注音加框 R';
-  src: local('ㄅ字嗨注音加框 R'),
-       local('ㄅ字嗨注音加框'),
-       local('BpmfZihiBox-R'),
-       local('BpmfZihiBox'),
-       url('../assets/fonts/BpmfZihiBox-R.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
   font-family: 'ㄅ字嗨注音而已 R';
   src: local('ㄅ字嗨注音而已 R'),
        local('ㄅ字嗨注音而已'),
@@ -48,13 +36,12 @@
 
   /* 學習單字型堆疊：
      - 全形標點符號優先透過 WorksheetPunct 採用穩定置中對齊之 CJK 標點
-     - 學習單可切換標楷體與三款字嗨注音字型
+     - 學習單可切換標楷體與兩款字嗨注音字型
      - 具備健壯的跨平台 CJK 系統字體 fallback 堆疊（Mac/Windows/Linux），絕不依賴會造成排版錯位的 Western serif */
   --font-worksheet-punct: 'WorksheetPunct', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
   --font-worksheet-standard: 'WorksheetPunct', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'STKaiti',
     'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
   --font-worksheet-zihi-kai: 'WorksheetPunct', 'ㄅ字嗨注音標楷 Regular', 'BpmfZihiKaiStd-Regular', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
-  --font-worksheet-zihi-box: 'WorksheetPunct', 'ㄅ字嗨注音加框 R', 'BpmfZihiBox-R', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
   --font-worksheet-zihi-only: 'WorksheetPunct', 'ㄅ字嗨注音而已 R', 'BpmfZihiOnly-R', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
 
   --color-bg: #f8fafc;
@@ -624,12 +611,6 @@ textarea:focus-visible {
 .a4-sheet.worksheet-font-zihi-kai-zhuyin {
   font-family: var(--font-worksheet-zihi-kai);
   --current-zhuyin-font: var(--font-worksheet-zihi-kai);
-}
-
-.worksheet-font-zihi-box-zhuyin,
-.a4-sheet.worksheet-font-zihi-box-zhuyin {
-  font-family: var(--font-worksheet-zihi-box);
-  --current-zhuyin-font: var(--font-worksheet-zihi-box);
 }
 
 .worksheet-font-zihi-only-zhuyin,

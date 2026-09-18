@@ -25,7 +25,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [analysisError, setAnalysisError] = useState<AppError | null>(null)
   const [typedCharacters, setTypedCharacters] = useState<string[]>([])
   const [selectedGrade, setSelectedGrade] = useState(3)
-  const [includeZhuyin, setIncludeZhuyin] = useState(true)
   const [worksheetImages, setWorksheetImages] = useState<Record<string, WorksheetImage>>({})
   const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('character-practice')
   const [worksheetDoc, setWorksheetDoc] = useState<WorksheetDoc | null>(null)
@@ -50,7 +49,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAnalysisError(null)
     const result = analyzeTypedCharacters({
       characters,
-      context: { language: 'zh-TW', includeZhuyin, grade: selectedGrade },
+      context: { language: 'zh-TW', grade: selectedGrade },
     })
     if (!result.ok) {
       setAnalysisError(result.error)
@@ -70,8 +69,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAnalysisError,
       selectedGrade,
       setSelectedGrade,
-      includeZhuyin,
-      setIncludeZhuyin,
       worksheetImages,
       setWorksheetImages,
       selectedTemplate,

@@ -146,6 +146,7 @@ export const TemplateSelectionPage: React.FC = () => {
         {
           character: '學',
           zhuyin: 'ㄒㄩㄝˊ',
+          zhuyinCandidates: ['ㄒㄩㄝˊ'],
           radical: '子',
           strokeCount: 16,
           wordCandidates: ['學校', '學習', '學生'],
@@ -155,6 +156,7 @@ export const TemplateSelectionPage: React.FC = () => {
         {
           character: '習',
           zhuyin: 'ㄒㄧˊ',
+          zhuyinCandidates: ['ㄒㄧˊ'],
           radical: '羽',
           strokeCount: 11,
           wordCandidates: ['學習', '練習', '習慣'],
@@ -164,6 +166,7 @@ export const TemplateSelectionPage: React.FC = () => {
         {
           character: '一',
           zhuyin: 'ㄧ',
+          zhuyinCandidates: ['ㄧ', 'ㄧˊ', 'ㄧˋ'],
           radical: '一',
           strokeCount: 1,
           wordCandidates: ['一起', '一定', '一樣', '第一'],
@@ -255,12 +258,14 @@ export const TemplateSelectionPage: React.FC = () => {
           {
             character: '學',
             zhuyin: 'ㄒㄩㄝˊ',
+            zhuyinCandidates: ['ㄒㄩㄝˊ'],
             wordCandidates: ['學校', '學習', '學生'],
             sentenceCandidates: ['我每天到學校學習新知識。'],
           },
           {
             character: '習',
             zhuyin: 'ㄒㄧˊ',
+            zhuyinCandidates: ['ㄒㄧˊ'],
             wordCandidates: ['學習', '練習', '習慣'],
             sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
           },
