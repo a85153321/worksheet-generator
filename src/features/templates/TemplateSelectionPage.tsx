@@ -17,7 +17,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'character' | 'word' | 'sentence'
+  wireframeType: 'reference' | 'character' | 'word' | 'sentence'
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -29,7 +29,7 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     description: '以教師提供的第一題 Word 版面為母版，逐題複製並支援 IVS 注音與配圖',
     features: ['原稿群組圖形與字型', '每題不同生字資料', '自動分頁與自備配圖'],
     icon: '📝',
-    wireframeType: 'character',
+    wireframeType: 'reference',
   },
   {
     id: 'character-practice',
@@ -191,6 +191,24 @@ export const TemplateSelectionPage: React.FC = () => {
   // 渲染卡片內線框縮圖 (Wireframe Mini Illustration)
   const renderWireframe = (type: TemplateOption['wireframeType']) => {
     switch (type) {
+      case 'reference':
+        return (
+          <div className="template-wireframe" aria-hidden="true">
+            <div className="wireframe-header-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+              <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 600 }}>第 1 題：【看】 部首：目 9畫</span>
+            </div>
+            <div className="wireframe-row" style={{ gap: '3px', marginBottom: '3px' }}>
+              <div className="wireframe-box" style={{ borderColor: '#ef4444', color: '#b91c1c', fontWeight: 700, fontSize: '9px' }} title="示範格">看</div>
+              <div className="wireframe-box" style={{ borderColor: '#cbd5e1', color: '#94a3b8', opacity: 0.5, fontSize: '9px' }} title="描字格">看</div>
+              <div className="wireframe-box" style={{ borderColor: '#cbd5e1' }} title="習寫格 1"></div>
+              <div className="wireframe-box" style={{ borderColor: '#cbd5e1' }} title="習寫格 2"></div>
+              <div className="wireframe-box" style={{ borderColor: '#7030a0', borderWidth: '1.5px', color: '#7030a0', fontSize: '8px', fontWeight: 700 }} title="原稿紫色部首格">目</div>
+            </div>
+            <div className="wireframe-lines">
+              <div className="wireframe-line-sm" style={{ width: '85%' }}></div>
+            </div>
+          </div>
+        )
       case 'character':
         return (
           <div className="template-wireframe" aria-hidden="true">
@@ -269,6 +287,8 @@ export const TemplateSelectionPage: React.FC = () => {
             character: '學',
             zhuyin: 'ㄒㄩㄝˊ',
             zhuyinCandidates: ['ㄒㄩㄝˊ'],
+            radical: '子',
+            strokeCount: 16,
             wordCandidates: ['學校', '學習', '學生'],
             sentenceCandidates: ['我每天到學校學習新知識。'],
           },
@@ -276,6 +296,8 @@ export const TemplateSelectionPage: React.FC = () => {
             character: '習',
             zhuyin: 'ㄒㄧˊ',
             zhuyinCandidates: ['ㄒㄧˊ'],
+            radical: '羽',
+            strokeCount: 11,
             wordCandidates: ['學習', '練習', '習慣'],
             sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
           },
@@ -327,9 +349,9 @@ export const TemplateSelectionPage: React.FC = () => {
                 color: '#000000',
               }}
             >
-              國小國語單元評量學習單
+              {selectedTemplate === 'reference-character-practice' ? '生字注音學習單' : '國小國語單元評量學習單'}
             </h4>
-            <span style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#64748b' }}>
+            <span style={{ fontSize: isEnlarged ? '13px' : '11px', color: selectedTemplate === 'reference-character-practice' ? '#7c3aed' : '#64748b', fontWeight: selectedTemplate === 'reference-character-practice' ? 600 : 400 }}>
               版型：{currentOption.title}
             </span>
           </div>
@@ -348,13 +370,197 @@ export const TemplateSelectionPage: React.FC = () => {
             <span style={{ whiteSpace: 'nowrap' }}>____ 年 ____ 班</span>
             <span style={{ whiteSpace: 'nowrap' }}>座號：____</span>
             <span style={{ whiteSpace: 'nowrap' }}>姓名：____________</span>
-            <span style={{ whiteSpace: 'nowrap' }}>得分：______</span>
+            {selectedTemplate !== 'reference-character-practice' && (
+              <span style={{ whiteSpace: 'nowrap' }}>得分：______</span>
+            )}
           </div>
         </div>
 
+        {/* 教師 Word 原稿母版特色提示 */}
+        {selectedTemplate === 'reference-character-practice' && (
+          <div
+            style={{
+              padding: isEnlarged ? '8px 12px' : '5px 8px',
+              backgroundColor: '#f5f3ff',
+              border: '1px solid #ddd6fe',
+              borderRadius: '4px',
+              color: '#6b21a8',
+              fontSize: isEnlarged ? '12px' : '10px',
+              fontWeight: 600,
+              marginBottom: isEnlarged ? '12px' : '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>📄</span>
+            <span>
+              教師 Word 原稿版型：完整複製第一題群組圖形（示範格、描字格、習寫格、紫色部首格）與字型大小，每頁固定 5 題（第 6 題自動換頁），支援 IVS 破音字注音與配圖。
+            </span>
+          </div>
+        )}
+
         {/* 依模板樣式呈現排版模擬 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: isEnlarged ? '16px' : '10px' }}>
-          {previewChars.slice(0, 2).map((item, idx) => {
+          {selectedTemplate === 'reference-character-practice' ? (
+            previewChars.slice(0, 2).map((item, idx) => {
+              const image = worksheetImages[item.character]
+              return (
+                <div
+                  key={`${item.character}-${idx}`}
+                  style={{
+                    border: '1px solid #cbd5e1',
+                    borderRadius: isEnlarged ? '6px' : '4px',
+                    padding: isEnlarged ? '12px 16px' : '8px 10px',
+                    backgroundColor: '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: isEnlarged ? '10px' : '6px',
+                  }}
+                >
+                  {/* 題號與生字部首筆畫標題列 */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: isEnlarged ? '14px' : '8px',
+                      fontSize: isEnlarged ? '15px' : '12px',
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>第 {idx + 1} 題：【 {item.character} 】</span>
+                    <span style={{ fontWeight: 500, color: '#334155' }}>部首：{item.radical || '—'}</span>
+                    <span style={{ fontWeight: 500, color: '#334155' }}>筆畫：{item.strokeCount || '—'} 畫</span>
+                    <span style={{ fontWeight: 500, color: '#334155' }}>讀音：{item.zhuyin || '—'}</span>
+                  </div>
+
+                  {/* 5 格排版母版群組：示範格、描字格、練習格1、練習格2、紫色部首格 + 配圖 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: isEnlarged ? '10px' : '6px', flexWrap: 'wrap' }}>
+                    {/* 1. 示範格（紅框田字格） */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: isEnlarged ? '54px' : '36px',
+                        height: isEnlarged ? '54px' : '36px',
+                        border: isEnlarged ? '2px solid #ef4444' : '1.5px solid #ef4444',
+                        borderRadius: '3px',
+                        backgroundColor: '#fff',
+                        color: '#b91c1c',
+                        fontSize: isEnlarged ? '28px' : '18px',
+                        fontWeight: 700,
+                        fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
+                      }}
+                      title="示範格"
+                    >
+                      {item.character}
+                    </div>
+
+                    {/* 2. 描紅格（淺灰字田字格） */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: isEnlarged ? '54px' : '36px',
+                        height: isEnlarged ? '54px' : '36px',
+                        border: '1px dashed #ef4444',
+                        borderRadius: '3px',
+                        backgroundColor: '#fff',
+                        color: '#bfbfbf',
+                        fontSize: isEnlarged ? '28px' : '18px',
+                        fontWeight: 700,
+                        fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
+                      }}
+                      title="描字格"
+                    >
+                      {item.character}
+                    </div>
+
+                    {/* 3. 習寫空白格 1 */}
+                    <div
+                      style={{
+                        width: isEnlarged ? '54px' : '36px',
+                        height: isEnlarged ? '54px' : '36px',
+                        border: '1px dashed #ef4444',
+                        borderRadius: '3px',
+                        backgroundColor: '#fff',
+                      }}
+                      title="習寫格 1"
+                    ></div>
+
+                    {/* 4. 習寫空白格 2 */}
+                    <div
+                      style={{
+                        width: isEnlarged ? '54px' : '36px',
+                        height: isEnlarged ? '54px' : '36px',
+                        border: '1px dashed #ef4444',
+                        borderRadius: '3px',
+                        backgroundColor: '#fff',
+                      }}
+                      title="習寫格 2"
+                    ></div>
+
+                    {/* 5. 原稿專屬部首格（紫色粗框） */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: isEnlarged ? '54px' : '36px',
+                        height: isEnlarged ? '54px' : '36px',
+                        border: isEnlarged ? '2.5px solid #7030A0' : '2px solid #7030A0',
+                        borderRadius: '3px',
+                        backgroundColor: '#faf5ff',
+                        color: '#7030A0',
+                        fontSize: isEnlarged ? '24px' : '16px',
+                        fontWeight: 700,
+                        fontFamily: "'DFKai-SB', 'BiauKai', 'KaiTi', serif",
+                      }}
+                      title="原稿專屬紫色部首格"
+                    >
+                      {item.radical || '—'}
+                    </div>
+
+                    {/* 教師配圖顯示（若有上傳配圖） */}
+                    {image && (
+                      <div
+                        style={{
+                          marginLeft: 'auto',
+                          width: isEnlarged ? '64px' : '44px',
+                          height: isEnlarged ? '54px' : '36px',
+                          borderRadius: '4px',
+                          border: '1px solid #cbd5e1',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: '#f8fafc',
+                        }}
+                        title={`教師自備配圖：${item.character}`}
+                      >
+                        <img
+                          src={image.url}
+                          alt={item.character}
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 常用語詞造詞參考行 */}
+                  <div style={{ fontSize: isEnlarged ? '13px' : '11px', color: '#475569', borderTop: '1px dashed #e2e8f0', paddingTop: '4px' }}>
+                    <strong>【常用語詞造詞參考】：</strong>
+                    <span>{item.wordCandidates?.slice(0, 3).join('、') || '________________、________________'}</span>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            previewChars.slice(0, 2).map((item, idx) => {
             return (
               <div
                 key={`${item.character}-${idx}`}
@@ -394,7 +600,7 @@ export const TemplateSelectionPage: React.FC = () => {
 
                 {/* 模板特有內容區 */}
                 <div style={{ flex: 1, minWidth: '220px' }}>
-                  {(selectedTemplate === 'character-practice' || selectedTemplate === 'reference-character-practice') && (
+                  {selectedTemplate === 'character-practice' && (
                     <div>
                       <div style={{ display: 'flex', gap: isEnlarged ? '8px' : '4px', marginBottom: isEnlarged ? '8px' : '4px', flexWrap: 'wrap' }}>
                         <div
@@ -468,7 +674,7 @@ export const TemplateSelectionPage: React.FC = () => {
                 </div>
               </div>
             )
-          })}
+          }))}
         </div>
 
         {/* 頁面註腳 */}

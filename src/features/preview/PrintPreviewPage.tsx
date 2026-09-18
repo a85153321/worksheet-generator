@@ -148,7 +148,12 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }
 
-  const activeTitle = worksheetDoc?.title || templateNameMap[activeTemplate] || '學習單'
+  const activeTitle =
+    worksheetDoc?.title && worksheetDoc.title !== '範例生字學習單'
+      ? worksheetDoc.title
+      : activeTemplate === 'reference-character-practice'
+        ? '生字注音學習單'
+        : templateNameMap[activeTemplate] || '學習單'
 
   // 取得 WorksheetDoc 中組裝之頁面陣列（支援多頁），若為空則預設 1 頁
   const pages: WorksheetPage[] = worksheetDoc?.pages && worksheetDoc.pages.length > 0
@@ -283,6 +288,160 @@ export const PrintPreviewPage: React.FC = () => {
             </div>
           </section>
         ))}
+      </div>
+    )
+  }
+
+  // 1b. 渲染範例注音生字學習單 (reference-character-practice: 教師提供 Word 原稿母版，每頁固定 5 題)
+  const renderReferenceCharacterPractice = (pageSections: WorksheetSection[], pageNumber: number) => {
+    const charSections = pageSections.filter((s): s is CharacterWorksheetSection => s.kind === 'character')
+    const items = charSections.length > 0
+      ? charSections.map((s) => {
+          const detail = findCharacterData(s.item.character)
+          return {
+            character: s.item.character,
+            zhuyin: s.item.zhuyin,
+            radical: s.item.radical,
+            strokeCount: s.item.strokeCount,
+            wordCandidates: detail?.wordCandidates || [],
+          }
+        })
+      : fallbackCharacters.map((c) => ({
+          character: c.character,
+          zhuyin: c.zhuyin,
+          radical: c.radical,
+          strokeCount: c.strokeCount,
+          wordCandidates: c.wordCandidates,
+        }))
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="sheet-instruction-banner" style={{ borderLeftColor: '#7030a0' }}>
+          <strong>【壹、範例注音生字學習單】</strong>（教師 Word 範本原稿母版·每頁五題） 先讀注音與部首，再依正確筆順在田字格內端正書寫。
+        </div>
+
+        {items.map((item, idx) => {
+          const qNum = (pageNumber - 1) * 5 + idx + 1
+          const uploadedImg = worksheetImages[item.character]
+          return (
+            <section
+              key={`${item.character}-${idx}`}
+              className="sheet-char-card"
+              style={{ padding: '8px 12px', gap: '6px' }}
+            >
+              <div className="sheet-char-card-header" style={{ paddingBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
+                    第 {qNum} 題：【 {item.character} 】
+                  </span>
+                  <span className="tag tag-info" style={{ fontSize: '11px', padding: '1px 7px' }}>
+                    部首：{item.radical || '—'}
+                  </span>
+                  <span className="tag tag-info" style={{ fontSize: '11px', padding: '1px 7px' }}>
+                    筆畫：{item.strokeCount || '—'} 畫
+                  </span>
+                </div>
+                {Boolean(item.zhuyin && item.zhuyin.trim()) && (
+                  <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>讀音：</span>
+                    <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
+                  </div>
+                )}
+              </div>
+
+              {/* 5 格排版母版群組：示範格、描字格、練習格1、練習格2、原稿專屬紫色部首格 + 配圖 */}
+              <div className="sheet-char-grid-row" style={{ gap: '6px' }}>
+                {/* 1. 示範大格（國字在田字格內，標準直式注音位於右側注音欄） */}
+                <TianzigeWithZhuyin
+                  character={item.character}
+                  zhuyin={item.zhuyin}
+                  isDemonstration
+                  showZhuyin
+                />
+
+                {/* 2. 1 格描字格 */}
+                <TianzigeWithZhuyin
+                  character={item.character}
+                  zhuyin={item.zhuyin}
+                  isTracing
+                  showZhuyin={false}
+                />
+
+                {/* 3. 空白田字格練習 1 */}
+                <TianzigeWithZhuyin
+                  character=""
+                  zhuyin=""
+                  practiceNumber={1}
+                />
+
+                {/* 4. 空白田字格練習 2 */}
+                <TianzigeWithZhuyin
+                  character=""
+                  zhuyin=""
+                  practiceNumber={2}
+                />
+
+                {/* 5. 原稿專屬紫色粗框部首格 */}
+                <div className="tianzige-block-item" title={`原稿紫色部首格：${item.radical || '—'}`}>
+                  <div className="tianzige-box-with-zhuyin no-zhuyin">
+                    <div
+                      className="sheet-tian-grid sm"
+                      style={{
+                        borderColor: '#7030a0',
+                        borderWidth: '2.5px',
+                        color: '#7030a0',
+                        backgroundColor: '#faf5ff',
+                        opacity: 0.85,
+                        fontWeight: 700,
+                      }}
+                      aria-label={`部首：${item.radical}`}
+                    >
+                      {item.radical || '—'}
+                    </div>
+                  </div>
+                  <span className="tianzige-bottom-label" style={{ color: '#7030a0', fontWeight: 600 }}>
+                    部首
+                  </span>
+                </div>
+
+                {/* 若有自備配圖則在右側呈現 */}
+                {uploadedImg && (
+                  <div
+                    style={{
+                      marginLeft: 'auto',
+                      width: '68px',
+                      height: '54px',
+                      borderRadius: '4px',
+                      border: '1px solid #cbd5e1',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#f8fafc',
+                      padding: '2px',
+                    }}
+                    title={`教師配圖：${item.character}`}
+                  >
+                    <img
+                      src={uploadedImg.url}
+                      alt={item.character}
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ fontSize: '12.5px', color: '#334155', borderTop: '1px solid #f1f5f9', paddingTop: '4px' }}>
+                <strong>【常用語詞造詞參考】：</strong>
+                <span>
+                  {item.wordCandidates && item.wordCandidates.length > 0
+                    ? item.wordCandidates.slice(0, 3).join('、')
+                    : '________________、________________'}
+                </span>
+              </div>
+            </section>
+          )
+        })}
       </div>
     )
   }
@@ -514,11 +673,12 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   // 根據模板分流渲染當前頁面內容
-  const renderContentByTemplate = (pageSections: WorksheetSection[]) => {
+  const renderContentByTemplate = (pageSections: WorksheetSection[], pageNumber = 1) => {
     switch (activeTemplate) {
       case 'character-practice':
-      case 'reference-character-practice':
         return renderCharacterPractice(pageSections)
+      case 'reference-character-practice':
+        return renderReferenceCharacterPractice(pageSections, pageNumber)
       case 'word-practice':
         return renderWordPractice(pageSections)
       case 'sentence-practice':
@@ -801,12 +961,14 @@ export const PrintPreviewPage: React.FC = () => {
                   <span className="sheet-info-item">____ 年 ____ 班</span>
                   <span className="sheet-info-item">座號：____</span>
                   <span className="sheet-info-item">姓名：____________</span>
-                  <span className="sheet-info-item">得分：______</span>
+                  {activeTemplate !== 'reference-character-practice' && (
+                    <span className="sheet-info-item">得分：______</span>
+                  )}
                 </div>
               </header>
 
               <main className="sheet-content">
-                {renderContentByTemplate(page.sections)}
+                {renderContentByTemplate(page.sections, page.pageNumber)}
               </main>
 
               <footer className="sheet-footer">
