@@ -19,9 +19,32 @@ import type {
   WordWorksheetSection,
   SentenceWorksheetSection,
   PictureWorksheetSection,
+  DocxExportOptions,
+  WorksheetFont,
 } from './contracts'
 
-const FONT_FAMILY = 'DFKai-SB'
+export const DOCX_FONT_FULL_NAMES: Record<WorksheetFont, string> = {
+  'standard-kai': '標楷體',
+  'zihi-kai-zhuyin': 'ㄅ字嗨注音標楷 Regular',
+  'zihi-box-zhuyin': 'ㄅ字嗨注音加框 R',
+  'zihi-only-zhuyin': 'ㄅ字嗨注音而已 R',
+}
+
+type DocxFont = {
+  ascii: string
+  hAnsi: string
+  eastAsia: string
+  cs: string
+}
+
+function docxFont(font: WorksheetFont): DocxFont {
+  const fullName = DOCX_FONT_FULL_NAMES[font]
+  return { ascii: fullName, hAnsi: fullName, eastAsia: fullName, cs: fullName }
+}
+
+// docx-builder 以 TextRun 直接建立文件；同步建立期間切換此 run property，
+// 讓所有明確文字與 default style 寫入相同的 w:rFonts。
+let FONT_FAMILY: DocxFont = docxFont('standard-kai')
 
 const borderThin = {
   style: BorderStyle.SINGLE,
@@ -642,7 +665,11 @@ function renderPageSections(
 /**
  * 建立標準 Word 文件模型 (Document)
  */
-export function createDocxDocument(doc: WorksheetDoc): Document {
+export function createDocxDocument(
+  doc: WorksheetDoc,
+  options: DocxExportOptions = {},
+): Document {
+  FONT_FAMILY = docxFont(options.font ?? 'standard-kai')
   const templateTitle = templateNameMap[doc.template] || '國語學習單'
   const totalPages = doc.pages.length > 0 ? doc.pages.length : 1
 
@@ -707,8 +734,11 @@ export function createDocxDocument(doc: WorksheetDoc): Document {
 /**
  * 產生純前端 Word Blob 檔案
  */
-export async function generateDocxBlob(doc: WorksheetDoc): Promise<Blob> {
-  const document = createDocxDocument(doc)
+export async function generateDocxBlob(
+  doc: WorksheetDoc,
+  options: DocxExportOptions = {},
+): Promise<Blob> {
+  const document = createDocxDocument(doc, options)
   return await Packer.toBlob(document)
 }
 
@@ -718,8 +748,9 @@ export async function generateDocxBlob(doc: WorksheetDoc): Promise<Blob> {
 export async function exportWorksheetToDocx(
   doc: WorksheetDoc,
   filename?: string,
+  options: DocxExportOptions = {},
 ): Promise<void> {
-  const blob = await generateDocxBlob(doc)
+  const blob = await generateDocxBlob(doc, options)
   const downloadName =
     filename ||
     `${(doc.title || templateNameMap[doc.template] || '國語學習單').replace(/[\\/:*?"<>|]/g, '_')}.docx`

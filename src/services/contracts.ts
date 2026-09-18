@@ -42,6 +42,16 @@ export type WorksheetTemplate =
   | 'sentence-practice'
   | 'picture-practice'
 
+export type WorksheetFont =
+  | 'standard-kai'
+  | 'zihi-kai-zhuyin'
+  | 'zihi-box-zhuyin'
+  | 'zihi-only-zhuyin'
+
+export interface DocxExportOptions {
+  font?: WorksheetFont
+}
+
 export type WorksheetBlock = Pick<
   CharacterAnalysis,
   'character' | 'zhuyin' | 'wordCandidates' | 'sentenceCandidates'

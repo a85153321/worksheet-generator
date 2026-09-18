@@ -5,6 +5,7 @@ export {
 } from './use-cases'
 export { buildWorksheet } from './worksheet-builder'
 export {
+  DOCX_FONT_FULL_NAMES,
   createDocxDocument,
   generateDocxBlob,
   exportWorksheetToDocx,
@@ -21,6 +22,7 @@ export type {
 export type {
   AnalyzeTypedCharactersInput,
   BuildWorksheetOptions,
+  DocxExportOptions,
   CharacterWorksheetSection,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
@@ -34,6 +36,7 @@ export type {
   WorksheetSection,
   WorksheetTemplate,
   WorksheetImage,
+  WorksheetFont,
 } from './contracts'
 export type { ElementaryGrade } from '../domain'
 export type {

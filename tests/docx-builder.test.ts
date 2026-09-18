@@ -6,6 +6,11 @@ import {
   generateDocxBlob,
 } from '../src/services'
 import { Packer } from 'docx'
+import JSZip from 'jszip'
+import {
+  DOCX_FONT_FULL_NAMES,
+  type WorksheetFont,
+} from '../src/services'
 
 const sampleAnalysis: AnalysisResult = {
   characters: [
@@ -31,6 +36,23 @@ const sampleAnalysis: AnalysisResult = {
 }
 
 describe('docx-builder', () => {
+  it.each(Object.entries(DOCX_FONT_FULL_NAMES) as Array<[WorksheetFont, string]>) (
+    'writes the exact Word font name for %s',
+    async (font, fullName) => {
+      const result = await buildWorksheet(sampleAnalysis, 'character-practice', { grade: 3 })
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+
+      const buffer = await Packer.toBuffer(createDocxDocument(result.value, { font }))
+      const archive = await JSZip.loadAsync(buffer)
+      const documentXml = await archive.file('word/document.xml')?.async('string')
+      const stylesXml = await archive.file('word/styles.xml')?.async('string')
+
+      expect(documentXml).toContain(`w:eastAsia="${fullName}"`)
+      expect(stylesXml).toContain(`w:eastAsia="${fullName}"`)
+    },
+  )
+
   it('creates valid Document and generates non-empty buffer for character-practice', async () => {
     const res = await buildWorksheet(sampleAnalysis, 'character-practice', { grade: 3 })
     expect(res.ok).toBe(true)

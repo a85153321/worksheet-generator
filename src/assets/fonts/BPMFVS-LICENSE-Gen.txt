@@ -1,5 +1,10 @@
-BpmfIansui.ttf	注音芫荽
-Copyright 2022 But Ko
+BpmfGenYoMin-*.ttf	源樣注音明體
+BpmfGenRyuMin-*.ttf	源流注音明體
+BpmfGenWanMin-*.ttf	源雲注音明體
+BpmfGenYoGothic-*.ttf	源樣注音黑體
+BpmfGenSekiGothic-*.ttf	源石注音黑體
+BpmfGenSenRounded-*.ttf	源泉注音圓體
+Copyright 2020 But Ko
 
 	https://github.com/ButTaiwan/bpmfvs
 
@@ -14,17 +19,55 @@ Bopomofo IVS Font Specification (注音IVS字型規格)
 	https://github.com/ButTaiwan/bpmfvs
 
 
-contains Iansui (芫荽).
-	https://github.com/ButTaiwan/iansui
+BpmfGenYoMin-*.ttf contains GenYo Min (源樣明體).
+	https://github.com/ButTaiwan/genyo-font
 	Copyright But Ko
 	Licensed under SIL Open Font License 1.1
 
-which based on Klee One
-	https://github.com/fontworks-fonts/Klee
-	Copyright 2020 The Klee Project Authors
+BpmfGenRyuMin-*.ttf contains GenRyu Min (源流明體).
+	https://github.com/ButTaiwan/genryu-font
+	Copyright But Ko
+	Licensed under SIL Open Font License 1.1
+
+BpmfGenWanMin-*.ttf contains GenWan Min (源雲明體).
+	https://github.com/ButTaiwan/genwan-font
+	Copyright But Ko
+	Licensed under SIL Open Font License 1.1
+
+BpmfGenYoGothic-*.ttf contains GenYo Gothic (源樣黑體).
+	https://github.com/ButTaiwan/genyog-font
+	Copyright But Ko
+	Licensed under SIL Open Font License 1.1
+
+BpmfGenSekiGothic-*.ttf contains GenSeki Gothic (源石黑體).
+	https://github.com/ButTaiwan/genseki-font
+	Copyright But Ko
+	Licensed under SIL Open Font License 1.1
+
+BpmfGenSenRounded-*.ttf contains GenYo Gothic (源泉圓體).
+	https://github.com/ButTaiwan/gensen-font
+	Copyright But Ko
 	Licensed under SIL Open Font License 1.1
 
 
+BpmfGenYoMin-*.ttf contains Source Han Serif (思源宋體).
+BpmfGenRyuMin-*.ttf contains Source Han Serif (思源宋體).
+BpmfGenWanMin-*.ttf contains Source Han Serif (思源宋體).
+	Copyright Adobe
+	https://github.com/adobe-fonts/source-han-serif
+	Licensed under SIL Open Font License 1.1
+
+BpmfGenYoGothic-*.ttf contains Source Han Sans (思源黑體).
+BpmfGenSekiGothic-*.ttf contains Source Han Sans (思源黑體).
+BpmfGenSenRounded-*.ttf contains Source Han Sans (思源黑體).
+	Copyright Adobe
+	https://github.com/adobe-fonts/source-han-sans
+	Licensed under SIL Open Font License 1.1
+
+
+Copyright 2014-2019 Adobe (http://www.adobe.com/), with Reserved Font
+Name 'Source'. Source is a trademark of Adobe in the United States
+and/or other countries.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

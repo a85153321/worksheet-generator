@@ -12,7 +12,15 @@ import {
   type PictureWorksheetSection,
   type WorksheetPage,
   type WorksheetTemplate,
+  type WorksheetFont,
 } from '../../services'
+
+const WORKSHEET_FONT_LABELS: Record<WorksheetFont, string> = {
+  'standard-kai': '標楷體',
+  'zihi-kai-zhuyin': '標楷有注音',
+  'zihi-box-zhuyin': '注音有框',
+  'zihi-only-zhuyin': '純注音',
+}
 
 export const PrintPreviewPage: React.FC = () => {
   const {
@@ -27,8 +35,8 @@ export const PrintPreviewPage: React.FC = () => {
     setIncludeZhuyin,
   } = useApp()
 
-  const [previewFont, setPreviewFont] = useState<'standard' | 'bopomofo'>(
-    (selectedGrade ?? 3) <= 2 ? 'bopomofo' : 'standard'
+  const [previewFont, setPreviewFont] = useState<WorksheetFont>(
+    (selectedGrade ?? 3) <= 2 ? 'zihi-kai-zhuyin' : 'standard-kai'
   )
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [isExportingDocx, setIsExportingDocx] = useState(false)
@@ -130,7 +138,7 @@ export const PrintPreviewPage: React.FC = () => {
     try {
       const cleanTitle = (worksheetDoc.title || templateNameMap[activeTemplate] || '學習單').replace(/[\\/:*?"<>|]/g, '_')
       const fileName = `${cleanTitle}.docx`
-      await exportWorksheetToDocx(worksheetDoc, fileName)
+      await exportWorksheetToDocx(worksheetDoc, fileName, { font: previewFont })
       setExportSuccess(`✅ 已成功於瀏覽器端生成「${fileName}」並開始下載！（純本機 Word 運算，未傳輸至任何外部伺服器）`)
       setTimeout(() => setExportSuccess(null), 6000)
     } catch (err) {
@@ -530,7 +538,7 @@ export const PrintPreviewPage: React.FC = () => {
             <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
             <p className="card-subtitle">
               已套用「{templateNameMap[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級
-              {previewFont === 'bopomofo' ? '（已套用「芫荽注音字體」）' : '（已套用「標楷體」）'}
+              （已套用「{WORKSHEET_FONT_LABELS[previewFont]}」）
               ；本步驟由純前端引擎執行，不會傳送資料到外部服務
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
@@ -569,7 +577,7 @@ export const PrintPreviewPage: React.FC = () => {
                 <select
                   id="preview-font-select"
                   value={previewFont}
-                  onChange={(e) => setPreviewFont(e.target.value as 'standard' | 'bopomofo')}
+                  onChange={(e) => setPreviewFont(e.target.value as WorksheetFont)}
                   style={{
                     padding: '0.35rem 0.65rem',
                     borderRadius: 'var(--radius-sm)',
@@ -582,17 +590,17 @@ export const PrintPreviewPage: React.FC = () => {
                   }}
                   aria-label="選擇學習單字體"
                 >
-                  <option value="standard">標楷體（標準字體）</option>
-                  <option value="bopomofo">芫荽注音字體</option>
+                  <option value="standard-kai">標楷體</option>
+                  <option value="zihi-kai-zhuyin">標楷有注音</option>
+                  <option value="zihi-box-zhuyin">注音有框</option>
+                  <option value="zihi-only-zhuyin">純注音</option>
                 </select>
               </div>
 
-              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : previewFont === 'bopomofo' ? '#0d9488' : '#3b82f6', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : previewFont === 'standard-kai' ? '#3b82f6' : '#0d9488', fontWeight: 600 }}>
                 {!includeZhuyin
                   ? '🚫 已關閉注音（純文字排版，不留空白佔位）'
-                  : previewFont === 'bopomofo'
-                    ? '✨ 已套用「芫荽注音字體」排版'
-                    : '📝 已套用標準「標楷體」排版'}
+                  : `✨ 已套用「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
               </span>
             </div>
           </div>
@@ -695,7 +703,7 @@ export const PrintPreviewPage: React.FC = () => {
           {pages.map((page) => (
             <article
               key={page.pageNumber}
-              className={`a4-sheet ${previewFont === 'bopomofo' ? 'worksheet-font-bopomofo' : 'worksheet-font-standard'}`}
+              className={`a4-sheet worksheet-font-${previewFont}`}
               role="region"
               aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
             >
@@ -707,8 +715,8 @@ export const PrintPreviewPage: React.FC = () => {
                     <span className="sheet-header-meta-sep">｜</span>
                     <span>{templateNameMap[activeTemplate] || '生字練習單'}</span>
                     {includeZhuyin ? (
-                      previewFont === 'bopomofo' ? (
-                        <span className="sheet-header-badge">（芫荽注音）</span>
+                      previewFont !== 'standard-kai' ? (
+                        <span className="sheet-header-badge">（{WORKSHEET_FONT_LABELS[previewFont]}）</span>
                       ) : null
                     ) : (
                       <span className="sheet-header-badge muted">（無注音版）</span>
