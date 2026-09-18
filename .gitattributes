@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 scripts/vendor/bpmfvs/phonic_table_Z.txt text eol=lf
+src/assets/fonts/bpmf-ivs-map.json text eol=lf

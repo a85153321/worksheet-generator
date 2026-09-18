@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
 import { lookupCharacterFromDictionary, updateAnalysisResult } from '../../services'
+import { resolveBopomofoDisplayCharacter } from '../../infrastructure'
 
 const defaultSampleAnalysis: AnalysisResult = {
   characters: [
@@ -401,6 +402,18 @@ export const ReviewPage: React.FC = () => {
     }
   }
 
+  // 切換多音字讀音並立即儲存
+  const handleSelectZhuyin = async (idx: number, candidate: string) => {
+    if (characters[idx]?.zhuyin === candidate) return
+    const updatedChars = characters.map((c, i) =>
+      i === idx ? { ...c, zhuyin: candidate } : c
+    )
+    if (editingIndex === idx) {
+      setEditForm((prev) => ({ ...prev, zhuyin: candidate }))
+    }
+    await saveAnalysisData({ characters: updatedChars })
+  }
+
   // 刪除生字項目
   const handleDeleteItem = async (index: number) => {
     const charName = characters[index].character
@@ -421,9 +434,6 @@ export const ReviewPage: React.FC = () => {
             <h1 className="card-title">🔍 步驟 3：生字查詢結果審核與編輯</h1>
             <p className="card-subtitle">
               教師享有最終編輯審核權：逐字核對注音、部首、筆畫、語詞候選與例句候選，所有修改即時儲存
-            </p>
-            <p style={{ fontSize: '0.88rem', color: '#b45309', margin: '0.25rem 0 0 0', fontWeight: 500 }}>
-              💬 提醒：若生字為破音字，請確認注音是否為您想教授的讀音，避免學習單排版跑版。
             </p>
           </div>
           <button
@@ -713,14 +723,16 @@ export const ReviewPage: React.FC = () => {
               className="char-card"
               aria-label={`生字卡片：${item.character}`}
             >
-              {/* 卡片標頭：生字、注音、部首、筆畫 */}
+              {/* 卡片標頭：生字（標楷注音字體渲染）、部首、筆畫 */}
               <div className="char-card-header">
                 <div>
-                  <span className="char-big">{item.character}</span>
+                  <span
+                    className="review-bopomofo-character"
+                    aria-label={`${item.character}，讀音${item.zhuyin}`}
+                  >
+                    {resolveBopomofoDisplayCharacter(item.character, item.zhuyin)}
+                  </span>
                   <div className="char-meta-row">
-                    <span>
-                      注音：<strong>{item.zhuyin}</strong>
-                    </span>
                     <span>
                       部首：<strong>{item.radical}</strong>
                     </span>
@@ -729,6 +741,41 @@ export const ReviewPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* 讀音選擇按鈕組 */}
+              <div className="reading-selector">
+                {(item.zhuyinCandidates?.length ?? 0) > 1 ? (
+                  <>
+                    <div className="reading-selector-row">
+                      <span className="reading-selector-label">讀音切換：</span>
+                      <div className="reading-buttons" role="group" aria-label={`「${item.character}」候選讀音切換`}>
+                        {item.zhuyinCandidates.map((candidate) => {
+                          const isSelected = item.zhuyin === candidate
+                          return (
+                            <button
+                              key={candidate}
+                              type="button"
+                              className={`reading-button ${isSelected ? 'selected' : ''}`}
+                              aria-pressed={isSelected}
+                              onClick={() => handleSelectZhuyin(idx, candidate)}
+                              disabled={isSaving}
+                            >
+                              {candidate}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <div className="reading-fallback-text">
+                      目前讀音：<strong>{item.zhuyin}</strong>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+                    讀音：<strong style={{ color: 'var(--color-text-main)' }}>{item.zhuyin}</strong>
+                  </div>
+                )}
               </div>
 
               {/* 編輯每個欄位的表單 (Requirement 2 & 3: 儲存中與錯誤狀態) */}

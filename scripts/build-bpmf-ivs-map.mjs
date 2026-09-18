@@ -72,8 +72,9 @@ async function main() {
   const output = outputFlag >= 0 ? args[outputFlag + 1] : DEFAULT_OUTPUT
   const serialized = `${JSON.stringify(buildIvsMapFromText(sourceText), null, 2)}\n`
   if (args.includes('--check')) {
-    const current = await readFile(output, 'utf8')
-    if (current !== serialized) throw new Error('bpmf-ivs-map.json is out of date')
+    const current = (await readFile(output, 'utf8')).replace(/\r\n/g, '\n')
+    const expected = serialized.replace(/\r\n/g, '\n')
+    if (current !== expected) throw new Error('bpmf-ivs-map.json is out of date')
     return
   }
   await writeFile(output, serialized, 'utf8')

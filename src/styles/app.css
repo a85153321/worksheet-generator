@@ -471,6 +471,89 @@ textarea:focus-visible {
   font-family: var(--font-worksheet-standard);
 }
 
+/* 審查卡片標楷注音生字大字渲染 */
+.review-bopomofo-character {
+  display: inline-block;
+  font-family: 'ㄅ字嗨注音標楷 Regular', 'BpmfZihiKaiStd-Regular',
+    '標楷體', 'DFKai-SB', serif;
+  font-size: 4.5rem;
+  font-weight: 400; /* 務必用 400，用 700 會讓瀏覽器模擬粗體、注音跑版 */
+  line-height: 1.35;
+  color: var(--color-primary-dark);
+  padding: 0.25rem 0.5rem;
+}
+
+/* 讀音選擇按鈕組 */
+.reading-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+}
+
+.reading-selector-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+}
+
+.reading-selector-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.reading-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.reading-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reading-button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.reading-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.reading-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.reading-button.selected {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(13, 148, 136, 0.25);
+}
+
+.reading-fallback-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
 .char-meta-row {
   display: flex;
   gap: 0.75rem;
