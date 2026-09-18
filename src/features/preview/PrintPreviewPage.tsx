@@ -590,7 +590,7 @@ export const PrintPreviewPage: React.FC = () => {
                   }}
                   aria-label="選擇學習單字體"
                 >
-                  <option value="standard-kai">標楷體</option>
+                  <option value="standard-kai">標楷體（標準字體，不顯示注音）</option>
                   <option value="zihi-kai-zhuyin">標楷有注音</option>
                   <option value="zihi-box-zhuyin">注音有框</option>
                   <option value="zihi-only-zhuyin">純注音</option>
@@ -600,7 +600,7 @@ export const PrintPreviewPage: React.FC = () => {
               <span style={{ fontSize: '0.82rem', color: !includeZhuyin ? '#64748b' : previewFont === 'standard-kai' ? '#3b82f6' : '#0d9488', fontWeight: 600 }}>
                 {!includeZhuyin
                   ? '🚫 已關閉注音（純文字排版，不留空白佔位）'
-                  : `✨ 已套用「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
+                  : `✨ 已套用標準「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
               </span>
             </div>
           </div>
@@ -696,6 +696,86 @@ export const PrintPreviewPage: React.FC = () => {
             ❌ {exportError}
           </div>
         )}
+
+        {/* 字型安裝與 Word (.docx) 排版提醒區塊 */}
+        <section
+          className="callout no-print"
+          style={{
+            marginTop: '1.25rem',
+            padding: '1.1rem 1.25rem',
+            backgroundColor: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.88rem',
+            lineHeight: '1.65',
+            color: '#334155',
+          }}
+          aria-label="學習單字型安裝與 Word 排版提醒"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>💡</span>
+            <strong style={{ fontSize: '0.98rem', color: '#0f172a' }}>
+              學習單字型安裝與 Word (.docx) 排版提醒
+            </strong>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {/* 1. 預覽與 Word 差異說明 */}
+            <p style={{ margin: 0 }}>
+              <strong>📢 顯示與 Word 匯出說明：</strong>
+              本系統在<strong>「瀏覽器預覽」</strong>、<strong>「瀏覽器列印」</strong>與<strong>「下載 PDF 學習單」</strong>時，均已內建打包完整 WebFont 字型，使用者電腦<strong>無需額外安裝字型即可 100% 正確顯示</strong>。但若選擇<strong>「下載 Word 檔 (.docx)」</strong>，因 Word 文件本身不內嵌字型檔案，若收件者（其他老師或家長）電腦上未安裝同一套字型，Word 開啟時系統會自動以預設字型替換，注音或方框排版可能會發生跑版或錯位。
+            </p>
+
+            {/* 2. 四款字型與官方下載連結 */}
+            <div style={{ margin: 0 }}>
+              <strong>🔗 四款字型官方開源下載連結：</strong>
+              字型源自開源專案 <strong>ButTaiwan/bpmfvs</strong>（採 Apache 2.0 / SIL OFL 開源授權，可免費商用、自由嵌入與免費下載）：
+              <ul style={{ margin: '0.35rem 0 0.35rem 1.25rem', padding: 0 }}>
+                <li>
+                  <strong>標楷體（標準字體）</strong>：Windows 系統已內建「標楷體」；macOS / Linux 使用者若無，可使用系統楷體或至政府資料開放平臺下載「全字庫正楷體」。
+                </li>
+                <li>
+                  <strong>標楷有注音</strong>（字型檔：<code>BpmfZihiKaiStd-Regular.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音標楷 Regular</code>）
+                </li>
+                <li>
+                  <strong>注音有框</strong>（字型檔：<code>BpmfZihiBox-R.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音加框 R</code>）
+                </li>
+                <li>
+                  <strong>純注音</strong>（字型檔：<code>BpmfZihiOnly-R.ttf</code>，安裝後系統字型名稱：<code>ㄅ字嗨注音而已 R</code>）
+                </li>
+              </ul>
+              <div style={{ marginTop: '0.35rem' }}>
+                👉 前往官方下載：
+                <a
+                  href="https://github.com/ButTaiwan/bpmfvs/releases"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#0284c7', textDecoration: 'underline', fontWeight: 600, marginLeft: '0.25rem' }}
+                >
+                  ButTaiwan/bpmfvs GitHub Releases 官方發布頁面 ↗
+                </a>
+                <span style={{ color: '#64748b', fontSize: '0.82rem', marginLeft: '0.4rem' }}>
+                  （進入 Releases 頁面後於 Assets 區塊下載對應的 zip 壓縮檔解壓縮即可取得字型檔）
+                </span>
+              </div>
+            </div>
+
+            {/* 3. 簡短安裝說明 */}
+            <div style={{ margin: 0 }}>
+              <strong>🛠️ 簡短安裝步驟：</strong>
+              <div style={{ paddingLeft: '1rem', marginTop: '0.2rem' }}>
+                • <strong>Windows 使用者</strong>：下載解壓縮後，對 <code>.ttf</code> 或 <code>.otf</code> 字型檔案按滑鼠右鍵，點選<strong>「安裝」</strong>（或「為所有使用者安裝」）。<br />
+                • <strong>Mac 使用者</strong>：下載解壓縮後，連按兩下（雙擊）字型檔案，在彈出的「字體簿（Font Book）」視窗中點擊<strong>「安裝字體」</strong>。
+              </div>
+            </div>
+
+            {/* 4. 安全性說明 */}
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b', borderTop: '1px dashed #e2e8f0', paddingTop: '0.5rem' }}>
+              <strong>🛡️ 安全性說明：</strong>
+              這是開源專案在 GitHub 上公開發布的字型檔案（純字型向量格式，不是可執行程式），字型檔本身不具備執行程式碼能力，安裝風險等同於作業系統一般安裝字型的安全性。建議只從上述 GitHub 官方 Release 連結下載，確保取得未受竄改之原始檔案。
+            </p>
+          </div>
+        </section>
       </div>
 
       {/* A4 紙張預覽區（支援多頁依序呈現） */}
