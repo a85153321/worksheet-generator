@@ -23,7 +23,7 @@
        - 多音字（如「長」、「行」）卡片顯示讀音切換按鈕組，目前選取的讀音高亮為 `.selected` 並設 `aria-pressed="true"`，下方顯示「目前讀音：XX」備援小字。
        - 單音字（如「學」）不顯示切換按鈕，簡潔顯示「讀音：ㄒㄩㄝˊ」。
        - 移除舊版卡片上的「注音：XX」純文字行與步驟三頂部「若生字為破音字...」固定提醒文字。
-       - 點擊其他讀音（如「長」切換至「ㄔㄤˊ」、「行」切換至「ㄒㄧㄥˊ」）時，立即更新 `item.zhuyin` 並呼叫 `saveAnalysisData` 持久化儲存，大字與 IVS 注音即時隨之切換變更。
+       - 點擊其他讀音（如「長」切換至「ㄔㄤˊ」、「行」切換至「ㄒㄧㄥˊ」）時，立即更新 `item.zhuyin` 並呼叫 `saveAnalysisData(..., { silent: true })` 持久化儲存，大字與 IVS 注音即時隨之切換變更，且以靜默模式執行，不觸發全頁綠色成功橫幅（避免點擊按鈕時造成畫面頻繁跳動干擾）；手動新增生字與表單欄位編輯則維持正常顯示成功提示。
     2. **步驟六控制列與字型選單**：
        - 完全無「顯示注音」勾選框，字型選擇完全由下拉選單決定。
        - 學習單字體下拉選單僅包含三款：「標楷體（標準字體，不顯示注音）」、「標楷有注音」、「純注音」，完全移除「注音有框」與相關資源。
@@ -37,6 +37,8 @@
   - `step3_polyphone_reading_buttons.png`（多音字顯示讀音切換按鈕、單音字顯示純讀音文字）
   - `step3_reading_switched.png`（點擊切換讀音後狀態更新）
   - `step3_switched_readings_chang_xing.png`（「長」切換至「ㄔㄤˊ」、「行」切換至「ㄒㄧㄥˊ」之即時 IVS 注音渲染）
+  - `step3_silent_switch_no_toast.png`（切換讀音時靜默儲存、無全頁綠色提示干擾）
+  - `step3_edit_save_shows_toast.png`（編輯表單「儲存修改」正常保留成功提示）
   - `step6_font_reminder_collapsed.png`（控制列無勾選框、三款字體、安裝提醒預設收合）
   - `step6_font_reminder_expanded.png`（點擊展開字型安裝提醒）
   - `step6_font_zihi_kai.png`（標楷有注音 A4 預覽）

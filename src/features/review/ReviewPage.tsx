@@ -84,10 +84,15 @@ export const ReviewPage: React.FC = () => {
   const isEmpty = characters.length === 0
 
   // 通用儲存函式：呼叫 updateAnalysisResult use case (Requirement 2 & 3)
-  const saveAnalysisData = async (updatedData: AnalysisResult): Promise<boolean> => {
+  const saveAnalysisData = async (
+    updatedData: AnalysisResult,
+    options?: { silent?: boolean },
+  ): Promise<boolean> => {
     setIsSaving(true)
     setSaveError(null)
-    setSaveSuccessMsg(null)
+    if (!options?.silent) {
+      setSaveSuccessMsg(null)
+    }
 
     try {
       // 呼叫 updateAnalysisResult use case
@@ -95,8 +100,10 @@ export const ReviewPage: React.FC = () => {
 
       if (res.ok) {
         setAnalysisResult(res.value)
-        setSaveSuccessMsg('生字資料已成功通過驗證並儲存！')
-        setTimeout(() => setSaveSuccessMsg(null), 3500)
+        if (!options?.silent) {
+          setSaveSuccessMsg('生字資料已成功通過驗證並儲存！')
+          setTimeout(() => setSaveSuccessMsg(null), 3500)
+        }
         setIsSaving(false)
         return true
       } else {
@@ -402,7 +409,7 @@ export const ReviewPage: React.FC = () => {
     }
   }
 
-  // 切換多音字讀音並立即儲存
+  // 切換多音字讀音並立即儲存（以 silent 模式儲存，不跳出全頁綠色提示）
   const handleSelectZhuyin = async (idx: number, candidate: string) => {
     if (characters[idx]?.zhuyin === candidate) return
     const updatedChars = characters.map((c, i) =>
@@ -411,7 +418,7 @@ export const ReviewPage: React.FC = () => {
     if (editingIndex === idx) {
       setEditForm((prev) => ({ ...prev, zhuyin: candidate }))
     }
-    await saveAnalysisData({ characters: updatedChars })
+    await saveAnalysisData({ characters: updatedChars }, { silent: true })
   }
 
   // 刪除生字項目
