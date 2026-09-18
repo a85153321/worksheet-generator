@@ -150,13 +150,7 @@ export const TemplateSelectionPage: React.FC = () => {
           strokeCount: 16,
           wordCandidates: ['學校', '學習', '學生'],
           sentenceCandidates: ['我每天到學校學習新知識。', '在明亮的教室裡認真讀書。'],
-          confidence: 0.96,
           source: { page: 1, block: '第一段' },
-          editableState: {
-            status: 'confirmed',
-            isEditable: true,
-            needsReview: false,
-          },
         },
         {
           character: '習',
@@ -165,13 +159,7 @@ export const TemplateSelectionPage: React.FC = () => {
           strokeCount: 11,
           wordCandidates: ['學習', '練習', '習慣'],
           sentenceCandidates: ['多練習可以讓生字寫得更漂亮。', '養成良好的讀書與習字習慣。'],
-          confidence: 0.88,
           source: { page: 1, block: '第一段' },
-          editableState: {
-            status: 'confirmed',
-            isEditable: true,
-            needsReview: false,
-          },
         },
         {
           character: '一',
@@ -180,13 +168,7 @@ export const TemplateSelectionPage: React.FC = () => {
           strokeCount: 1,
           wordCandidates: ['一起', '一定', '一樣', '第一'],
           sentenceCandidates: ['我們一起到公園玩耍。', '只要努力練習，一定能把字寫好。', '大家都有著一樣的愛心。'],
-          confidence: 0.98,
           source: { page: 1, block: '第一段' },
-          editableState: {
-            status: 'confirmed',
-            isEditable: true,
-            needsReview: false,
-          },
         },
       ],
     })

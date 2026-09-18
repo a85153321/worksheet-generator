@@ -12,13 +12,7 @@ const defaultSampleAnalysis: AnalysisResult = {
       strokeCount: 16,
       wordCandidates: ['學校', '學習', '學生'],
       sentenceCandidates: ['我每天到學校學習新知識。'],
-      confidence: 1.0,
       source: { page: null, block: '教育部《國語辭典簡編本》' },
-      editableState: {
-        status: 'draft',
-        isEditable: true,
-        needsReview: true,
-      },
     },
     {
       character: '習',
@@ -27,13 +21,7 @@ const defaultSampleAnalysis: AnalysisResult = {
       strokeCount: 11,
       wordCandidates: ['學習', '練習', '習慣'],
       sentenceCandidates: ['多練習可以讓生字寫得更漂亮。'],
-      confidence: 1.0,
       source: { page: null, block: '教育部《國語辭典簡編本》' },
-      editableState: {
-        status: 'draft',
-        isEditable: true,
-        needsReview: true,
-      },
     },
     {
       character: '一',
@@ -45,13 +33,7 @@ const defaultSampleAnalysis: AnalysisResult = {
         '我們一起到公園玩耍。',
         '只要努力練習，一定能把字寫好。',
       ],
-      confidence: 1.0,
       source: { page: null, block: '教育部《國語辭典簡編本》' },
-      editableState: {
-        status: 'draft',
-        isEditable: true,
-        needsReview: true,
-      },
     },
   ],
 }
@@ -60,7 +42,7 @@ interface EditFormState {
   character: string
   zhuyin: string
   radical: string
-  strokeCount: number
+  strokeCount: number | ''
   words: string
   exampleSentence: string
 }
@@ -77,7 +59,7 @@ export const ReviewPage: React.FC = () => {
     character: '',
     zhuyin: '',
     radical: '',
-    strokeCount: 1,
+    strokeCount: '',
     words: '',
     exampleSentence: '',
   })
@@ -85,6 +67,7 @@ export const ReviewPage: React.FC = () => {
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [wordDrawNotice, setWordDrawNotice] = useState<string | null>(null)
   const [sentenceDrawNotice, setSentenceDrawNotice] = useState<string | null>(null)
+  const [autofillNotice, setAutofillNotice] = useState<string | null>(null)
 
   // 儲存狀態與錯誤狀態 (Requirement 3)
   const [isSaving, setIsSaving] = useState(false)
@@ -187,9 +170,6 @@ export const ReviewPage: React.FC = () => {
 
   // 統計生字狀態
   const totalCount = characters.length
-  const needsReviewCount = characters.filter((c) => c.editableState.status !== 'confirmed').length
-  const confirmedCount = characters.filter((c) => c.editableState.status === 'confirmed').length
-  const editedCount = characters.filter((c) => c.editableState.status === 'edited').length
 
   const handleStartEdit = (idx: number) => {
     const item = characters[idx]
@@ -199,6 +179,7 @@ export const ReviewPage: React.FC = () => {
     setSaveError(null)
     setWordDrawNotice(null)
     setSentenceDrawNotice(null)
+    setAutofillNotice(null)
     setEditForm({
       character: item.character,
       zhuyin: item.zhuyin,
@@ -216,13 +197,53 @@ export const ReviewPage: React.FC = () => {
     setSaveError(null)
     setWordDrawNotice(null)
     setSentenceDrawNotice(null)
+    setAutofillNotice(null)
     setEditForm({
       character: '',
       zhuyin: '',
       radical: '',
-      strokeCount: 1,
+      strokeCount: '',
       words: '',
       exampleSentence: '',
+    })
+  }
+
+  // 自動整理：從教育部辭典補齊空白欄位（不覆蓋已有內容）
+  const handleAutofillNewChar = () => {
+    const char = editForm.character.trim()
+    if (!char) {
+      setAutofillNotice('請先輸入生字')
+      return
+    }
+    const lookup = lookupCharacterFromDictionary(char)
+    if (!lookup) {
+      setAutofillNotice('資料庫查無此字，請手動輸入注音、部首等資料。')
+      return
+    }
+
+    setAutofillNotice(null)
+    setEditForm((prev) => {
+      const newZhuyin = prev.zhuyin.trim() ? prev.zhuyin : lookup.zhuyin
+      const newRadical = prev.radical.trim() ? prev.radical : lookup.radical
+      const newStrokeCount =
+        prev.strokeCount !== '' && prev.strokeCount > 0
+          ? prev.strokeCount
+          : lookup.strokeCount
+      const newWords = prev.words.trim()
+        ? prev.words
+        : lookup.wordCandidates.slice(0, 3).join('、')
+      const newSentence = prev.exampleSentence.trim()
+        ? prev.exampleSentence
+        : lookup.sentenceCandidates.slice(0, 2).join('\n')
+
+      return {
+        ...prev,
+        zhuyin: newZhuyin,
+        radical: newRadical,
+        strokeCount: newStrokeCount,
+        words: newWords,
+        exampleSentence: newSentence,
+      }
     })
   }
 
@@ -304,7 +325,11 @@ export const ReviewPage: React.FC = () => {
     if (!editForm.radical.trim()) {
       errors.radical = '部首不可為空'
     }
-    if (!editForm.strokeCount || editForm.strokeCount < 1 || !Number.isInteger(editForm.strokeCount)) {
+    if (
+      editForm.strokeCount === '' ||
+      editForm.strokeCount < 1 ||
+      !Number.isInteger(editForm.strokeCount)
+    ) {
       errors.strokeCount = '筆畫必須為大於 0 的正整數'
     }
     setFieldErrors(errors)
@@ -325,21 +350,17 @@ export const ReviewPage: React.FC = () => {
       .map((s) => s.trim())
       .filter(Boolean)
 
+    const strokeCount = typeof editForm.strokeCount === 'number' ? editForm.strokeCount : 1
+
     if (isAddingNew) {
       const newChar: CharacterAnalysis = {
         character: editForm.character.trim(),
         zhuyin: editForm.zhuyin.trim(),
         radical: editForm.radical.trim(),
-        strokeCount: editForm.strokeCount,
+        strokeCount,
         wordCandidates: parsedWords.length > 0 ? parsedWords : [editForm.character.trim()],
         sentenceCandidates: parsedSentences.length > 0 ? parsedSentences : [],
-        confidence: 1.0,
         source: { page: null, block: '教師自訂新增' },
-        editableState: {
-          status: 'confirmed',
-          isEditable: true,
-          needsReview: false,
-        },
       }
       const updated: AnalysisResult = { characters: [...characters, newChar] }
       const success = await saveAnalysisData(updated)
@@ -354,14 +375,9 @@ export const ReviewPage: React.FC = () => {
         character: editForm.character.trim(),
         zhuyin: editForm.zhuyin.trim(),
         radical: editForm.radical.trim(),
-        strokeCount: editForm.strokeCount,
+        strokeCount,
         wordCandidates: parsedWords,
         sentenceCandidates: parsedSentences.length > 0 ? parsedSentences : [],
-        editableState: {
-          ...current.editableState,
-          status: 'edited',
-          needsReview: false,
-        },
       }
       const updated: AnalysisResult = { characters: updatedChars }
       const success = await saveAnalysisData(updated)
@@ -369,54 +385,6 @@ export const ReviewPage: React.FC = () => {
         setEditingIndex(null)
       }
     }
-  }
-
-  // 單一項目確認無誤
-  const handleConfirmItem = async (index: number) => {
-    const updatedChars = [...characters]
-    const item = updatedChars[index]
-    updatedChars[index] = {
-      ...item,
-      editableState: {
-        ...item.editableState,
-        status: 'confirmed',
-        needsReview: false,
-      },
-    }
-    await saveAnalysisData({ characters: updatedChars })
-  }
-
-  // 單一項目取消確認，改回待審核狀態
-  const handleUnconfirmItem = async (index: number) => {
-    const updatedChars = [...characters]
-    const item = updatedChars[index]
-    updatedChars[index] = {
-      ...item,
-      editableState: {
-        ...item.editableState,
-        status: 'draft',
-        needsReview: true,
-      },
-    }
-    await saveAnalysisData({ characters: updatedChars })
-  }
-
-  // 一鍵將所有「待審核」生字標記為已確認（已確認的項目維持不變）
-  const handleConfirmAll = async () => {
-    const updatedChars = characters.map((item) => {
-      if (item.editableState.status === 'confirmed') {
-        return item
-      }
-      return {
-        ...item,
-        editableState: {
-          ...item.editableState,
-          status: 'confirmed' as const,
-          needsReview: false,
-        },
-      }
-    })
-    await saveAnalysisData({ characters: updatedChars })
   }
 
   // 刪除生字項目
@@ -439,6 +407,9 @@ export const ReviewPage: React.FC = () => {
             <h1 className="card-title">🔍 步驟 3：生字查詢結果審核與編輯</h1>
             <p className="card-subtitle">
               教師享有最終編輯審核權：逐字核對注音、部首、筆畫、語詞候選與例句候選，所有修改即時儲存
+            </p>
+            <p style={{ fontSize: '0.88rem', color: '#b45309', margin: '0.25rem 0 0 0', fontWeight: 500 }}>
+              💬 提醒：若生字為破音字，請確認注音是否為您想教授的讀音，避免學習單排版跑版。
             </p>
           </div>
           <button
@@ -494,17 +465,6 @@ export const ReviewPage: React.FC = () => {
           <span>
             生字總數：<strong>{totalCount}</strong> 個
           </span>
-          <span style={{ color: needsReviewCount > 0 ? '#b45309' : 'inherit', fontWeight: needsReviewCount > 0 ? 700 : 'normal' }}>
-            ⚠️ 待審核：<strong>{needsReviewCount}</strong>
-          </span>
-          <span style={{ color: '#047857' }}>
-            ✓ 已確認：<strong>{confirmedCount}</strong>
-          </span>
-          {editedCount > 0 && (
-            <span style={{ color: '#4338ca' }}>
-              ✏️ 已修改：<strong>{editedCount}</strong>
-            </span>
-          )}
           {isSaving && (
             <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
               <span className="spinner-sm" style={{ marginRight: '4px', borderColor: 'rgba(13,148,136,0.3)', borderTopColor: 'var(--color-primary)' }}></span>
@@ -512,30 +472,7 @@ export const ReviewPage: React.FC = () => {
             </span>
           )}
         </div>
-
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
-          onClick={handleConfirmAll}
-          disabled={isSaving || needsReviewCount === 0}
-          aria-label="一鍵將所有待審核生字標記為已確認"
-        >
-          ✓ 全部確認
-        </button>
       </div>
-
-      {/* needsReview 項目提示橫幅 (Requirement 1) */}
-      {needsReviewCount > 0 && (
-        <div className="callout callout-warning" role="region" aria-label="待審核提示">
-          <div className="callout-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span>⚠️ 注意：有 {needsReviewCount} 個生字標記為「待審核」</span>
-          </div>
-          <p>
-            標示有黃色警示外框與「⚠️ 待審核」圖示的項目需要教師再次確認，建議特別核對<strong>注音與總筆畫</strong>。
-          </p>
-        </div>
-      )}
 
       {/* 手動自訂新增生字表單 */}
       {isAddingNew && (
@@ -548,9 +485,40 @@ export const ReviewPage: React.FC = () => {
             marginBottom: '1.5rem',
           }}
         >
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.75rem', color: 'var(--color-primary-dark)' }}>
-            ➕ 教師自訂新增生字
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--color-primary-dark)' }}>
+              ➕ 教師自訂新增生字
+            </h3>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}
+              onClick={handleAutofillNewChar}
+              disabled={isSaving}
+              aria-label="自動整理生字資料"
+            >
+              🪄 自動整理
+            </button>
+          </div>
+
+          {autofillNotice && (
+            <div
+              style={{
+                fontSize: '0.85rem',
+                color: autofillNotice.includes('查無此字') ? '#b91c1c' : '#d97706',
+                backgroundColor: autofillNotice.includes('查無此字') ? '#fef2f2' : '#fffbeb',
+                border: `1px solid ${autofillNotice.includes('查無此字') ? '#fca5a5' : '#fcd34d'}`,
+                padding: '0.4rem 0.75rem',
+                borderRadius: '4px',
+                marginBottom: '0.75rem',
+                fontWeight: 500,
+              }}
+              role="status"
+            >
+              ℹ️ {autofillNotice}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '0.75rem' }}>
             <div>
               <label htmlFor="new-char-input" style={{ fontSize: '0.85rem', fontWeight: 600 }}>生字（單字）：</label>
@@ -559,7 +527,10 @@ export const ReviewPage: React.FC = () => {
                 type="text"
                 maxLength={1}
                 value={editForm.character}
-                onChange={(e) => setEditForm({ ...editForm, character: e.target.value })}
+                onChange={(e) => {
+                  setEditForm({ ...editForm, character: e.target.value })
+                  setAutofillNotice(null)
+                }}
                 placeholder="例如：春"
                 disabled={isSaving}
                 style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
@@ -599,8 +570,9 @@ export const ReviewPage: React.FC = () => {
                 type="number"
                 min={1}
                 value={editForm.strokeCount}
-                onChange={(e) => setEditForm({ ...editForm, strokeCount: Number(e.target.value) })}
+                onChange={(e) => setEditForm({ ...editForm, strokeCount: e.target.value === '' ? '' : Number(e.target.value) })}
                 disabled={isSaving}
+                placeholder="例如：9"
                 style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
               />
               {fieldErrors.strokeCount && <div className="form-error">{fieldErrors.strokeCount}</div>}
@@ -701,26 +673,12 @@ export const ReviewPage: React.FC = () => {
       <div className="char-grid" role="region" aria-label="生字分析結果清單">
         {characters.map((item, idx) => {
           const isEditingThis = editingIndex === idx
-          const isConfirmed = item.editableState.status === 'confirmed'
-          const isEdited = item.editableState.status === 'edited'
 
           return (
             <article
               key={`${item.character}-${idx}`}
               className="char-card"
-              style={{
-                borderWidth: '2px',
-                borderStyle: 'solid',
-                borderColor: isConfirmed
-                  ? '#10b981'
-                  : isEdited
-                  ? '#6366f1'
-                  : '#f59e0b',
-                backgroundColor: isConfirmed
-                  ? 'var(--color-surface)'
-                  : '#fffbeb',
-              }}
-              aria-label={`生字卡片：${item.character}，${isConfirmed ? '已確認' : '待審核'}`}
+              aria-label={`生字卡片：${item.character}`}
             >
               {/* 卡片標頭：生字、注音、部首、筆畫 */}
               <div className="char-card-header">
@@ -737,32 +695,6 @@ export const ReviewPage: React.FC = () => {
                       筆畫：<strong>{item.strokeCount}</strong> 畫
                     </span>
                   </div>
-                </div>
-
-                {/* 清楚標示狀態標籤 */}
-                <div style={{ textAlign: 'right' }}>
-                  {isConfirmed ? (
-                    <span className="tag tag-success" style={{ display: 'block', marginBottom: '4px' }}>
-                      ✓ 已確認
-                    </span>
-                  ) : isEdited ? (
-                    <span className="tag tag-info" style={{ display: 'block' }}>
-                      ✏️ 已編輯
-                    </span>
-                  ) : (
-                    <span
-                      className="tag tag-warning"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        marginBottom: '4px',
-                        border: '1px solid #d97706',
-                      }}
-                    >
-                      ⚠️ 待審核
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -825,8 +757,9 @@ export const ReviewPage: React.FC = () => {
                         type="number"
                         min={1}
                         value={editForm.strokeCount}
-                        onChange={(e) => setEditForm({ ...editForm, strokeCount: Number(e.target.value) })}
+                        onChange={(e) => setEditForm({ ...editForm, strokeCount: e.target.value === '' ? '' : Number(e.target.value) })}
                         disabled={isSaving}
+                        placeholder="例如：9"
                         style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                       {fieldErrors.strokeCount && <div className="form-error">{fieldErrors.strokeCount}</div>}
@@ -960,30 +893,6 @@ export const ReviewPage: React.FC = () => {
                     >
                       ✏️ 編輯
                     </button>
-
-                    {isConfirmed ? (
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '0.3rem 0.65rem', fontSize: '0.82rem' }}
-                        onClick={() => handleUnconfirmItem(idx)}
-                        disabled={isSaving}
-                        aria-label={`取消確認生字「${item.character}」`}
-                      >
-                        ↩️ 取消確認
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '0.3rem 0.65rem', fontSize: '0.82rem' }}
-                        onClick={() => handleConfirmItem(idx)}
-                        disabled={isSaving}
-                        aria-label={`確認生字「${item.character}」無誤`}
-                      >
-                        ✓ 確認無誤
-                      </button>
-                    )}
 
                     <button
                       type="button"
