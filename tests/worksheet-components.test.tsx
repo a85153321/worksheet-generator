@@ -99,4 +99,15 @@ describe('WorksheetSheet & WorksheetContentRenderer', () => {
     expect(htmlZhuyin).toContain('worksheet-font-zihi-kai-zhuyin')
     expect(htmlZhuyin).toContain('標楷有注音')
   })
+
+  it('determines default font based on grade correctly', () => {
+    const resolveDefaultFont = (grade?: number): 'zihi-kai-zhuyin' | 'standard-kai' =>
+      (grade ?? 3) <= 2 ? 'zihi-kai-zhuyin' : 'standard-kai'
+
+    expect(resolveDefaultFont(1)).toBe('zihi-kai-zhuyin')
+    expect(resolveDefaultFont(2)).toBe('zihi-kai-zhuyin')
+    expect(resolveDefaultFont(3)).toBe('standard-kai')
+    expect(resolveDefaultFont(4)).toBe('standard-kai')
+    expect(resolveDefaultFont(undefined)).toBe('standard-kai')
+  })
 })

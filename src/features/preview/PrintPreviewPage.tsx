@@ -10,7 +10,6 @@ import {
 import {
   WorksheetSheet,
   TEMPLATE_NAMES,
-  WORKSHEET_FONT_LABELS,
 } from '../../components/worksheet'
 
 export const PrintPreviewPage: React.FC = () => {
@@ -24,9 +23,8 @@ export const PrintPreviewPage: React.FC = () => {
     selectedGrade,
   } = useApp()
 
-  const [previewFont, setPreviewFont] = useState<WorksheetFont>(
+  const previewFont: WorksheetFont =
     (selectedGrade ?? 3) <= 2 ? 'zihi-kai-zhuyin' : 'standard-kai'
-  )
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [isExportingDocx, setIsExportingDocx] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -152,42 +150,8 @@ export const PrintPreviewPage: React.FC = () => {
           <div>
             <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
             <p className="card-subtitle">
-              已套用「{TEMPLATE_NAMES[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級
-              （已套用「{WORKSHEET_FONT_LABELS[previewFont]}」）
-              ；本步驟由純前端引擎執行，不會傳送資料到外部服務
+              已套用「{TEMPLATE_NAMES[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級；本步驟由純前端引擎執行，不會傳送資料到外部服務
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-              {/* 直接選擇字體控制 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <label htmlFor="preview-font-select" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-                  🔤 學習單字體：
-                </label>
-                <select
-                  id="preview-font-select"
-                  value={previewFont}
-                  onChange={(e) => setPreviewFont(e.target.value as WorksheetFont)}
-                  style={{
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.88rem',
-                    backgroundColor: '#ffffff',
-                    color: '#0f172a',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                  aria-label="選擇學習單字體"
-                >
-                  <option value="standard-kai">標楷體（標準字體，不顯示注音）</option>
-                  <option value="zihi-kai-zhuyin">標楷有注音</option>
-                  <option value="zihi-only-zhuyin">純注音</option>
-                </select>
-              </div>
-
-              <span style={{ fontSize: '0.82rem', color: previewFont === 'standard-kai' ? '#3b82f6' : '#0d9488', fontWeight: 600 }}>
-                {`✨ 已套用標準「${WORKSHEET_FONT_LABELS[previewFont]}」排版`}
-              </span>
-            </div>
           </div>
           <div className="btn-group">
             <button
