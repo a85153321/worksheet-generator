@@ -39,7 +39,7 @@ Optional static host
 | --- | --- | --- |
 | 《國語辭典簡編本》索引 | 隨前端打包的唯讀資產 | 保留版本、來源、授權與字詞號索引 |
 | 教師輸入與查詢結果 | React state；需要持久化時使用 IndexedDB | 不自動上傳 |
-| 教師自行提供的配圖 | 瀏覽器工作階段／本機儲存 | 不送往外部服務 |
+| 教師自行提供的配圖 | 瀏覽器工作階段／本機儲存 | 同時保留預覽 URL 與原始 File／Blob，供 DOCX 嵌入；不送往外部服務 |
 | Log / analytics | 預設關閉或匿名化 | 不得含教師輸入、完整辭典內容或本機圖片 |
 
 完整索引目前約 10.8 MB；正式前端 bundle 約 11.5 MB、gzip 約 4.45 MB。這是維持同步查詢的已知取捨。若改用分片或 SQLite/WASM，首次載入與查詢契約必須明確改為非同步。
@@ -110,7 +110,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 5. 由原始詞條組裝注音、部首、總筆畫、`wordCandidates` 與從 `[例]` 擷取的 `sentenceCandidates`。
 6. 使用 Zod 驗證 `AnalysisResult`；任一字查無資料時回傳 `dictionary-not-found` 與 `missingCharacters`。
 7. 教師挑選或修改候選內容，修改後再次通過 schema 驗證。
-8. 教師可從本機上傳自備配圖，再以本機模板建立預覽、Word、列印與 PDF。
+8. 教師可從本機上傳自備配圖；現有 React state 會保留原始 File／Blob，讓預覽使用 URL、Word 匯出使用實際二進位資料，再以本機模板建立預覽、Word、列印與 PDF。
 
 整個生字查詢流程不使用 fetch、不連線到外部 API、不需要重試或配額管理。
 

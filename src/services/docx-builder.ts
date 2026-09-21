@@ -11,6 +11,7 @@ import {
   ShadingType,
   Packer,
   Footer,
+  ImageRun,
 } from 'docx'
 import type {
   WorksheetDoc,
@@ -21,6 +22,7 @@ import type {
   PictureWorksheetSection,
   DocxExportOptions,
   WorksheetFont,
+  WorksheetImage,
 } from './contracts'
 import { resolveBopomofoDisplayCharacter } from '../infrastructure'
 import { generateReferenceTemplateDocxBlob } from './reference-template-docx'
@@ -36,6 +38,66 @@ type DocxFont = {
   hAnsi: string
   eastAsia: string
   cs: string
+}
+
+type EmbeddedImageData =
+  | { type: 'png' | 'jpg'; data: Uint8Array }
+  | {
+      type: 'svg'
+      data: Uint8Array
+      fallback: { type: 'png'; data: Uint8Array }
+    }
+
+const TRANSPARENT_PNG = Uint8Array.from(
+  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
+  (character) => character.charCodeAt(0),
+)
+
+async function convertWebpToPng(file: Blob): Promise<Uint8Array> {
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
+    throw new Error('目前執行環境無法將 WebP 圖片轉換成 Word 支援的 PNG。')
+  }
+  const bitmap = await createImageBitmap(file)
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('無法建立圖片轉換畫布。')
+    context.drawImage(bitmap, 0, 0)
+    const pngBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('WebP 圖片轉換失敗。')),
+        'image/png',
+      )
+    })
+    return new Uint8Array(await pngBlob.arrayBuffer())
+  } finally {
+    bitmap.close()
+  }
+}
+
+async function readEmbeddedImage(image: WorksheetImage): Promise<EmbeddedImageData | null> {
+  if (!image.file) return null
+  if (image.mimeType === 'image/webp') {
+    return { type: 'png', data: await convertWebpToPng(image.file) }
+  }
+  const data = new Uint8Array(await image.file.arrayBuffer())
+  if (image.mimeType === 'image/svg+xml') {
+    return { type: 'svg', data, fallback: { type: 'png', data: TRANSPARENT_PNG } }
+  }
+  return { type: image.mimeType === 'image/jpeg' ? 'jpg' : 'png', data }
+}
+
+async function loadEmbeddedImages(
+  images: readonly WorksheetImage[] | undefined,
+): Promise<ReadonlyMap<string, EmbeddedImageData>> {
+  const entries = await Promise.all(
+    (images ?? []).map(async (image) => [image.id, await readEmbeddedImage(image)] as const),
+  )
+  return new Map(
+    entries.filter((entry): entry is readonly [string, EmbeddedImageData] => entry[1] !== null),
+  )
 }
 
 function docxFont(font: WorksheetFont): DocxFont {
@@ -543,6 +605,7 @@ function renderSentenceSections(
 function renderPictureSections(
   sections: PictureWorksheetSection[],
   doc: WorksheetDoc,
+  embeddedImages: ReadonlyMap<string, EmbeddedImageData>,
 ): (Paragraph | Table)[] {
   const result: (Paragraph | Table)[] = [
     createInstructionBanner('【伍、看圖識字與表達】 觀察圖片中的情境，寫出對應的生字，並造出一個完整的句子。'),
@@ -550,6 +613,7 @@ function renderPictureSections(
 
   sections.forEach((sec) => {
     const item = sec.item
+    const embeddedImage = item.image ? embeddedImages.get(item.image.id) : undefined
 
     const picRow = new TableRow({
       children: [
@@ -562,12 +626,17 @@ function renderPictureSections(
             new Paragraph({
               alignment: AlignmentType.CENTER,
               children: [
-                new TextRun({
-                  text: '🖼️ 教學插圖區',
-                  size: 20,
-                  font: FONT_FAMILY,
-                  color: '94A3B8',
-                }),
+                embeddedImage
+                  ? new ImageRun({
+                      ...embeddedImage,
+                      transformation: { width: 120, height: 90 },
+                    })
+                  : new TextRun({
+                      text: '🖼️ 教學插圖區',
+                      size: 20,
+                      font: FONT_FAMILY,
+                      color: '94A3B8',
+                    }),
               ],
             }),
             new Paragraph({
@@ -651,6 +720,7 @@ function renderPictureSections(
 function renderPageSections(
   sections: WorksheetSection[],
   doc: WorksheetDoc,
+  embeddedImages: ReadonlyMap<string, EmbeddedImageData>,
 ): (Paragraph | Table)[] {
   switch (doc.template) {
     case 'character-practice':
@@ -673,6 +743,7 @@ function renderPageSections(
       return renderPictureSections(
         sections.filter((s): s is PictureWorksheetSection => s.kind === 'picture'),
         doc,
+        embeddedImages,
       )
     default:
       return renderCharacterSections(
@@ -688,6 +759,7 @@ function renderPageSections(
 export function createDocxDocument(
   doc: WorksheetDoc,
   options: DocxExportOptions = {},
+  embeddedImages: ReadonlyMap<string, EmbeddedImageData> = new Map(),
 ): Document {
   SELECTED_FONT = options.font ?? 'standard-kai'
   FONT_FAMILY = docxFont(SELECTED_FONT)
@@ -697,7 +769,7 @@ export function createDocxDocument(
   const docxSections = (doc.pages.length > 0 ? doc.pages : [{ pageNumber: 1, blocks: [], sections: [] }]).map(
     (page, pageIdx) => {
       const headerElements = createPageHeader(doc, templateTitle)
-      const sectionElements = renderPageSections(page.sections, doc)
+      const sectionElements = renderPageSections(page.sections, doc, embeddedImages)
 
       return {
         properties: {
@@ -762,7 +834,8 @@ export async function generateDocxBlob(
   if (doc.template === 'reference-character-practice') {
     return generateReferenceTemplateDocxBlob(doc, options)
   }
-  const document = createDocxDocument(doc, options)
+  const embeddedImages = await loadEmbeddedImages(doc.images)
+  const document = createDocxDocument(doc, options, embeddedImages)
   return await Packer.toBlob(document)
 }
 

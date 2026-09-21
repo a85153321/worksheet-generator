@@ -8,9 +8,8 @@ import type {
 } from '../../services'
 import {
   WorksheetContentRenderer,
-  TEMPLATE_NAMES,
-  WORKSHEET_FONT_LABELS,
 } from './WorksheetContentRenderer'
+import { TEMPLATE_NAMES, WORKSHEET_FONT_LABELS } from './constants'
 
 export interface WorksheetSheetProps {
   page: WorksheetPage
@@ -44,7 +43,7 @@ export const WorksheetSheet: React.FC<WorksheetSheetProps> = ({
 
   return (
     <article
-      className={`a4-sheet worksheet-font-${previewFont} ${className}`}
+      className={`a4-sheet worksheet-font-${previewFont} template-${template} ${className}`}
       role="region"
       aria-label={`A4 學習單第 ${page.pageNumber} 頁預覽`}
       style={style}
@@ -52,14 +51,16 @@ export const WorksheetSheet: React.FC<WorksheetSheetProps> = ({
       <header className="sheet-header">
         <div className="sheet-header-top">
           <h2 className="sheet-title">{displayTitle}</h2>
-          <div className="sheet-header-meta">
-            <span>國語單元評量</span>
-            <span className="sheet-header-meta-sep">｜</span>
-            <span>{TEMPLATE_NAMES[template] || '生字練習單'}</span>
-            {previewFont !== 'standard-kai' ? (
-              <span className="sheet-header-badge">（{WORKSHEET_FONT_LABELS[previewFont]}）</span>
-            ) : null}
-          </div>
+          {template !== 'reference-character-practice' ? (
+            <div className="sheet-header-meta">
+              <span>國語單元評量</span>
+              <span className="sheet-header-meta-sep">｜</span>
+              <span>{TEMPLATE_NAMES[template] || '生字練習單'}</span>
+              {previewFont !== 'standard-kai' ? (
+                <span className="sheet-header-badge">（{WORKSHEET_FONT_LABELS[previewFont]}）</span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="sheet-info-row">
           <span className="sheet-info-item">____ 年 ____ 班</span>
@@ -81,10 +82,12 @@ export const WorksheetSheet: React.FC<WorksheetSheetProps> = ({
         />
       </main>
 
-      <footer className="sheet-footer">
-        <span>國小本機學習單生成器（Local-First 免費教師版）· {TEMPLATE_NAMES[template]}</span>
-        <span>第 {page.pageNumber} 頁 / 共 {totalPages} 頁</span>
-      </footer>
+      {template !== 'reference-character-practice' ? (
+        <footer className="sheet-footer">
+          <span>國小本機學習單生成器（Local-First 免費教師版）· {TEMPLATE_NAMES[template]}</span>
+          <span>第 {page.pageNumber} 頁 / 共 {totalPages} 頁</span>
+        </footer>
+      ) : null}
     </article>
   )
 }

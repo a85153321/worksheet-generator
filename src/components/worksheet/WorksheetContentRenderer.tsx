@@ -8,23 +8,8 @@ import type {
   SentenceWorksheetSection,
   PictureWorksheetSection,
   WorksheetTemplate,
-  WorksheetFont,
   WorksheetImage,
 } from '../../services'
-
-export const WORKSHEET_FONT_LABELS: Record<WorksheetFont, string> = {
-  'standard-kai': '標楷體',
-  'zihi-kai-zhuyin': '標楷有注音',
-  'zihi-only-zhuyin': '純注音',
-}
-
-export const TEMPLATE_NAMES: Record<WorksheetTemplate, string> = {
-  'character-practice': '生字田字格練習單',
-  'reference-character-practice': '範例注音生字學習單',
-  'word-practice': '語詞積木擴展單',
-  'sentence-practice': '句型仿寫應用單',
-  'picture-practice': '看圖識字練習單',
-}
 
 export interface WorksheetContentRendererProps {
   template: WorksheetTemplate
@@ -161,34 +146,29 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
         }))
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div className="sheet-instruction-banner" style={{ borderLeftColor: '#7030a0' }}>
-          <strong>【壹、範例注音生字學習單】</strong>（教師 Word 範本原稿母版·每頁五題） 先讀注音與部首，再依正確筆順在田字格內端正書寫。
-        </div>
-
+      <div className="reference-question-list">
         {items.map((item, idx) => {
           const qNum = (pageNumber - 1) * 5 + idx + 1
           const uploadedImg = images[item.character]
           return (
             <section
               key={`${item.character}-${idx}`}
-              className="sheet-char-card"
-              style={{ padding: '8px 12px', gap: '6px' }}
+              className="reference-question"
             >
-              <div className="sheet-char-card-header" style={{ paddingBottom: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
+              <div className="reference-question-header">
+                <div className="reference-question-meta">
+                  <span className="reference-question-number">
                     第 {qNum} 題：【 {item.character} 】
                   </span>
-                  <span className="tag tag-info" style={{ fontSize: '11px', padding: '1px 7px' }}>
+                  <span>
                     部首：{item.radical || '—'}
                   </span>
-                  <span className="tag tag-info" style={{ fontSize: '11px', padding: '1px 7px' }}>
+                  <span>
                     筆畫：{item.strokeCount || '—'} 畫
                   </span>
                 </div>
                 {Boolean(item.zhuyin && item.zhuyin.trim()) && (
-                  <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="reference-question-reading">
                     <span>讀音：</span>
                     <VerticalZhuyin character={item.character} zhuyin={item.zhuyin} size="md" />
                   </div>
@@ -196,7 +176,7 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
               </div>
 
               {/* 5 格排版母版群組：示範格、描字格、練習格1、練習格2、原稿專屬紫色部首格 + 配圖 */}
-              <div className="sheet-char-grid-row" style={{ gap: '6px' }}>
+              <div className="reference-character-grid">
                 {/* 1. 示範大格（國字在田字格內，標準直式注音位於右側注音欄） */}
                 <TianzigeWithZhuyin
                   character={item.character}
@@ -228,7 +208,7 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
                 />
 
                 {/* 5. 原稿專屬紫色粗框部首格 */}
-                <div className="tianzige-block-item" title={`原稿紫色部首格：${item.radical || '—'}`}>
+                <div className="tianzige-block-item reference-radical-box" title={`原稿紫色部首格：${item.radical || '—'}`}>
                   <div className="tianzige-box-with-zhuyin no-zhuyin">
                     <div
                       className="sheet-tian-grid sm"
@@ -277,7 +257,7 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
                 )}
               </div>
 
-              <div style={{ fontSize: '12.5px', color: '#334155', borderTop: '1px solid #f1f5f9', paddingTop: '4px' }}>
+              <div className="reference-word-candidates">
                 <strong>【常用語詞造詞參考】：</strong>
                 <span>
                   {item.wordCandidates && item.wordCandidates.length > 0

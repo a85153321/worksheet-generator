@@ -15,6 +15,8 @@ export interface WorksheetImage {
   id: string
   character: string
   url: string
+  /** 原始上傳檔，供 Word 匯出讀取二進位內容；url 僅供瀏覽器預覽。 */
+  file?: Blob
   mimeType: 'image/svg+xml' | 'image/png' | 'image/jpeg' | 'image/webp'
   source: 'upload'
   createdAt: string
@@ -91,7 +93,7 @@ export interface PictureWorksheetSection extends WorksheetSectionBase {
     character: CharacterAnalysis['character']
     prompt: string
     rationale: string
-    image: Pick<WorksheetImage, 'id' | 'url' | 'mimeType'> | null
+    image: Pick<WorksheetImage, 'id' | 'url' | 'file' | 'mimeType'> | null
     needsImage: boolean
   }
 }

@@ -23,6 +23,7 @@ export const ImageSelectionPage: React.FC = () => {
         id: `upload-${encodeURIComponent(character)}-${Date.now()}`,
         character,
         url: String(reader.result),
+        file,
         mimeType: file.type as WorksheetImage['mimeType'],
         source: 'upload',
         createdAt: new Date().toISOString(),

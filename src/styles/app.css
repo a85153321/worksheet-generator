@@ -1143,6 +1143,116 @@ textarea:focus-visible {
   background: linear-gradient(to bottom, transparent 48%, #cbd5e1 49%, transparent 52%);
 }
 
+/* 教師 Word 原稿的 HTML 模擬：以真實範本的五題、五大格、無卡片裝飾為準。 */
+.a4-sheet.template-reference-character-practice {
+  padding: 10mm 12mm;
+  gap: 8px;
+}
+
+.template-reference-character-practice .sheet-header {
+  border-bottom: 0;
+  padding-bottom: 2px;
+  gap: 8px;
+  align-items: center;
+}
+
+.template-reference-character-practice .sheet-header-top {
+  justify-content: center;
+}
+
+.template-reference-character-practice .sheet-title {
+  font-size: 25px;
+  letter-spacing: 0.08em;
+}
+
+.template-reference-character-practice .sheet-info-row {
+  justify-content: center;
+  gap: 24px;
+  font-size: 15px;
+}
+
+.template-reference-character-practice .sheet-content {
+  gap: 0;
+}
+
+.reference-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reference-question {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  break-inside: avoid;
+}
+
+.reference-question-header,
+.reference-question-meta,
+.reference-question-reading {
+  display: flex;
+  align-items: center;
+}
+
+.reference-question-header {
+  justify-content: space-between;
+  color: #334155;
+  font-size: 13px;
+}
+
+.reference-question-meta {
+  gap: 24px;
+}
+
+.reference-question-number {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.reference-question-reading {
+  gap: 5px;
+}
+
+.reference-character-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.reference-character-grid .tianzige-block-item,
+.reference-character-grid .tianzige-box-with-zhuyin {
+  width: 100%;
+}
+
+.reference-character-grid .tianzige-box-with-zhuyin {
+  height: 96px;
+}
+
+.reference-character-grid .sheet-tian-grid,
+.reference-character-grid .sheet-tian-grid.sm {
+  width: 100%;
+  height: 96px;
+  box-sizing: border-box;
+  font-size: 54px;
+}
+
+.reference-character-grid .sheet-tian-zhuyin-column {
+  width: 28px;
+  flex: 0 0 28px;
+}
+
+.reference-character-grid .tianzige-bottom-label {
+  display: none;
+}
+
+.reference-word-candidates {
+  color: #334155;
+  font-size: 13px;
+  padding-left: 4px;
+}
+
 .sheet-score-box {
   border: 1px solid #cbd5e1;
   border-radius: 4px;

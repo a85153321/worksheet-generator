@@ -80,7 +80,9 @@ function pictureSection(
       character: item.character,
       prompt: `教師為「${item.character}」上傳的教學圖片`,
       rationale: '教師選擇的看圖練習。',
-      image: image ? { id: image.id, url: image.url, mimeType: image.mimeType } : null,
+      image: image
+        ? { id: image.id, url: image.url, file: image.file, mimeType: image.mimeType }
+        : null,
       needsImage: !image,
     },
   }
@@ -210,7 +212,8 @@ export async function buildWorksheet(
       status: 'draft',
       pages,
       sourceAnalysis: structuredClone(analysis),
-      images: options.images ? structuredClone([...options.images]) : undefined,
+      // Blob/File 是不可變的瀏覽器物件；保留原物件，Word 匯出時才能讀取 arrayBuffer()。
+      images: options.images ? [...options.images] : undefined,
       createdAt: new Date().toISOString(),
     },
   }

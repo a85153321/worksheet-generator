@@ -187,6 +187,8 @@ export const TemplateSelectionPage: React.FC = () => {
       ? defaultSampleAnalysis
       : analysisResult
 
+    // Loading 狀態是本 effect 所啟動非同步工作的起點，不是衍生 render state。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsPreviewLoading(true)
     let imageList = Object.values(worksheetImages)
     // 若選擇看圖模板但目前無上傳圖片，提供示範插圖以供模板排版預覽

@@ -122,4 +122,32 @@ describe('docx-builder', () => {
     expect(blob).toBeDefined()
     expect(blob.size).toBeGreaterThan(1000)
   })
+
+  it('embeds picture-practice image bytes in word/media', async () => {
+    const imageBytes = Uint8Array.from(
+      Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
+    )
+    const res = await buildWorksheet(sampleAnalysis, 'picture-practice', {
+      grade: 3,
+      images: [{
+        id: 'picture-study',
+        character: '學',
+        url: 'blob:preview-only',
+        file: new Blob([imageBytes], { type: 'image/png' }),
+        mimeType: 'image/png',
+        source: 'upload',
+        createdAt: '2026-09-21T00:00:00.000Z',
+      }],
+    })
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+
+    const blob = await generateDocxBlob(res.value)
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer())
+    const mediaFiles = Object.keys(archive.files).filter((path) => path.startsWith('word/media/'))
+
+    expect(mediaFiles.some((path) => path.endsWith('.png'))).toBe(true)
+    const embedded = await archive.file(mediaFiles.find((path) => path.endsWith('.png'))!)?.async('uint8array')
+    expect(embedded).toEqual(imageBytes)
+  })
 })
