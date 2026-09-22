@@ -1,5 +1,6 @@
 export {
   analyzeTypedCharacters,
+  getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   resolveSentenceCandidatesForWords,
   updateAnalysisResult,

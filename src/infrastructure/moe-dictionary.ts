@@ -78,6 +78,24 @@ export function lookupDictionaryEntriesByTerm(term: string): DictionaryEntry[] {
   return entriesFromIds(entryIdsByTerm[term.trim()])
 }
 
+export function matchReadingForWord(
+  character: string,
+  targetZhuyin: string,
+  wordName: string,
+  wordZhuyin: string,
+): boolean {
+  if (!targetZhuyin) return true
+  const syllables = wordZhuyin.split(/\s+/)
+  const chars = [...wordName]
+  if (syllables.length === chars.length) {
+    for (let i = 0; i < chars.length; i++) {
+      if (chars[i] === character && syllables[i] === targetZhuyin) return true
+    }
+    return false
+  }
+  return wordZhuyin.includes(targetZhuyin)
+}
+
 export function lookupCharacterFromDictionary(
   character: string,
 ): CharacterDictionaryLookup | null {
@@ -90,7 +108,9 @@ export function lookupCharacterFromDictionary(
 
   const relatedEntries = entriesFromIds(entryIdsByCharacter[normalized])
   const zhuyinCandidates = unique(exactEntries.map((entry) => entry.zhuyin).filter(Boolean))
-  const wordCandidateDetails = relatedEntries
+  const defaultZhuyin = chooseDefaultReading(normalized, zhuyinCandidates)
+
+  const rawDetails = relatedEntries
     .filter((entry) => entry.wordName !== normalized && [...entry.wordName].length <= 6)
     .map((entry): WordCandidateDetail => ({
       text: entry.wordName,
@@ -99,6 +119,12 @@ export function lookupCharacterFromDictionary(
       sentenceCandidates: unique(extractExamples(entry.definition)),
       source: '教育部《國語辭典簡編本》',
     }))
+
+  const wordCandidateDetails = [
+    ...rawDetails.filter((d) => matchReadingForWord(normalized, defaultZhuyin, d.text, d.zhuyin)),
+    ...rawDetails.filter((d) => !matchReadingForWord(normalized, defaultZhuyin, d.text, d.zhuyin)),
+  ]
+
   const wordCandidates = unique(wordCandidateDetails.map((entry) => entry.text))
   const sentenceCandidates = unique(
     relatedEntries.flatMap((entry) => extractExamples(entry.definition)),
@@ -106,7 +132,7 @@ export function lookupCharacterFromDictionary(
 
   return {
     character: normalized,
-    zhuyin: chooseDefaultReading(normalized, zhuyinCandidates),
+    zhuyin: defaultZhuyin,
     zhuyinCandidates,
     radical: primaryEntry.radical,
     strokeCount: primaryEntry.strokeCount,
@@ -114,6 +140,44 @@ export function lookupCharacterFromDictionary(
     wordCandidateDetails,
     sentenceCandidates,
     entryWordNumbers: relatedEntries.map((entry) => entry.wordNumber),
+  }
+}
+
+export function getCandidatesForCharacterReading(
+  character: string,
+  targetZhuyin: string,
+): {
+  wordCandidates: string[]
+  allWordCandidates: string[]
+  sentenceCandidates: string[]
+} {
+  const lookup = lookupCharacterFromDictionary(character)
+  if (!lookup) {
+    return { wordCandidates: [], allWordCandidates: [], sentenceCandidates: [] }
+  }
+
+  const matchedDetails = lookup.wordCandidateDetails.filter((detail) =>
+    matchReadingForWord(character, targetZhuyin, detail.text, detail.zhuyin),
+  )
+
+  const allWordCandidates = unique(
+    (matchedDetails.length > 0 ? matchedDetails : lookup.wordCandidateDetails).map((d) => d.text),
+  )
+  const wordCandidates = allWordCandidates.slice(0, 3)
+
+  const matchedSentences = unique(
+    (matchedDetails.length > 0 ? matchedDetails : lookup.wordCandidateDetails).flatMap(
+      (d) => d.sentenceCandidates,
+    ),
+  )
+
+  const linkedSentences = resolveSentenceCandidatesForWords(lookup, wordCandidates)
+  const sentenceCandidates = unique([...linkedSentences, ...matchedSentences]).slice(0, 2)
+
+  return {
+    wordCandidates,
+    allWordCandidates,
+    sentenceCandidates: sentenceCandidates.length > 0 ? sentenceCandidates : lookup.sentenceCandidates.slice(0, 2),
   }
 }
 

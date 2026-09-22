@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { appErrorSchema } from '../src/domain'
 import {
   analyzeTypedCharacters,
+  getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   resolveSentenceCandidatesForWords,
 } from '../src/services'
@@ -102,5 +103,25 @@ describe('MOE Concised Mandarin Dictionary', () => {
     expect(result?.zhuyinCandidates.length).toBeGreaterThan(1)
     expect(result?.zhuyinCandidates).toContain(result?.zhuyin)
     expect(result?.zhuyin).not.toContain('、')
+  })
+
+  it('dynamically switches word and sentence candidates when selecting different polyphone readings', () => {
+    // 測試「長」：ㄔㄤˊ vs ㄓㄤˇ
+    const changReading = getCandidatesForCharacterReading('長', 'ㄔㄤˊ')
+    const zhangReading = getCandidatesForCharacterReading('長', 'ㄓㄤˇ')
+
+    expect(changReading.wordCandidates.length).toBeGreaterThan(0)
+    expect(zhangReading.wordCandidates.length).toBeGreaterThan(0)
+
+    // 驗證兩個讀音取出的語詞各自符合該讀音之詞意
+    expect(changReading.wordCandidates).toContain('波長')
+    expect(zhangReading.wordCandidates).toContain('班長')
+
+    // 測試「奇」：ㄑㄧˊ vs ㄐㄧ
+    const qiReading = getCandidatesForCharacterReading('奇', 'ㄑㄧˊ')
+    const jiReading = getCandidatesForCharacterReading('奇', 'ㄐㄧ')
+
+    expect(qiReading.wordCandidates).not.toContain('奇數')
+    expect(jiReading.wordCandidates).toContain('奇數')
   })
 })

@@ -7,12 +7,20 @@ import {
   type Result,
 } from '../domain'
 import {
+  getCandidatesForCharacterReading as getCandidatesForCharacterReadingInfra,
   lookupCharacterFromDictionary as lookupLocalDictionary,
   putAnalysisCache,
   resolveSentenceCandidatesForWords as resolveLinkedSentences,
 } from '../infrastructure'
 import type { CharacterDictionaryLookup } from '../infrastructure'
 import type { AnalyzeTypedCharactersInput } from './contracts'
+
+export function getCandidatesForCharacterReading(
+  character: string,
+  targetZhuyin: string,
+) {
+  return getCandidatesForCharacterReadingInfra(character, targetZhuyin)
+}
 
 export function lookupCharacterFromDictionary(
   character: string,

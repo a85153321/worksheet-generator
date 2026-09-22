@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
 import {
+  getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   resolveSentenceCandidatesForWords,
   updateAnalysisResult,
@@ -271,15 +272,22 @@ export const ReviewPage: React.FC = () => {
     })
   }
 
-  // 隨機抽選語詞（從辭典完整候選隨機挑選未加入者）
+  // 隨機抽選語詞（優先從當前讀音專屬候選隨機挑選未加入者）
   const handleDrawRandomWord = () => {
     const char = editForm.character.trim()
     if (!char) {
       setWordDrawNotice('請先輸入生字')
       return
     }
+    const currentReading = editForm.zhuyin.trim()
+    const readingCandidates = currentReading
+      ? getCandidatesForCharacterReading(char, currentReading)
+      : null
     const lookup = lookupCharacterFromDictionary(char)
-    const fullCandidates = lookup?.wordCandidates || []
+    const preferredCandidates = readingCandidates?.allWordCandidates ?? []
+    const fallbackCandidates = lookup?.wordCandidates || []
+    const fullCandidates = preferredCandidates.length > 0 ? preferredCandidates : fallbackCandidates
+
     if (fullCandidates.length === 0) {
       setWordDrawNotice('已無更多候選')
       return
@@ -304,7 +312,7 @@ export const ReviewPage: React.FC = () => {
     setWordDrawNotice(null)
   }
 
-  // 隨機抽選例句（從辭典完整候選隨機挑選未加入者）
+  // 隨機抽選例句（從符合當前讀音或選用語詞之例句中挑選）
   const handleDrawRandomSentence = () => {
     const char = editForm.character.trim()
     if (!char) {
@@ -316,9 +324,20 @@ export const ReviewPage: React.FC = () => {
       .split(/[,、，\s]/)
       .map((word) => word.trim())
       .filter(Boolean)
-    const fullCandidates = lookup
+    const currentReading = editForm.zhuyin.trim()
+    const readingCandidates = currentReading
+      ? getCandidatesForCharacterReading(char, currentReading)
+      : null
+    const linkedWordsSentences = lookup
       ? resolveSentenceCandidatesForWords(lookup, selectedWords)
       : []
+    const fullCandidates =
+      linkedWordsSentences.length > 0
+        ? linkedWordsSentences
+        : (readingCandidates?.sentenceCandidates.length ?? 0) > 0
+          ? readingCandidates!.sentenceCandidates
+          : (lookup?.sentenceCandidates ?? [])
+
     if (fullCandidates.length === 0) {
       setSentenceDrawNotice('已無更多候選')
       return
@@ -425,14 +444,62 @@ export const ReviewPage: React.FC = () => {
     }
   }
 
-  // 切換多音字讀音並立即儲存（以 silent 模式儲存，不跳出全頁綠色提示）
+  // 切換編輯表單中的注音符號時，聯動更新語詞與例句推薦
+  const handleEditFormZhuyinChange = (newZhuyin: string) => {
+    const char = editForm.character.trim()
+    const readingCandidates = getCandidatesForCharacterReading(char, newZhuyin)
+    setEditForm((prev) => ({
+      ...prev,
+      zhuyin: newZhuyin,
+      words:
+        readingCandidates.wordCandidates.length > 0
+          ? readingCandidates.wordCandidates.join('、')
+          : prev.words,
+      exampleSentence:
+        readingCandidates.sentenceCandidates.length > 0
+          ? readingCandidates.sentenceCandidates.join('\n')
+          : prev.exampleSentence,
+    }))
+  }
+
+  // 切換多音字讀音並立即儲存（以 silent 模式儲存，同時聯動切換專屬語詞與例句）
   const handleSelectZhuyin = async (idx: number, candidate: string) => {
     if (characters[idx]?.zhuyin === candidate) return
-    const updatedChars = characters.map((c, i) =>
-      i === idx ? { ...c, zhuyin: candidate } : c
+    const targetChar = characters[idx]
+    if (!targetChar) return
+
+    // 依選定的讀音取得對應語詞與例句
+    const readingCandidates = getCandidatesForCharacterReading(
+      targetChar.character,
+      candidate,
     )
+    const newWords =
+      readingCandidates.wordCandidates.length > 0
+        ? readingCandidates.wordCandidates
+        : targetChar.wordCandidates
+    const newSentences =
+      readingCandidates.sentenceCandidates.length > 0
+        ? readingCandidates.sentenceCandidates
+        : targetChar.sentenceCandidates
+
+    const updatedChars = characters.map((c, i) =>
+      i === idx
+        ? {
+            ...c,
+            zhuyin: candidate,
+            wordCandidates: newWords,
+            sentenceCandidates: newSentences,
+          }
+        : c,
+    )
+
     if (editingIndex === idx) {
-      setEditForm((prev) => ({ ...prev, zhuyin: candidate }))
+      setEditForm((prev) => ({
+        ...prev,
+        zhuyin: candidate,
+        words: newWords.join('、'),
+        exampleSentence: newSentences.join('\n'),
+      }))
     }
     await saveAnalysisData({ characters: updatedChars }, { silent: true })
   }
@@ -594,8 +661,9 @@ export const ReviewPage: React.FC = () => {
               {editForm.zhuyinCandidates.length > 0 ? (
                 <select
                   id="new-zhuyin-input"
+                  className="zhuyin-form-input"
                   value={editForm.zhuyin}
-                  onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
+                  onChange={(e) => handleEditFormZhuyinChange(e.target.value)}
                   disabled={isSaving}
                   style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc' }}
                 >
@@ -606,6 +674,7 @@ export const ReviewPage: React.FC = () => {
               ) : (
                 <input
                   id="new-zhuyin-input"
+                  className="zhuyin-form-input"
                   type="text"
                   value={editForm.zhuyin}
                   onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
@@ -796,7 +865,7 @@ export const ReviewPage: React.FC = () => {
                   </>
                 ) : (
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
-                    讀音：<strong style={{ color: 'var(--color-text-main)' }}>{item.zhuyin}</strong>
+                    讀音：<span className="single-reading-display">{item.zhuyin}</span>
                   </div>
                 )}
               </div>
@@ -840,8 +909,9 @@ export const ReviewPage: React.FC = () => {
                     <div>
                       <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>注音符號：</label>
                       <select
+                        className="zhuyin-form-input"
                         value={editForm.zhuyin}
-                        onChange={(e) => setEditForm({ ...editForm, zhuyin: e.target.value })}
+                        onChange={(e) => handleEditFormZhuyinChange(e.target.value)}
                         disabled={isSaving}
                         style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #ccc' }}
                       >

@@ -7,8 +7,10 @@ export {
 } from './bpmf-ivs'
 export {
   chooseDefaultReading,
+  getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
+  matchReadingForWord,
   MOE_CONCISED_DICTIONARY_METADATA,
   resolveSentenceCandidatesForWords,
 } from './moe-dictionary'
