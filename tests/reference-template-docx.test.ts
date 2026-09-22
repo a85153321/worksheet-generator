@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import JSZip from 'jszip'
 import {
@@ -128,6 +129,24 @@ describe('easy-template-x smoke template', () => {
 })
 
 describe('migrated teacher Word template', () => {
+  it('does not expose author metadata from any bundled Word template', async () => {
+    const templateDirectory = 'src/assets/docx-templates'
+    const templateFiles = readdirSync(templateDirectory)
+      .filter((fileName) => fileName.toLowerCase().endsWith('.docx') && !fileName.startsWith('~$'))
+
+    expect(templateFiles.length).toBeGreaterThan(0)
+    for (const fileName of templateFiles) {
+      const zip = await JSZip.loadAsync(readFileSync(join(templateDirectory, fileName)))
+      const coreXml = await zip.file('docProps/core.xml')?.async('string') ?? ''
+      expect(coreXml, `${fileName} contains creator metadata`).not.toMatch(
+        /<dc:creator[^>]*>\s*[^<\s][^<]*<\/dc:creator>/,
+      )
+      expect(coreXml, `${fileName} contains lastModifiedBy metadata`).not.toMatch(
+        /<cp:lastModifiedBy[^>]*>\s*[^<\s][^<]*<\/cp:lastModifiedBy>/,
+      )
+    }
+  })
+
   it('contains the supported easy-template-x tags and character style', async () => {
     const tags = await new TemplateHandler({ maxXmlDepth: 100 }).parseTags(template)
     const names = tags.map((tag) => tag.name)
