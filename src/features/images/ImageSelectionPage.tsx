@@ -1,9 +1,10 @@
 import React, { useRef, useState } from 'react'
 import { useApp } from '../../app/index'
 import type { WorksheetImage } from '../../services'
+import { resolveBopomofoDisplayCharacter } from '../../infrastructure'
 
 export const ImageSelectionPage: React.FC = () => {
-  const { analysisResult, worksheetImages, setWorksheetImages, navigate } = useApp()
+  const { analysisResult, worksheetImages, setWorksheetImages, navigate, readingFontMode } = useApp()
   const [notice, setNotice] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const characters = analysisResult?.characters ?? []
@@ -76,7 +77,14 @@ export const ImageSelectionPage: React.FC = () => {
             <article key={item.character} className="sheet-char-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <strong style={{ fontSize: '1.8rem' }}>{item.character}</strong>
-                <span>{item.zhuyin}｜{item.radical}部 {item.strokeCount}畫</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <span className="zhuyin-text single-reading-display">
+                    {readingFontMode === 'vertical'
+                      ? resolveBopomofoDisplayCharacter(item.character, item.zhuyin)
+                      : item.zhuyin}
+                  </span>
+                  <span>｜{item.radical}部 {item.strokeCount}畫</span>
+                </span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
                   <input
                     ref={(element) => { fileInputRefs.current[item.character] = element }}
