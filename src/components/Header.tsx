@@ -28,7 +28,7 @@ export const Header: React.FC = () => {
               type="button"
               className={`header-toggle-btn ${readingFontMode === 'kai' ? 'active' : ''}`}
               onClick={() => setReadingFontMode('kai')}
-              title="使用國小課本標準「標楷注音」（橫排毛筆楷書筆鋒）"
+              title="使用國小課本標準「標楷注音」字型（毛筆楷書筆鋒）"
               aria-pressed={readingFontMode === 'kai'}
             >
               標楷注音
@@ -37,7 +37,7 @@ export const Header: React.FC = () => {
               type="button"
               className={`header-toggle-btn ${readingFontMode === 'vertical' ? 'active' : ''}`}
               onClick={() => setReadingFontMode('vertical')}
-              title="使用「直立注音」（直立垂直排列）"
+              title="使用直立注音「字嗨注音而已 (BpmfZihiOnly)」字型"
               aria-pressed={readingFontMode === 'vertical'}
             >
               直立注音

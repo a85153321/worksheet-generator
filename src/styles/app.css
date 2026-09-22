@@ -674,28 +674,36 @@ textarea:focus-visible {
   color: var(--color-primary-dark);
 }
 
-/* 直立注音模式 (直排 vertical-rl，直立排列) */
+/* 標楷注音模式：套用國小標準標楷體 */
+body[data-reading-font="kai"] .zhuyin-text,
+body[data-reading-font="kai"] .reading-button,
+body[data-reading-font="kai"] .single-reading-display,
+body[data-reading-font="kai"] .reading-highlight,
+body[data-reading-font="kai"] .reading-fallback-text strong,
+body[data-reading-font="kai"] .zhuyin-form-input,
+[data-reading-font="kai"] .zhuyin-text,
+[data-reading-font="kai"] .reading-button,
+[data-reading-font="kai"] .single-reading-display,
+[data-reading-font="kai"] .reading-highlight,
+[data-reading-font="kai"] .reading-fallback-text strong,
+[data-reading-font="kai"] .zhuyin-form-input {
+  font-family: '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'TW-Kai', serif !important;
+}
+
+/* 直立注音模式：套用字嗨注音而已 (BpmfZihiOnly) 字型 */
 body[data-reading-font="vertical"] .zhuyin-text,
-[data-reading-font="vertical"] .zhuyin-text {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  letter-spacing: 0.08em;
-  font-family: var(--font-worksheet-zihi-only), '標楷體', 'DFKai-SB' !important;
-  display: inline-block;
-  vertical-align: middle;
-}
-
 body[data-reading-font="vertical"] .reading-button,
-[data-reading-font="vertical"] .reading-button {
-  padding: 0.35rem 0.6rem;
-  min-height: 2.5rem;
-  align-items: center;
-}
-
 body[data-reading-font="vertical"] .single-reading-display,
-[data-reading-font="vertical"] .single-reading-display {
-  display: inline-flex;
-  vertical-align: middle;
+body[data-reading-font="vertical"] .reading-highlight,
+body[data-reading-font="vertical"] .reading-fallback-text strong,
+body[data-reading-font="vertical"] .zhuyin-form-input,
+[data-reading-font="vertical"] .zhuyin-text,
+[data-reading-font="vertical"] .reading-button,
+[data-reading-font="vertical"] .single-reading-display,
+[data-reading-font="vertical"] .reading-highlight,
+[data-reading-font="vertical"] .reading-fallback-text strong,
+[data-reading-font="vertical"] .zhuyin-form-input {
+  font-family: 'BpmfZihiOnly', 'BpmfZihiOnly-R', 'ㄅ字嗨注音而已 R', 'Bpmf Zihi Only R', 'ㄅ字嗨注音而已', serif !important;
 }
 
 /* 語詞候選點擊查看詞義樣式 */
