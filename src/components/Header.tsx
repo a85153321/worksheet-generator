@@ -16,7 +16,7 @@ export const Header: React.FC = () => {
           }}
           aria-label="國小本機學習單生成器 首頁"
         >
-          <span>📝 國小本機學習單生成器</span>
+          <span>📝 國小學習單生成器</span>
           <span className="brand-badge">Local-First</span>
         </a>
       </div>
