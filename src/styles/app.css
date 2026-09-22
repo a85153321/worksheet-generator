@@ -193,6 +193,53 @@ textarea:focus-visible {
   gap: 0.75rem;
 }
 
+.header-reading-font-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-md);
+}
+
+.header-reading-font-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-toggle-buttons {
+  display: inline-flex;
+  background-color: #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.header-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-radius: calc(var(--radius-sm) - 1px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-toggle-btn:hover {
+  color: var(--color-text-main);
+}
+
+.header-toggle-btn.active {
+  background-color: var(--color-surface);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
 /* 步驟指示列 (Step Navigation) */
 .steps-nav {
   background-color: var(--color-surface);
@@ -625,6 +672,170 @@ textarea:focus-visible {
 .single-reading-display,
 .reading-highlight {
   color: var(--color-primary-dark);
+}
+
+/* 直立注音模式 (直排 vertical-rl，直立排列) */
+body[data-reading-font="vertical"] .zhuyin-text,
+[data-reading-font="vertical"] .zhuyin-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.08em;
+  font-family: var(--font-worksheet-zihi-only), '標楷體', 'DFKai-SB' !important;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+body[data-reading-font="vertical"] .reading-button,
+[data-reading-font="vertical"] .reading-button {
+  padding: 0.35rem 0.6rem;
+  min-height: 2.5rem;
+  align-items: center;
+}
+
+body[data-reading-font="vertical"] .single-reading-display,
+[data-reading-font="vertical"] .single-reading-display {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+/* 語詞候選點擊查看詞義樣式 */
+.word-candidate-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: none;
+  background: rgba(13, 148, 136, 0.06);
+  padding: 0.15rem 0.45rem;
+  margin: 0.1rem 0.15rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  transition: all 0.15s ease;
+}
+
+.word-candidate-link:hover {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.2);
+}
+
+.word-def-icon {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.word-candidate-sep {
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+/* 語詞釋義彈窗 Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 540px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: #e2e8f0;
+  color: var(--color-text-main);
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.word-def-entry {
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-primary);
+}
+
+.word-def-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text-main);
+  white-space: pre-wrap;
+  margin-top: 0.4rem;
+}
+
+.modal-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  background: #f8fafc;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .char-meta-row {

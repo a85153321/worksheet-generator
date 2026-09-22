@@ -22,6 +22,8 @@ export interface AppContextType {
   setWorksheetDoc: React.Dispatch<React.SetStateAction<WorksheetDoc | null>>
   typedCharacters: string[]
   runTypedAnalysis: (characters: string[]) => boolean
+  readingFontMode: 'kai' | 'vertical'
+  setReadingFontMode: (mode: 'kai' | 'vertical') => void
 }
 
 export const AppContext = createContext<AppContextType | null>(null)

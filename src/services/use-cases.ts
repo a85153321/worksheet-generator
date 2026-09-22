@@ -9,10 +9,11 @@ import {
 import {
   getCandidatesForCharacterReading as getCandidatesForCharacterReadingInfra,
   lookupCharacterFromDictionary as lookupLocalDictionary,
+  lookupDictionaryEntriesByTerm as lookupLocalDictionaryEntriesByTerm,
   putAnalysisCache,
   resolveSentenceCandidatesForWords as resolveLinkedSentences,
 } from '../infrastructure'
-import type { CharacterDictionaryLookup } from '../infrastructure'
+import type { CharacterDictionaryLookup, DictionaryEntry } from '../infrastructure'
 import type { AnalyzeTypedCharactersInput } from './contracts'
 
 export function getCandidatesForCharacterReading(
@@ -20,6 +21,10 @@ export function getCandidatesForCharacterReading(
   targetZhuyin: string,
 ) {
   return getCandidatesForCharacterReadingInfra(character, targetZhuyin)
+}
+
+export function lookupDictionaryEntriesByTerm(term: string): DictionaryEntry[] {
+  return lookupLocalDictionaryEntriesByTerm(term)
 }
 
 export function lookupCharacterFromDictionary(

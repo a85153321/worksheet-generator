@@ -2,10 +2,11 @@ export {
   analyzeTypedCharacters,
   getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
+  lookupDictionaryEntriesByTerm,
   resolveSentenceCandidatesForWords,
   updateAnalysisResult,
 } from './use-cases'
-export type { CharacterDictionaryLookup, WordCandidateDetail } from '../infrastructure'
+export type { CharacterDictionaryLookup, DictionaryEntry, WordCandidateDetail } from '../infrastructure'
 export { buildWorksheet } from './worksheet-builder'
 export {
   DOCX_FONT_FULL_NAMES,

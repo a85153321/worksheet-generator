@@ -4,8 +4,10 @@ import type { AnalysisResult, CharacterAnalysis } from '../../domain'
 import {
   getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
+  lookupDictionaryEntriesByTerm,
   resolveSentenceCandidatesForWords,
   updateAnalysisResult,
+  type DictionaryEntry,
 } from '../../services'
 import { resolveBopomofoDisplayCharacter } from '../../infrastructure'
 
@@ -79,6 +81,19 @@ export const ReviewPage: React.FC = () => {
   const [wordDrawNotice, setWordDrawNotice] = useState<string | null>(null)
   const [sentenceDrawNotice, setSentenceDrawNotice] = useState<string | null>(null)
   const [autofillNotice, setAutofillNotice] = useState<string | null>(null)
+
+  // 語詞釋義彈窗狀態 (教育部國語辭典簡編本)
+  const [activeWordDefinition, setActiveWordDefinition] = useState<{
+    word: string
+    entries: DictionaryEntry[]
+  } | null>(null)
+
+  const handleViewWordDefinition = (word: string) => {
+    const cleanWord = word.trim()
+    if (!cleanWord) return
+    const entries = lookupDictionaryEntriesByTerm(cleanWord)
+    setActiveWordDefinition({ word: cleanWord, entries })
+  }
 
   // 儲存狀態與錯誤狀態 (Requirement 3)
   const [isSaving, setIsSaving] = useState(false)
@@ -1040,8 +1055,27 @@ export const ReviewPage: React.FC = () => {
               ) : (
                 /* 正常呈現狀態 */
                 <div style={{ marginTop: '0.5rem' }}>
-                  <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem' }}>
-                    <strong>語詞候選：</strong> {item.wordCandidates.slice(0, 3).length > 0 ? item.wordCandidates.slice(0, 3).join('、') : '（無語詞）'}
+                  <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <strong>語詞候選：</strong>{' '}
+                    {item.wordCandidates.slice(0, 3).length > 0 ? (
+                      item.wordCandidates.slice(0, 3).map((word, wIdx) => (
+                        <React.Fragment key={`${word}-${wIdx}`}>
+                          {wIdx > 0 && <span className="word-candidate-sep">、</span>}
+                          <button
+                            type="button"
+                            className="word-candidate-link"
+                            onClick={() => handleViewWordDefinition(word)}
+                            title={`點擊查看「${word}」在教育部《國語辭典簡編本》之詞義`}
+                            aria-label={`查看語詞「${word}」詞義`}
+                          >
+                            {word}
+                            <span className="word-def-icon" aria-hidden="true">📖</span>
+                          </button>
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      '（無語詞）'
+                    )}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     <strong>例句候選：</strong>
@@ -1114,6 +1148,81 @@ export const ReviewPage: React.FC = () => {
           下一步：上傳配圖 →
         </button>
       </div>
+
+      {/* 語詞釋義彈窗 Modal（教育部國語辭典簡編本） */}
+      {activeWordDefinition && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="word-def-title"
+          onClick={() => setActiveWordDefinition(null)}
+        >
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 id="word-def-title" className="modal-title">
+                📖 語詞釋義：{activeWordDefinition.word}
+              </h2>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveWordDefinition(null)}
+                aria-label="關閉語詞釋義"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {activeWordDefinition.entries.length > 0 ? (
+                activeWordDefinition.entries.map((entry, eIdx) => (
+                  <div key={entry.wordNumber || eIdx} className="word-def-entry">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                        {entry.wordName}
+                      </span>
+                      <span className="zhuyin-text" style={{ color: 'var(--color-primary-dark)', fontSize: '1.05rem' }}>
+                        {entry.zhuyin}
+                      </span>
+                      {entry.radical && (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                          部首：{entry.radical}
+                        </span>
+                      )}
+                      {entry.strokeCount > 0 && (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                          筆畫：{entry.strokeCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="word-def-text">
+                      {entry.definition}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '1rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  《國語辭典簡編本》暫無「{activeWordDefinition.word}」之詳細釋義條目。
+                </div>
+              )}
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
+                資料來源：教育部《國語辭典簡編本》
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ fontSize: '0.85rem', padding: '0.35rem 1rem' }}
+                onClick={() => setActiveWordDefinition(null)}
+              >
+                我知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

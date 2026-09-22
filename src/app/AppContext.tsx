@@ -32,6 +32,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     getDefaultWordTemplateId(),
   )
   const [worksheetDoc, setWorksheetDoc] = useState<WorksheetDoc | null>(null)
+  const [readingFontMode, setReadingFontModeState] = useState<'kai' | 'vertical'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('worksheet_reading_font_mode')
+      if (saved === 'kai' || saved === 'vertical') return saved
+    }
+    return 'kai'
+  })
+
+  const setReadingFontMode = (mode: 'kai' | 'vertical') => {
+    setReadingFontModeState(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('worksheet_reading_font_mode', mode)
+      document.body.dataset.readingFont = mode
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.body.dataset.readingFont = readingFontMode
+    }
+  }, [readingFontMode])
 
   useEffect(() => {
     const handleHashChange = () => startTransition(() => setCurrentRoute(parseHash(window.location.hash)))
@@ -83,6 +104,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setWorksheetDoc,
       typedCharacters,
       runTypedAnalysis,
+      readingFontMode,
+      setReadingFontMode,
     }}>
       {children}
     </AppContext.Provider>
