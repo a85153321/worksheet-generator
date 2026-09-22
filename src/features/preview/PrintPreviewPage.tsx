@@ -4,10 +4,12 @@ import {
   buildWorksheet,
   exportWorksheetToDocx,
   lookupCharacterFromDictionary,
+  lookupDictionaryEntriesByTerm,
   resolveSentenceCandidatesForWords,
   type WorksheetPage,
   type WorksheetTemplate,
   type WorksheetFont,
+  type DictionaryEntry,
 } from '../../services'
 import type { ElementaryGrade } from '../../domain'
 import {
@@ -55,6 +57,19 @@ export const PrintPreviewPage: React.FC = () => {
   const [expandedCharacterIndices, setExpandedCharacterIndices] = useState<Set<number>>(() => new Set())
   const [candidateNotice, setCandidateNotice] = useState<Record<string, string>>({})
   const sheetsContainerRef = useRef<HTMLDivElement>(null)
+
+  // 語詞釋義彈窗狀態 (教育部國語辭典簡編本)
+  const [activeWordDefinition, setActiveWordDefinition] = useState<{
+    word: string
+    entries: DictionaryEntry[]
+  } | null>(null)
+
+  const handleViewWordDefinition = (word: string) => {
+    const cleanWord = word.trim()
+    if (!cleanWord) return
+    const entries = lookupDictionaryEntriesByTerm(cleanWord)
+    setActiveWordDefinition({ word: cleanWord, entries })
+  }
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
 
@@ -530,13 +545,30 @@ export const PrintPreviewPage: React.FC = () => {
                           <div className="preview-candidate-group">
                             <div>
                               <strong>語詞候選</strong>
-                              <p>
-                                {item.wordCandidates
-                                  .slice(0, 3)
-                                  .map(getCandidateText)
-                                  .filter(Boolean)
-                                  .join('、') || '（目前沒有語詞）'}
-                              </p>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.35rem' }}>
+                                {item.wordCandidates.slice(0, 3).map(getCandidateText).filter(Boolean).length > 0 ? (
+                                  item.wordCandidates
+                                    .slice(0, 3)
+                                    .map(getCandidateText)
+                                    .filter(Boolean)
+                                    .map((word) => (
+                                      <button
+                                        key={word}
+                                        type="button"
+                                        className="word-candidate-link"
+                                        onClick={() => handleViewWordDefinition(word)}
+                                        title={`查看「${word}」教育部詞義`}
+                                      >
+                                        <span>{word}</span>
+                                        <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>📖</span>
+                                      </button>
+                                    ))
+                                ) : (
+                                  <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>
+                                    （目前沒有語詞）
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <button
                               type="button"
@@ -603,6 +635,79 @@ export const PrintPreviewPage: React.FC = () => {
           />
         ))}
       </div>
+      {/* 語詞釋義彈窗 (教育部國語辭典簡編本) */}
+      {activeWordDefinition && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-word-def-title"
+          onClick={() => setActiveWordDefinition(null)}
+        >
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 id="preview-word-def-title" className="modal-title">
+                📖 辭典釋義：{activeWordDefinition.word}
+              </h2>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveWordDefinition(null)}
+                aria-label="關閉語詞釋義"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {activeWordDefinition.entries.length > 0 ? (
+                activeWordDefinition.entries.map((entry, eIdx) => (
+                  <div key={entry.wordNumber || eIdx} className="word-def-entry">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                        {entry.wordName}
+                      </span>
+                      <span className="zhuyin-text" style={{ color: 'var(--color-primary-dark)', fontSize: '1.05rem' }}>
+                        {entry.zhuyin}
+                      </span>
+                      {entry.radical && (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                          部首：{entry.radical}
+                        </span>
+                      )}
+                      {entry.strokeCount > 0 && (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                          筆畫：{entry.strokeCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="word-def-text">
+                      {entry.definition}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '1rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  《國語辭典簡編本》暫無「{activeWordDefinition.word}」之詳細釋義條目。
+                </div>
+              )}
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
+                資料來源：教育部《國語辭典簡編本》
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setActiveWordDefinition(null)}
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
