@@ -708,16 +708,31 @@ body[data-reading-font="vertical"] .zhuyin-form-input,
 
 body[data-reading-font="vertical"] .reading-button,
 [data-reading-font="vertical"] .reading-button {
-  min-width: 2.2rem;
-  padding: 0.2rem 0.55rem;
-  font-size: 1.25rem;
+  min-width: 2.8rem;
+  min-height: 2.8rem;
+  padding: 0.2rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem !important;
+  line-height: 1;
+}
+
+body[data-reading-font="vertical"] .reading-button .zhuyin-text,
+[data-reading-font="vertical"] .reading-button .zhuyin-text {
+  font-size: 2.2rem !important;
+  line-height: 1;
+  display: inline-block;
 }
 
 body[data-reading-font="vertical"] .reading-highlight,
 body[data-reading-font="vertical"] .single-reading-display,
 [data-reading-font="vertical"] .reading-highlight,
 [data-reading-font="vertical"] .single-reading-display {
-  font-size: 1.25rem;
+  font-size: 2.2rem !important;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* 語詞候選點擊查看詞義樣式 */
