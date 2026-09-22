@@ -1,12 +1,28 @@
 /* ButTaiwan/bpmfvs 字嗨注音系列（Apache 2.0；授權文件位於 assets/fonts） */
+
+/* BpmfZihiOnly 純注音字型宣告（支援 BpmfZihiOnly / BpmfZihiOnly-R / ㄅ字嗨注音而已 R） */
 @font-face {
-  font-family: 'ㄅ字嗨注音標楷 Regular';
-  src: local('ㄅ字嗨注音標楷 Regular'),
-       local('ㄅ字嗨注音標楷'),
-       local('BpmfZihiKaiStd-Regular'),
-       local('BpmfZihiKaiStd'),
-       url('../assets/fonts/BpmfZihiKaiStd-Regular.ttf') format('truetype');
-  font-weight: 400;
+  font-family: 'BpmfZihiOnly';
+  src: local('BpmfZihiOnly-R'),
+       local('BpmfZihiOnly'),
+       local('Bpmf Zihi Only R'),
+       local('ㄅ字嗨注音而已 R'),
+       local('ㄅ字嗨注音而已'),
+       url('../assets/fonts/BpmfZihiOnly-R.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BpmfZihiOnly-R';
+  src: local('BpmfZihiOnly-R'),
+       local('BpmfZihiOnly'),
+       local('Bpmf Zihi Only R'),
+       local('ㄅ字嗨注音而已 R'),
+       local('ㄅ字嗨注音而已'),
+       url('../assets/fonts/BpmfZihiOnly-R.ttf') format('truetype');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -17,8 +33,46 @@
        local('ㄅ字嗨注音而已'),
        local('BpmfZihiOnly-R'),
        local('BpmfZihiOnly'),
+       local('Bpmf Zihi Only R'),
        url('../assets/fonts/BpmfZihiOnly-R.ttf') format('truetype');
-  font-weight: 400;
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* BpmfZihiKaiStd 標楷有注音字型宣告 */
+@font-face {
+  font-family: 'BpmfZihiKaiStd';
+  src: local('BpmfZihiKaiStd-Regular'),
+       local('BpmfZihiKaiStd'),
+       local('ㄅ字嗨注音標楷 Regular'),
+       local('ㄅ字嗨注音標楷'),
+       url('../assets/fonts/BpmfZihiKaiStd-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BpmfZihiKaiStd-Regular';
+  src: local('BpmfZihiKaiStd-Regular'),
+       local('BpmfZihiKaiStd'),
+       local('ㄅ字嗨注音標楷 Regular'),
+       local('ㄅ字嗨注音標楷'),
+       url('../assets/fonts/BpmfZihiKaiStd-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ㄅ字嗨注音標楷 Regular';
+  src: local('ㄅ字嗨注音標楷 Regular'),
+       local('ㄅ字嗨注音標楷'),
+       local('BpmfZihiKaiStd-Regular'),
+       local('BpmfZihiKaiStd'),
+       url('../assets/fonts/BpmfZihiKaiStd-Regular.ttf') format('truetype');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -41,8 +95,8 @@
   --font-worksheet-punct: 'WorksheetPunct', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
   --font-worksheet-standard: 'WorksheetPunct', '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'STKaiti',
     'TW-Kai', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
-  --font-worksheet-zihi-kai: 'WorksheetPunct', 'ㄅ字嗨注音標楷 Regular', 'BpmfZihiKaiStd-Regular', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
-  --font-worksheet-zihi-only: 'WorksheetPunct', 'ㄅ字嗨注音而已 R', 'BpmfZihiOnly-R', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
+  --font-worksheet-zihi-kai: 'BpmfZihiKaiStd', 'BpmfZihiKaiStd-Regular', 'ㄅ字嗨注音標楷 Regular', 'ㄅ字嗨注音標楷', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
+  --font-worksheet-zihi-only: 'BpmfZihiOnly', 'BpmfZihiOnly-R', 'ㄅ字嗨注音而已 R', 'Bpmf Zihi Only R', 'ㄅ字嗨注音而已', '標楷體', 'DFKai-SB', 'Kaiti TC', 'BiauKai', sans-serif;
 
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
@@ -515,10 +569,10 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 0.25rem 0.65rem;
-  font-family: var(--font-worksheet-zihi-only);
-  font-size: 0.92rem;
+  font-family: var(--font-worksheet-zihi-only) !important;
+  font-size: 1rem;
   font-weight: 400; /* 務必用 400，用 500/600 會因無粗體字重而退回微軟正黑體（黑體） */
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   line-height: 1.3;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
@@ -552,23 +606,24 @@ textarea:focus-visible {
 }
 
 .reading-fallback-text {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--color-text-muted);
 }
 
+.zhuyin-text,
 .reading-fallback-text strong,
-.single-reading-display {
-  font-family: var(--font-worksheet-zihi-only);
+.single-reading-display,
+.zhuyin-form-input,
+.reading-highlight {
+  font-family: var(--font-worksheet-zihi-only) !important;
   font-weight: 400;
-  color: var(--color-primary-dark);
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
 }
 
-.zhuyin-form-input {
-  font-family: var(--font-worksheet-zihi-only);
-  font-weight: 400;
-  font-size: 0.95rem;
+.single-reading-display,
+.reading-highlight {
+  color: var(--color-primary-dark);
 }
 
 .char-meta-row {

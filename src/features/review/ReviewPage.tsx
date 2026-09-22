@@ -853,19 +853,19 @@ export const ReviewPage: React.FC = () => {
                               onClick={() => handleSelectZhuyin(idx, candidate)}
                               disabled={isSaving}
                             >
-                              {candidate}
+                              <span className="zhuyin-text">{candidate}</span>
                             </button>
                           )
                         })}
                       </div>
                     </div>
                     <div className="reading-fallback-text">
-                      目前讀音：<strong>{item.zhuyin}</strong>
+                      目前讀音：<span className="zhuyin-text reading-highlight">{item.zhuyin}</span>
                     </div>
                   </>
                 ) : (
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
-                    讀音：<span className="single-reading-display">{item.zhuyin}</span>
+                    讀音：<span className="zhuyin-text single-reading-display">{item.zhuyin}</span>
                   </div>
                 )}
               </div>
