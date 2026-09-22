@@ -28,7 +28,6 @@ export default defineConfig({
     port: 5173,
     watch: {
       ignored: [
-        '**/src/assets/docx-templates/**',
         '**/~$*',
         '**/.tmp/**',
       ],
