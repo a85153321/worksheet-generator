@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import type { AnalysisResult, CharacterAnalysis } from '../../domain'
-import { lookupCharacterFromDictionary, updateAnalysisResult } from '../../services'
+import {
+  lookupCharacterFromDictionary,
+  resolveSentenceCandidatesForWords,
+  updateAnalysisResult,
+} from '../../services'
 import { resolveBopomofoDisplayCharacter } from '../../infrastructure'
 
 const defaultSampleAnalysis: AnalysisResult = {
@@ -247,9 +251,13 @@ export const ReviewPage: React.FC = () => {
       const newWords = prev.words.trim()
         ? prev.words
         : lookup.wordCandidates.slice(0, 3).join('、')
+      const selectedWords = newWords
+        .split(/[,、，\s]/)
+        .map((word) => word.trim())
+        .filter(Boolean)
       const newSentence = prev.exampleSentence.trim()
         ? prev.exampleSentence
-        : lookup.sentenceCandidates.slice(0, 2).join('\n')
+        : resolveSentenceCandidatesForWords(lookup, selectedWords).slice(0, 2).join('\n')
 
       return {
         ...prev,
@@ -304,7 +312,13 @@ export const ReviewPage: React.FC = () => {
       return
     }
     const lookup = lookupCharacterFromDictionary(char)
-    const fullCandidates = lookup?.sentenceCandidates || []
+    const selectedWords = editForm.words
+      .split(/[,、，\s]/)
+      .map((word) => word.trim())
+      .filter(Boolean)
+    const fullCandidates = lookup
+      ? resolveSentenceCandidatesForWords(lookup, selectedWords)
+      : []
     if (fullCandidates.length === 0) {
       setSentenceDrawNotice('已無更多候選')
       return
@@ -356,15 +370,17 @@ export const ReviewPage: React.FC = () => {
   const handleSaveEdit = async () => {
     if (!validateForm()) return
 
-    const parsedWords = editForm.words
+    const parsedWords = [...new Set(editForm.words
       .split(/[,、，\s]/)
       .map((w) => w.trim())
-      .filter(Boolean)
+      .filter(Boolean))]
+      .slice(0, 3)
 
-    const parsedSentences = editForm.exampleSentence
+    const parsedSentences = [...new Set(editForm.exampleSentence
       .split('\n')
       .map((s) => s.trim())
-      .filter(Boolean)
+      .filter(Boolean))]
+      .slice(0, 2)
 
     const strokeCount = typeof editForm.strokeCount === 'number' ? editForm.strokeCount : 1
     const zhuyinCandidates = [...new Set([

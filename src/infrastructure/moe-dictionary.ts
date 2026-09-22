@@ -18,6 +18,14 @@ export interface DictionaryEntry {
   definition: string
 }
 
+export interface WordCandidateDetail {
+  text: string
+  zhuyin: string
+  entryWordNumber: string
+  sentenceCandidates: string[]
+  source: '教育部《國語辭典簡編本》'
+}
+
 export interface CharacterDictionaryLookup {
   character: string
   zhuyin: string
@@ -25,6 +33,8 @@ export interface CharacterDictionaryLookup {
   radical: string
   strokeCount: number
   wordCandidates: string[]
+  /** 完整候選詞條與各自例句；wordCandidates 仍保留為 UI 方便使用的字串陣列。 */
+  wordCandidateDetails: WordCandidateDetail[]
   sentenceCandidates: string[]
   entryWordNumbers: string[]
 }
@@ -80,11 +90,16 @@ export function lookupCharacterFromDictionary(
 
   const relatedEntries = entriesFromIds(entryIdsByCharacter[normalized])
   const zhuyinCandidates = unique(exactEntries.map((entry) => entry.zhuyin).filter(Boolean))
-  const wordCandidates = unique(
-    relatedEntries
-      .map((entry) => entry.wordName)
-      .filter((wordName) => wordName !== normalized && [...wordName].length <= 6),
-  )
+  const wordCandidateDetails = relatedEntries
+    .filter((entry) => entry.wordName !== normalized && [...entry.wordName].length <= 6)
+    .map((entry): WordCandidateDetail => ({
+      text: entry.wordName,
+      zhuyin: entry.zhuyin,
+      entryWordNumber: entry.wordNumber,
+      sentenceCandidates: unique(extractExamples(entry.definition)),
+      source: '教育部《國語辭典簡編本》',
+    }))
+  const wordCandidates = unique(wordCandidateDetails.map((entry) => entry.text))
   const sentenceCandidates = unique(
     relatedEntries.flatMap((entry) => extractExamples(entry.definition)),
   )
@@ -96,9 +111,23 @@ export function lookupCharacterFromDictionary(
     radical: primaryEntry.radical,
     strokeCount: primaryEntry.strokeCount,
     wordCandidates,
+    wordCandidateDetails,
     sentenceCandidates,
     entryWordNumbers: relatedEntries.map((entry) => entry.wordNumber),
   }
+}
+
+export function resolveSentenceCandidatesForWords(
+  lookup: CharacterDictionaryLookup,
+  selectedWords: readonly string[],
+): string[] {
+  const selected = new Set(selectedWords.map((word) => word.trim()).filter(Boolean))
+  const linked = unique(
+    lookup.wordCandidateDetails
+      .filter((candidate) => selected.has(candidate.text))
+      .flatMap((candidate) => candidate.sentenceCandidates),
+  )
+  return linked.length > 0 ? linked : [...lookup.sentenceCandidates]
 }
 
 export const MOE_CONCISED_DICTIONARY_METADATA = dictionaryAsset.metadata

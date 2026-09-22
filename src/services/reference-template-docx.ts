@@ -1,168 +1,221 @@
-import JSZip from 'jszip'
 import { resolveBopomofoDisplayCharacter } from '../infrastructure'
-import type { CharacterAnalysis } from '../domain'
-import type { DocxExportOptions, WorksheetDoc, WorksheetImage } from './contracts'
+import {
+  MAX_SENTENCE_CANDIDATES,
+  MAX_WORD_CANDIDATES,
+  type CharacterAnalysis,
+} from '../domain'
+import type {
+  DocxExportOptions,
+  WorksheetDoc,
+  WorksheetFont,
+  WorksheetImage,
+} from './contracts'
+import {
+  findWordTemplate,
+  getDefaultWordTemplateId,
+  loadWordTemplateBytes,
+} from './word-template-registry'
+import { DOCX_FONT_FULL_NAMES, resolveWorksheetFont } from './worksheet-font'
 
-export const REFERENCE_TEMPLATE_URL = 'templates/%E7%94%9F%E5%AD%97%E5%AD%B8%E7%BF%92%E5%96%AE%E6%B3%A8%E9%9F%B3%E7%89%88.docx'
-export const REFERENCE_QUESTIONS_PER_PAGE = 5
+export const WORKSHEET_CHARACTER_STYLE = 'WorksheetCharacter'
 
-function escapeXml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;')
+export type TemplateImageMimeType = 'image/png' | 'image/jpeg' | 'image/svg+xml'
+
+type TemplateImage = {
+  _type: 'image'
+  source: ArrayBuffer
+  format: TemplateImageMimeType
+  width: number
+  height: number
+  altText: string
 }
 
-function directParagraphs(bodyXml: string): string[] {
-  const paragraphs: string[] = []
-  const tagPattern = /<\/?w:p(?=[\s>])[^>]*>/g
-  let depth = 0
-  let start = -1
-  for (let match = tagPattern.exec(bodyXml); match; match = tagPattern.exec(bodyXml)) {
-    const closing = match[0].startsWith('</')
-    if (!closing) {
-      if (match[0].endsWith('/>')) {
-        if (depth === 0) paragraphs.push(match[0])
-        continue
-      }
-      if (depth === 0) start = match.index
-      depth += 1
-    } else {
-      depth -= 1
-      if (depth === 0 && start >= 0) {
-        paragraphs.push(bodyXml.slice(start, tagPattern.lastIndex))
-        start = -1
-      }
-    }
+export interface WordCandidateTemplateItem {
+  text: string
+}
+
+export interface SentenceCandidateTemplateItem {
+  text: string
+}
+
+export interface WorksheetTemplateItem {
+  questionNumber: number
+  character: string
+  zhuyin: string
+  radical: string
+  strokeCount: number | string
+  wordCandidatesText: string
+  wordCandidates: WordCandidateTemplateItem[]
+  sentenceCandidatesText: string
+  sentenceCandidates: SentenceCandidateTemplateItem[]
+  image?: TemplateImage
+}
+
+export interface WorksheetTemplateData extends WorksheetTemplateItem {
+  title: string
+  items: WorksheetTemplateItem[]
+}
+
+async function convertWebpToPng(file: Blob): Promise<ArrayBuffer> {
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
+    throw new Error('目前執行環境無法將 WebP 圖片轉換成 Word 支援的 PNG。')
   }
-  return paragraphs
+  const bitmap = await createImageBitmap(file)
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('無法建立圖片轉換畫布。')
+    context.drawImage(bitmap, 0, 0)
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (result) => result ? resolve(result) : reject(new Error('WebP 圖片轉換失敗。')),
+        'image/png',
+      )
+    })
+    return blob.arrayBuffer()
+  } finally {
+    bitmap.close()
+  }
 }
 
-function questionCharacter(item: CharacterAnalysis, options: DocxExportOptions): string {
-  return options.font === 'standard-kai'
+async function templateImage(image: WorksheetImage | undefined): Promise<TemplateImage | undefined> {
+  if (!image?.file) return undefined
+  const isWebp = image.mimeType === 'image/webp'
+  return {
+    _type: 'image',
+    source: isWebp ? await convertWebpToPng(image.file) : await image.file.arrayBuffer(),
+    format: isWebp
+      ? 'image/png'
+      : image.mimeType === 'image/jpeg'
+        ? 'image/jpeg'
+        : image.mimeType === 'image/svg+xml'
+          ? 'image/svg+xml'
+          : 'image/png',
+    width: 105,
+    height: 80,
+    altText: `教師為「${image.character}」上傳的教學圖片`,
+  }
+}
+
+function displayCharacter(item: CharacterAnalysis, font: WorksheetFont): string {
+  return font === 'standard-kai'
     ? item.character
     : resolveBopomofoDisplayCharacter(item.character, item.zhuyin)
 }
 
-function replaceQuestionText(
-  paragraphXml: string,
+async function templateItem(
   item: CharacterAnalysis,
   questionNumber: number,
-  options: DocxExportOptions,
-): string {
-  const display = questionCharacter(item, options)
-  return paragraphXml
-    .replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (_match, open, text, close) => {
-      let next = text
-      if (text === '看') next = display
-      else if (text === '目') next = item.radical || '—'
-      else if (text === '9') next = String(item.strokeCount || '—')
-      else if (text.includes('第 1 題')) next = text.replace('第 1 題', `第 ${questionNumber} 題`)
-      return `${open}${escapeXml(next)}${close}`
-    })
-    .replace(/wp:docPr id="\d+"/g, `wp:docPr id="${1000 + questionNumber}"`)
-    .replace(/pic:cNvPr id="\d+"/g, `pic:cNvPr id="${2000 + questionNumber}"`)
-    .replace(/_x0000_s\d+/g, `_x0000_s${3000 + questionNumber}`)
+  font: WorksheetFont,
+  image: WorksheetImage | undefined,
+): Promise<WorksheetTemplateItem> {
+  const wordCandidates = item.wordCandidates.slice(0, MAX_WORD_CANDIDATES)
+  const sentenceCandidates = item.sentenceCandidates.slice(0, MAX_SENTENCE_CANDIDATES)
+  return {
+    questionNumber,
+    character: displayCharacter(item, font),
+    zhuyin: item.zhuyin,
+    radical: item.radical || '—',
+    strokeCount: item.strokeCount || '—',
+    wordCandidatesText: wordCandidates.join('、'),
+    wordCandidates: wordCandidates.map((text) => ({ text })),
+    sentenceCandidatesText: sentenceCandidates.join('；'),
+    sentenceCandidates: sentenceCandidates.map((text) => ({ text })),
+    image: await templateImage(image),
+  }
 }
 
-function fillWords(paragraphXml: string, item: CharacterAnalysis): string {
-  const words = item.wordCandidates.slice(0, 3).join('、') || '________________、________________'
-  const run = `<w:r><w:rPr><w:rFonts w:ascii="標楷體" w:eastAsia="標楷體" w:hAnsi="標楷體"/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve"> ${escapeXml(words)}</w:t></w:r>`
-  return paragraphXml.replace('</w:p>', `${run}</w:p>`)
+export async function createWorksheetTemplateData(
+  doc: WorksheetDoc,
+  font: WorksheetFont,
+): Promise<WorksheetTemplateData> {
+  const imagesByCharacter = new Map((doc.images ?? []).map((image) => [image.character, image]))
+  const items = await Promise.all(doc.sourceAnalysis.characters.map(
+    (item, index) => templateItem(item, index + 1, font, imagesByCharacter.get(item.character)),
+  ))
+  const first: WorksheetTemplateItem = items[0] ?? {
+    questionNumber: 1,
+    character: '',
+    zhuyin: '',
+    radical: '',
+    strokeCount: '',
+    wordCandidatesText: '',
+    wordCandidates: [],
+    sentenceCandidatesText: '',
+    sentenceCandidates: [],
+  }
+  return { title: doc.title, ...first, items }
 }
 
-function imageAnchor(rId: string, questionNumber: number, image: WorksheetImage): string {
-  const name = escapeXml(`題目${questionNumber}-${image.character}`)
-  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="251658240" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>5700000</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>920000</wp:posOffset></wp:positionV><wp:extent cx="1000000" cy="760000"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapSquare wrapText="bothSides"/><wp:docPr id="${4000 + questionNumber}" name="${name}" descr="${name}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${5000 + questionNumber}" name="${name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="760000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`
+function replaceStyleFonts(styleXml: string, fontName: string): string {
+  const escapedFont = fontName
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+  const fonts = `<w:rFonts w:ascii="${escapedFont}" w:hAnsi="${escapedFont}" w:eastAsia="${escapedFont}" w:cs="${escapedFont}"/>`
+  const stylePattern = new RegExp(
+    `(<w:style[^>]*w:styleId="${WORKSHEET_CHARACTER_STYLE}"[^>]*>)([\\s\\S]*?)(</w:style>)`,
+  )
+  const match = styleXml.match(stylePattern)
+  if (!match) throw new Error(`Word 範本缺少字元樣式「${WORKSHEET_CHARACTER_STYLE}」。`)
+  const body = match[2]
+  const nextBody = /<w:rPr[\s>]/.test(body)
+    ? body.replace(/(<w:rPr[^>]*>)([\s\S]*?)(<\/w:rPr>)/, (_all, open, content, close) => {
+        const nextContent = /<w:rFonts[\s>]/.test(content)
+          ? content.replace(/<w:rFonts[^>]*\/?>(?:<\/w:rFonts>)?/, fonts)
+          : `${fonts}${content}`
+        return `${open}${nextContent}${close}`
+      })
+    : `${body}<w:rPr>${fonts}</w:rPr>`
+  return styleXml.replace(match[0], `${match[1]}${nextBody}${match[3]}`)
 }
 
-async function imageBytes(image: WorksheetImage): Promise<Uint8Array> {
-  const response = await fetch(image.url)
-  if (!response.ok) throw new Error(`無法讀取「${image.character}」的學習單圖片。`)
-  return new Uint8Array(await response.arrayBuffer())
-}
-
-function imageExtension(image: WorksheetImage): string {
-  return image.mimeType === 'image/jpeg' ? 'jpg' : image.mimeType.split('/')[1] || 'png'
+export async function patchWorksheetCharacterStyle(
+  templateBytes: ArrayBuffer,
+  font: WorksheetFont,
+): Promise<ArrayBuffer> {
+  const { default: JSZip } = await import('jszip')
+  const zip = await JSZip.loadAsync(templateBytes)
+  const styles = await zip.file('word/styles.xml')?.async('string')
+  if (!styles) throw new Error('Word 範本缺少 word/styles.xml。')
+  zip.file('word/styles.xml', replaceStyleFonts(styles, DOCX_FONT_FULL_NAMES[font]))
+  return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' })
 }
 
 export async function createReferenceTemplateDocxBuffer(
-  templateBytes: ArrayBuffer | Uint8Array,
+  templateBytes: ArrayBuffer,
   doc: WorksheetDoc,
   options: DocxExportOptions = {},
-): Promise<Uint8Array> {
-  const zip = await JSZip.loadAsync(templateBytes)
-  const documentXml = await zip.file('word/document.xml')?.async('string')
-  const relsXml = await zip.file('word/_rels/document.xml.rels')?.async('string')
-  const contentTypesXml = await zip.file('[Content_Types].xml')?.async('string')
-  if (!documentXml || !relsXml || !contentTypesXml) {
-    throw new Error('教師提供的 Word 範例缺少必要的 OOXML 結構。')
-  }
-
-  const bodyMatch = documentXml.match(/(<w:body[^>]*>)([\s\S]*?)(<\/w:body>)/)
-  if (!bodyMatch) throw new Error('教師提供的 Word 範例缺少文件本文。')
-  const body = bodyMatch[2]
-  const paragraphs = directParagraphs(body)
-  if (paragraphs.length < 63) throw new Error(`教師提供的 Word 範例結構與預期不符（段落數：${paragraphs.length}）。`)
-
-  const characters = doc.sourceAnalysis.characters
-  const firstQuestion = paragraphs[2]
-  const spacerParagraphs = paragraphs.slice(3, 7)
-  const wordParagraph = paragraphs[7]
-  const pageBreakParagraph = paragraphs[32]
-  const sectionProperties = body.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/)?.[0] ?? ''
-  const imagesByCharacter = new Map((doc.images ?? []).map((image) => [image.character, image]))
-  const blocks: string[] = [paragraphs[0], paragraphs[1]]
-  let nextRelationshipId = 9000
-  let nextRelsXml = relsXml
-  let nextContentTypesXml = contentTypesXml
-
-  for (let index = 0; index < characters.length; index += 1) {
-    if (index > 0 && index % REFERENCE_QUESTIONS_PER_PAGE === 0) blocks.push(pageBreakParagraph)
-    const item = characters[index]
-    let question = replaceQuestionText(firstQuestion, item, index + 1, options)
-    const image = imagesByCharacter.get(item.character)
-    if (image) {
-      const extension = imageExtension(image)
-      const rId = `rIdReferenceImage${nextRelationshipId++}`
-      const mediaName = `reference-${index + 1}.${extension}`
-      zip.file(`word/media/${mediaName}`, await imageBytes(image))
-      nextRelsXml = nextRelsXml.replace(
-        '</Relationships>',
-        `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${mediaName}"/></Relationships>`,
-      )
-      const mime = image.mimeType === 'image/jpeg' ? 'image/jpeg' : image.mimeType
-      if (!nextContentTypesXml.includes(`Extension="${extension}"`)) {
-        nextContentTypesXml = nextContentTypesXml.replace(
-          '</Types>',
-          `<Default Extension="${extension}" ContentType="${mime}"/></Types>`,
-        )
-      }
-      question = question.replace('</w:p>', `${imageAnchor(rId, index + 1, image)}</w:p>`)
-    }
-    blocks.push(question, ...spacerParagraphs, fillWords(wordParagraph, item))
-  }
-
-  const nextBody = `${blocks.join('')}${sectionProperties}`
-  zip.file('word/document.xml', documentXml.replace(bodyMatch[0], `${bodyMatch[1]}${nextBody}${bodyMatch[3]}`))
-  zip.file('word/_rels/document.xml.rels', nextRelsXml)
-  zip.file('[Content_Types].xml', nextContentTypesXml)
-  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })
+): Promise<ArrayBuffer> {
+  const font = resolveWorksheetFont(doc.grade, options.font)
+  const styledTemplate = await patchWorksheetCharacterStyle(templateBytes, font)
+  const data = await createWorksheetTemplateData(doc, font)
+  const { TemplateHandler } = await import('easy-template-x')
+  const handler = new TemplateHandler({ maxXmlDepth: 100 })
+  const result = await handler.process(
+    styledTemplate,
+    data as never,
+  )
+  return result as ArrayBuffer
 }
 
 export async function generateReferenceTemplateDocxBlob(
   doc: WorksheetDoc,
   options: DocxExportOptions = {},
 ): Promise<Blob> {
-  const baseUrl = import.meta.env.BASE_URL || '/'
-  const response = await fetch(`${baseUrl}${REFERENCE_TEMPLATE_URL}`)
-  if (!response.ok) throw new Error('無法載入教師提供的 Word 範例模板。')
-  const buffer = await createReferenceTemplateDocxBuffer(await response.arrayBuffer(), doc, options)
-  const arrayBuffer = buffer.buffer.slice(
-    buffer.byteOffset,
-    buffer.byteOffset + buffer.byteLength,
-  ) as ArrayBuffer
-  return new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+  const templateId = doc.docxTemplateId ?? getDefaultWordTemplateId()
+  if (!templateId) throw new Error('目前沒有可用的 Word 範本，請先加入 .docx 範本檔。')
+  const descriptor = findWordTemplate(templateId)
+  if (!descriptor) throw new Error(`找不到已選取的 Word 範本「${templateId}」。`)
+  const output = await createReferenceTemplateDocxBuffer(
+    loadWordTemplateBytes(descriptor.id),
+    doc,
+    options,
+  )
+  return new Blob([output], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  })
 }

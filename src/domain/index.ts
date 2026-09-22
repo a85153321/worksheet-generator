@@ -8,6 +8,8 @@ export type {
 export {
   analysisResultSchema,
   characterAnalysisSchema,
+  MAX_SENTENCE_CANDIDATES,
+  MAX_WORD_CANDIDATES,
   sourceLocationSchema,
 } from './analysis-result'
 export type {

@@ -10,8 +10,13 @@ export {
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
   MOE_CONCISED_DICTIONARY_METADATA,
+  resolveSentenceCandidatesForWords,
 } from './moe-dictionary'
-export type { CharacterDictionaryLookup, DictionaryEntry } from './moe-dictionary'
+export type {
+  CharacterDictionaryLookup,
+  DictionaryEntry,
+  WordCandidateDetail,
+} from './moe-dictionary'
 export {
   clearAnalysisCache,
   deleteAnalysisCache,

@@ -73,6 +73,8 @@ src/
 - `strokeCount`
 - `wordCandidates`
 - `sentenceCandidates`
+
+`AnalysisResult` 中的教師確認候選有固定上限：`wordCandidates` 最多 3 個、`sentenceCandidates` 最多 2 則。辭典 lookup 的完整候選只供教師手動換選，不直接進入預覽或匯出資料。
 - `source`
 
 跨層操作使用 `Result<T, AppError>`。目前錯誤類型為：
@@ -90,6 +92,13 @@ lookupCharacterFromDictionary(character): {
   radical: string
   strokeCount: number
   wordCandidates: string[]
+  wordCandidateDetails: Array<{
+    text: string
+    zhuyin: string
+    entryWordNumber: string
+    sentenceCandidates: string[]
+    source: '教育部《國語辭典簡編本》'
+  }>
   sentenceCandidates: string[]
   entryWordNumbers: string[]
 } | null
@@ -97,9 +106,25 @@ lookupCharacterFromDictionary(character): {
 analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 ```
 
+`wordCandidateDetails` 保留每個相關詞條自己的字詞號、注音與 `[例]`；同名但不同詞條可各自保留。`wordCandidates` 仍是去重後的字串陣列，供既有 UI 與 `AnalysisResult` 使用。初次分析與教師換例句時，先合併目前已選語詞對應 detail 的例句；若這些詞條都沒有例句，才回退到整體 `sentenceCandidates` 池。
+
 `analyzeTypedCharacters` 是同步、本機函式。查無資料不得用猜測值補齊；應回傳 `dictionary-not-found`。注音與其他辭典欄位一律隨查詢回傳，不提供省略注音的查詢開關。
 
 圖片與 PDF 預處理契約可保留供教師整理或自行提供素材，但不負責 OCR 或自動分析生字。
+
+### Word 動態範本契約
+
+`reference-character-practice` 的 Word 匯出使用瀏覽器端 `easy-template-x`。範本放在
+`src/assets/docx-templates/*.docx`，由建置流程自動掃描並內嵌為 base64 資產；執行時不
+使用 `fetch`，也不維護檔名白名單。每份範本以 `{character}`、`{zhuyin}`、
+`{radical}`、`{strokeCount}`、候選內容標籤、`{#items}...{/items}` 迴圈與 `{image}`
+圖片標籤定義自己的版面。完整契約見 `docs/word-template-design-guide.md`。
+
+生字標籤必須套用 `WorksheetCharacter` Word 字元樣式。匯出前會修改範本
+`word/styles.xml` 中該樣式的 `w:rFonts`：一、二年級預設使用
+`ㄅ字嗨注音標楷 Regular` 並先解析 IVS，三至六年級預設使用 `標楷體` 與原始字元。
+教師配圖只從 state 保留的原始 File／Blob 讀取，以 `arrayBuffer()` 交給 Image plugin，
+不從預覽 URL 重新下載。
 
 ## 5. 本機辭典查詢流程
 
@@ -107,7 +132,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 2. UI 去除重複字與標點，將字元陣列交給 `analyzeTypedCharacters`。
 3. Service 逐字呼叫 `lookupCharacterFromDictionary`。
 4. Infrastructure 以字詞名精確索引取得單字詞條，再以單一漢字索引取得所有相關詞條。
-5. 由原始詞條組裝注音、部首、總筆畫、`wordCandidates` 與從 `[例]` 擷取的 `sentenceCandidates`。
+5. 由原始詞條組裝注音、部首、總筆畫、`wordCandidates`、保留詞條關聯的 `wordCandidateDetails`，以及從 `[例]` 擷取的整體 fallback `sentenceCandidates`。
 6. 使用 Zod 驗證 `AnalysisResult`；任一字查無資料時回傳 `dictionary-not-found` 與 `missingCharacters`。
 7. 教師挑選或修改候選內容，修改後再次通過 schema 驗證。
 8. 教師可從本機上傳自備配圖；現有 React state 會保留原始 File／Blob，讓預覽使用 URL、Word 匯出使用實際二進位資料，再以本機模板建立預覽、Word、列印與 PDF。

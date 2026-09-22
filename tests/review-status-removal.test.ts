@@ -61,4 +61,19 @@ describe('analysis without review status', () => {
     const buffer = await Packer.toBuffer(document)
     expect(buffer.length).toBeGreaterThan(1000)
   })
+
+  it('stores no more than three words and two sentences after teacher confirmation', async () => {
+    const overLimit = {
+      characters: analysisWithoutReviewStatus.characters.map((item) => ({
+        ...item,
+        wordCandidates: ['一', '二', '三', '四', '五'],
+        sentenceCandidates: ['句一', '句二', '句三'],
+      })),
+    }
+    const result = await updateAnalysisResult(overLimit)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.characters[0].wordCandidates).toEqual(['一', '二', '三'])
+    expect(result.value.characters[0].sentenceCandidates).toEqual(['句一', '句二'])
+  })
 })

@@ -1,8 +1,10 @@
 export {
   analyzeTypedCharacters,
   lookupCharacterFromDictionary,
+  resolveSentenceCandidatesForWords,
   updateAnalysisResult,
 } from './use-cases'
+export type { CharacterDictionaryLookup, WordCandidateDetail } from '../infrastructure'
 export { buildWorksheet } from './worksheet-builder'
 export {
   DOCX_FONT_FULL_NAMES,
@@ -10,12 +12,17 @@ export {
   generateDocxBlob,
   exportWorksheetToDocx,
 } from './docx-builder'
-export {
-  REFERENCE_QUESTIONS_PER_PAGE,
-  REFERENCE_TEMPLATE_URL,
-  createReferenceTemplateDocxBuffer,
-  generateReferenceTemplateDocxBlob,
+export type {
+  WorksheetTemplateData,
+  WorksheetTemplateItem,
 } from './reference-template-docx'
+export {
+  WORD_TEMPLATE_REGISTRY,
+  findWordTemplate,
+  getDefaultWordTemplateId,
+  loadWordTemplateBytes,
+} from './word-template-registry'
+export { resolveWorksheetFont } from './worksheet-font'
 export {
   inspectUploadedPdf,
   processSelectedPdfPages,

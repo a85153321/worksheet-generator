@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "docx": "^9.7.1",
+    "easy-template-x": "^7.2.8",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "pdfjs-dist": "^6.3.289",
@@ -36,5 +37,10 @@
     "typescript-eslint": "^8.69.0",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
+  },
+  "overrides": {
+    "easy-template-x": {
+      "@xmldom/xmldom": "0.8.15"
+    }
   }
 }

@@ -3,6 +3,7 @@ import { appErrorSchema } from '../src/domain'
 import {
   analyzeTypedCharacters,
   lookupCharacterFromDictionary,
+  resolveSentenceCandidatesForWords,
 } from '../src/services'
 
 describe('MOE Concised Mandarin Dictionary', () => {
@@ -18,8 +19,38 @@ describe('MOE Concised Mandarin Dictionary', () => {
     expect(result?.zhuyinCandidates).toContain('ㄒㄩㄝˊ')
     expect(result?.zhuyinCandidates).toContain(result?.zhuyin)
     expect(result?.wordCandidates).toContain('學習')
+    expect(result?.wordCandidateDetails.some((candidate) => (
+      candidate.text === '學習' && candidate.entryWordNumber.length > 0
+    ))).toBe(true)
     expect(result?.sentenceCandidates.length).toBeGreaterThan(0)
     expect(result?.entryWordNumbers.length).toBeGreaterThan(1)
+  })
+
+  it('preserves each word entry sentence relation and falls back to the overall pool', () => {
+    const lookup = lookupCharacterFromDictionary('學')
+    expect(lookup).not.toBeNull()
+    if (!lookup) return
+
+    const withExample = lookup.wordCandidateDetails.find(
+      (candidate) => candidate.sentenceCandidates.length > 0,
+    )
+    expect(withExample).toBeDefined()
+    if (!withExample) return
+    const linked = resolveSentenceCandidatesForWords(lookup, [withExample.text])
+    const sameTermPool = lookup.wordCandidateDetails
+      .filter((candidate) => candidate.text === withExample.text)
+      .flatMap((candidate) => candidate.sentenceCandidates)
+    expect(linked.length).toBeGreaterThan(0)
+    expect(linked.every((sentence) => sameTermPool.includes(sentence))).toBe(true)
+
+    const withoutExample = lookup.wordCandidateDetails.find(
+      (candidate) => candidate.sentenceCandidates.length === 0,
+    )
+    expect(withoutExample).toBeDefined()
+    if (!withoutExample) return
+    expect(resolveSentenceCandidatesForWords(lookup, [withoutExample.text])).toEqual(
+      lookup.sentenceCandidates,
+    )
   })
 
   it('returns null for a missing or non-single character', () => {
@@ -36,7 +67,17 @@ describe('MOE Concised Mandarin Dictionary', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.characters.map(({ character }) => character)).toEqual(['學', '習'])
-      expect(result.value.characters[0]?.wordCandidates).toContain('學習')
+      expect(result.value.characters[0]?.wordCandidates).toEqual(
+        lookupCharacterFromDictionary('學')?.wordCandidates.slice(0, 3),
+      )
+      expect(result.value.characters[0]?.wordCandidates).toHaveLength(3)
+      expect(result.value.characters[0]?.sentenceCandidates.length).toBeLessThanOrEqual(2)
+      const lookup = lookupCharacterFromDictionary('學')!
+      const linkedPool = resolveSentenceCandidatesForWords(
+        lookup,
+        result.value.characters[0]?.wordCandidates ?? [],
+      )
+      expect(result.value.characters[0]?.sentenceCandidates).toEqual(linkedPool.slice(0, 2))
     }
     expect(networkRequest).not.toHaveBeenCalled()
     vi.unstubAllGlobals()

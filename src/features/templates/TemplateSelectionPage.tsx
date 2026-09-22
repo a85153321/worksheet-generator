@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useApp } from '../../app/index'
 import {
   buildWorksheet,
+  WORD_TEMPLATE_REGISTRY,
   type WorksheetTemplate,
   type WorksheetDoc,
   type WorksheetImage,
@@ -18,6 +19,7 @@ import {
 
 interface TemplateOption {
   id: WorksheetTemplate
+  docxTemplateId?: string
   title: string
   badge: string
   description: string
@@ -27,17 +29,7 @@ interface TemplateOption {
   wireframeType: 'reference' | 'character' | 'word' | 'sentence' | 'picture'
 }
 
-const TEMPLATE_OPTIONS: TemplateOption[] = [
-  {
-    id: 'reference-character-practice',
-    title: '範例注音生字學習單',
-    badge: '教師提供版型',
-    targetGrade: '適合國小一至六年級',
-    description: '以教師提供的第一題 Word 版面為母版，逐題複製並支援 IVS 注音與配圖',
-    features: ['原稿群組圖形與字型', '每題不同生字資料', '自動分頁與自備配圖'],
-    icon: '📝',
-    wireframeType: 'reference',
-  },
+const STATIC_TEMPLATE_OPTIONS: TemplateOption[] = [
   {
     id: 'character-practice',
     title: '生字田字格練習單',
@@ -131,6 +123,8 @@ export const TemplateSelectionPage: React.FC = () => {
     setAnalysisResult,
     selectedTemplate,
     setSelectedTemplate,
+    selectedDocxTemplateId,
+    setSelectedDocxTemplateId,
     worksheetDoc,
     setWorksheetDoc,
     worksheetImages,
@@ -147,7 +141,24 @@ export const TemplateSelectionPage: React.FC = () => {
 
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
-  const currentOption = TEMPLATE_OPTIONS.find((t) => t.id === selectedTemplate) || TEMPLATE_OPTIONS[0]
+  const templateOptions: TemplateOption[] = [
+    ...WORD_TEMPLATE_REGISTRY.map((template) => ({
+      id: 'reference-character-practice' as const,
+      docxTemplateId: template.id,
+      title: template.displayName,
+      badge: 'Word 動態範本',
+      targetGrade: '適合國小一至六年級',
+      description: '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
+      features: ['檔名自動加入清單', '多題迴圈', '圖片二進位嵌入'],
+      icon: '📝',
+      wireframeType: 'reference' as const,
+    })),
+    ...STATIC_TEMPLATE_OPTIONS,
+  ]
+  const currentOption = templateOptions.find((option) =>
+    option.id === selectedTemplate &&
+    (option.id !== 'reference-character-practice' || option.docxTemplateId === selectedDocxTemplateId),
+  ) ?? templateOptions[0]
   const uploadedImageCount = Object.keys(worksheetImages).length
 
   // 若選到已移除之 mixed、reading-comprehension 或 character-discrimination 模板，自動轉向 character-practice
@@ -155,11 +166,13 @@ export const TemplateSelectionPage: React.FC = () => {
     if (
       (selectedTemplate as string) === 'mixed' ||
       (selectedTemplate as string) === 'reading-comprehension' ||
-      (selectedTemplate as string) === 'character-discrimination'
+      (selectedTemplate as string) === 'character-discrimination' ||
+      (selectedTemplate === 'reference-character-practice' && WORD_TEMPLATE_REGISTRY.length === 0)
     ) {
       setSelectedTemplate('character-practice')
+      setSelectedDocxTemplateId(null)
     }
-  }, [selectedTemplate, setSelectedTemplate])
+  }, [selectedTemplate, setSelectedTemplate, setSelectedDocxTemplateId])
 
   // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
@@ -200,6 +213,9 @@ export const TemplateSelectionPage: React.FC = () => {
     buildWorksheet(activeAnalysis, selectedTemplate, {
       images: imageList,
       grade: selectedGrade as ElementaryGrade,
+      docxTemplateId: selectedTemplate === 'reference-character-practice'
+        ? selectedDocxTemplateId ?? undefined
+        : undefined,
     })
       .then((res) => {
         if (!isCancelled && res.ok) {
@@ -218,7 +234,7 @@ export const TemplateSelectionPage: React.FC = () => {
     return () => {
       isCancelled = true
     }
-  }, [selectedTemplate, analysisResult, worksheetImages, selectedGrade])
+  }, [selectedTemplate, selectedDocxTemplateId, analysisResult, worksheetImages, selectedGrade])
 
   // 串接 buildWorksheet use case
   const handleCreateWorksheet = async () => {
@@ -241,6 +257,9 @@ export const TemplateSelectionPage: React.FC = () => {
       const res = await buildWorksheet(analysisResult, selectedTemplate, {
         images: imageList,
         grade: selectedGrade as ElementaryGrade,
+        docxTemplateId: selectedTemplate === 'reference-character-practice'
+          ? selectedDocxTemplateId ?? undefined
+          : undefined,
       })
       if (res.ok) {
         setWorksheetDoc(res.value)
@@ -485,20 +504,24 @@ export const TemplateSelectionPage: React.FC = () => {
       </div>
 
       <div className="template-grid" role="radiogroup" aria-label="學習單模板選項">
-        {TEMPLATE_OPTIONS.map((tpl) => {
-          const isSelected = selectedTemplate === tpl.id
+        {templateOptions.map((tpl) => {
+          const isSelected = selectedTemplate === tpl.id && (
+            tpl.id !== 'reference-character-practice' || tpl.docxTemplateId === selectedDocxTemplateId
+          )
           return (
             <div
-              key={tpl.id}
+              key={tpl.docxTemplateId ?? tpl.id}
               className={`template-card ${isSelected ? 'selected' : ''}`}
               onClick={() => {
                 setSelectedTemplate(tpl.id)
+                setSelectedDocxTemplateId(tpl.docxTemplateId ?? null)
                 setBuildError(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
                   setSelectedTemplate(tpl.id)
+                  setSelectedDocxTemplateId(tpl.docxTemplateId ?? null)
                   setBuildError(null)
                 }
               }}
@@ -570,6 +593,13 @@ export const TemplateSelectionPage: React.FC = () => {
           )
         })}
       </div>
+
+      {WORD_TEMPLATE_REGISTRY.length === 0 && (
+        <div className="callout" role="status" style={{ marginTop: '1rem' }}>
+          目前沒有可用的 Word 動態範本。請將至少一份 `.docx` 放入
+          `src/assets/docx-templates/` 後重新建置；其他程式化模板仍可使用。
+        </div>
+      )}
 
       {/* 2. 即時版面模擬預覽區塊：呼叫 buildWorksheet() 取得真實資料並以共用 WorksheetSheet 縮小渲染 */}
       <section

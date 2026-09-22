@@ -1,5 +1,7 @@
 import {
   analysisResultSchema,
+  MAX_SENTENCE_CANDIDATES,
+  MAX_WORD_CANDIDATES,
   type AnalysisResult,
   type AppError,
   type Result,
@@ -7,6 +9,7 @@ import {
 import {
   lookupCharacterFromDictionary as lookupLocalDictionary,
   putAnalysisCache,
+  resolveSentenceCandidatesForWords as resolveLinkedSentences,
 } from '../infrastructure'
 import type { CharacterDictionaryLookup } from '../infrastructure'
 import type { AnalyzeTypedCharactersInput } from './contracts'
@@ -15,6 +18,13 @@ export function lookupCharacterFromDictionary(
   character: string,
 ): CharacterDictionaryLookup | null {
   return lookupLocalDictionary(character)
+}
+
+export function resolveSentenceCandidatesForWords(
+  lookup: CharacterDictionaryLookup,
+  selectedWords: readonly string[],
+): string[] {
+  return resolveLinkedSentences(lookup, selectedWords)
 }
 
 export function analyzeTypedCharacters(
@@ -60,14 +70,16 @@ export function analyzeTypedCharacters(
   const result = {
     characters: lookups.map(({ dictionary }) => {
       if (!dictionary) throw new Error('Dictionary lookup changed during analysis')
+      const wordCandidates = dictionary.wordCandidates.slice(0, MAX_WORD_CANDIDATES)
       return {
         character: dictionary.character,
         zhuyin: dictionary.zhuyin,
         zhuyinCandidates: dictionary.zhuyinCandidates,
         radical: dictionary.radical,
         strokeCount: dictionary.strokeCount,
-        wordCandidates: dictionary.wordCandidates,
-        sentenceCandidates: dictionary.sentenceCandidates,
+        wordCandidates,
+        sentenceCandidates: resolveLinkedSentences(dictionary, wordCandidates)
+          .slice(0, MAX_SENTENCE_CANDIDATES),
         source: { page: null, block: '教育部《國語辭典簡編本》' },
       }
     }),

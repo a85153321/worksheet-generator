@@ -25,13 +25,9 @@ import type {
   WorksheetImage,
 } from './contracts'
 import { resolveBopomofoDisplayCharacter } from '../infrastructure'
-import { generateReferenceTemplateDocxBlob } from './reference-template-docx'
+import { DOCX_FONT_FULL_NAMES, resolveWorksheetFont } from './worksheet-font'
 
-export const DOCX_FONT_FULL_NAMES: Record<WorksheetFont, string> = {
-  'standard-kai': '標楷體',
-  'zihi-kai-zhuyin': 'ㄅ字嗨注音標楷 Regular',
-  'zihi-only-zhuyin': 'ㄅ字嗨注音而已 R',
-}
+export { DOCX_FONT_FULL_NAMES } from './worksheet-font'
 
 type DocxFont = {
   ascii: string
@@ -761,7 +757,7 @@ export function createDocxDocument(
   options: DocxExportOptions = {},
   embeddedImages: ReadonlyMap<string, EmbeddedImageData> = new Map(),
 ): Document {
-  SELECTED_FONT = options.font ?? 'standard-kai'
+  SELECTED_FONT = resolveWorksheetFont(doc.grade, options.font)
   FONT_FAMILY = docxFont(SELECTED_FONT)
   const templateTitle = templateNameMap[doc.template] || '國語學習單'
   const totalPages = doc.pages.length > 0 ? doc.pages.length : 1
@@ -832,6 +828,7 @@ export async function generateDocxBlob(
   options: DocxExportOptions = {},
 ): Promise<Blob> {
   if (doc.template === 'reference-character-practice') {
+    const { generateReferenceTemplateDocxBlob } = await import('./reference-template-docx')
     return generateReferenceTemplateDocxBlob(doc, options)
   }
   const embeddedImages = await loadEmbeddedImages(doc.images)

@@ -1,4 +1,10 @@
-import type { AnalysisResult, AppError, CharacterAnalysis, Result } from '../domain'
+import {
+  analysisResultSchema,
+  type AnalysisResult,
+  type AppError,
+  type CharacterAnalysis,
+  type Result,
+} from '../domain'
 import type {
   BuildWorksheetOptions,
   WorksheetImage,
@@ -169,7 +175,20 @@ export async function buildWorksheet(
   template: WorksheetTemplate,
   options: BuildWorksheetOptions = {},
 ): Promise<Result<WorksheetDoc, AppError>> {
-  if (analysis.characters.length === 0) {
+  const parsedAnalysis = analysisResultSchema.safeParse(analysis)
+  if (!parsedAnalysis.success) {
+    return {
+      ok: false,
+      error: {
+        type: 'validation',
+        message: '分析結果格式不正確，無法建立學習單。',
+        retryable: false,
+        details: { issues: parsedAnalysis.error.issues },
+      },
+    }
+  }
+  const canonicalAnalysis = parsedAnalysis.data
+  if (canonicalAnalysis.characters.length === 0) {
     return {
       ok: false,
       error: {
@@ -181,7 +200,7 @@ export async function buildWorksheet(
   }
 
   const images = new Map((options.images ?? []).map((image) => [image.character, image]))
-  const sections = buildSections(analysis, template, images)
+  const sections = buildSections(canonicalAnalysis, template, images)
   if (sections.length === 0) {
     return {
       ok: false,
@@ -195,8 +214,8 @@ export async function buildWorksheet(
 
   const pages = buildPages(
     sections,
-    analysis,
-    template === 'reference-character-practice' ? 5 : SECTIONS_PER_PAGE,
+    canonicalAnalysis,
+    SECTIONS_PER_PAGE,
   )
 
   return {
@@ -211,9 +230,10 @@ export async function buildWorksheet(
       pageSetup: { size: 'A4', orientation: 'portrait' },
       status: 'draft',
       pages,
-      sourceAnalysis: structuredClone(analysis),
+      sourceAnalysis: structuredClone(canonicalAnalysis),
       // Blob/File 是不可變的瀏覽器物件；保留原物件，Word 匯出時才能讀取 arrayBuffer()。
       images: options.images ? [...options.images] : undefined,
+      docxTemplateId: options.docxTemplateId,
       createdAt: new Date().toISOString(),
     },
   }

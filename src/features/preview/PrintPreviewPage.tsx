@@ -3,22 +3,43 @@ import { useApp } from '../../app/index'
 import {
   buildWorksheet,
   exportWorksheetToDocx,
+  lookupCharacterFromDictionary,
+  resolveSentenceCandidatesForWords,
   type WorksheetPage,
   type WorksheetTemplate,
   type WorksheetFont,
 } from '../../services'
+import type { ElementaryGrade } from '../../domain'
 import {
   WorksheetSheet,
   TEMPLATE_NAMES,
 } from '../../components/worksheet'
+import { selectReplacementCandidates } from './candidate-selection'
+
+type CandidateKind = 'words' | 'sentences'
+
+function getCandidateText(candidate: unknown): string {
+  if (typeof candidate === 'string') return candidate
+  if (
+    candidate &&
+    typeof candidate === 'object' &&
+    'text' in candidate &&
+    typeof (candidate as { text: unknown }).text === 'string'
+  ) {
+    return (candidate as { text: string }).text
+  }
+  return String(candidate ?? '')
+}
 
 export const PrintPreviewPage: React.FC = () => {
   const {
     worksheetDoc,
     setWorksheetDoc,
     analysisResult,
+    setAnalysisResult,
     worksheetImages,
     selectedTemplate,
+    selectedDocxTemplateId,
     navigate,
     selectedGrade,
   } = useApp()
@@ -30,16 +51,40 @@ export const PrintPreviewPage: React.FC = () => {
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
   const [isFontReminderExpanded, setIsFontReminderExpanded] = useState(false)
+  const [expandedCharacterIndices, setExpandedCharacterIndices] = useState<Set<number>>(() => new Set())
+  const [candidateNotice, setCandidateNotice] = useState<Record<string, string>>({})
   const sheetsContainerRef = useRef<HTMLDivElement>(null)
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
 
+  const toggleCharacterExpanded = (index: number) => {
+    setExpandedCharacterIndices((previous) => {
+      const next = new Set(previous)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }
+
   // 自動同步：若尚未由 buildWorksheet 組裝，或當前 worksheetDoc 與已選 selectedTemplate 不一致時，自動呼叫 buildWorksheet
   useEffect(() => {
     if (analysisResult && analysisResult.characters.length > 0) {
-      if (!worksheetDoc || worksheetDoc.template !== selectedTemplate) {
+      if (
+        !worksheetDoc ||
+        worksheetDoc.template !== selectedTemplate ||
+        (selectedTemplate === 'reference-character-practice' && worksheetDoc.docxTemplateId !== selectedDocxTemplateId)
+      ) {
         const imageList = Object.values(worksheetImages)
-        buildWorksheet(analysisResult, selectedTemplate, { images: imageList }).then((res) => {
+        buildWorksheet(analysisResult, selectedTemplate, {
+          images: imageList,
+          grade: selectedGrade as ElementaryGrade,
+          docxTemplateId: selectedTemplate === 'reference-character-practice'
+            ? selectedDocxTemplateId ?? undefined
+            : undefined,
+        }).then((res) => {
           if (res.ok) {
             setWorksheetDoc(res.value)
           } else {
@@ -48,10 +93,62 @@ export const PrintPreviewPage: React.FC = () => {
         })
       }
     }
-  }, [selectedTemplate, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
+  }, [selectedTemplate, selectedDocxTemplateId, selectedGrade, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleReplaceCandidates = (characterIndex: number, kind: CandidateKind) => {
+    if (!analysisResult) return
+    const item = analysisResult.characters[characterIndex]
+    if (!item) return
+
+    const lookup = lookupCharacterFromDictionary(item.character)
+    const isWords = kind === 'words'
+    const wordStrings = item.wordCandidates.map(getCandidateText)
+    const currentCandidates = isWords ? wordStrings : item.sentenceCandidates
+    const fullCandidates = isWords
+      ? lookup?.wordCandidates ?? []
+      : lookup
+        ? resolveSentenceCandidatesForWords(lookup, wordStrings)
+        : []
+    const replacement = selectReplacementCandidates(
+      fullCandidates,
+      currentCandidates,
+      isWords ? 3 : 2,
+    )
+    const noticeKey = `${characterIndex}-${kind}`
+
+    if (!replacement) {
+      setCandidateNotice((previous) => ({
+        ...previous,
+        [noticeKey]: lookup ? '已無其他候選可替換' : '辭典查無這個生字',
+      }))
+      return
+    }
+
+    setAnalysisResult({
+      ...analysisResult,
+      characters: analysisResult.characters.map((character, index) => {
+        if (index !== characterIndex) return character
+        if (!isWords) return { ...character, sentenceCandidates: replacement }
+
+        const linkedSentences = lookup
+          ? resolveSentenceCandidatesForWords(lookup, replacement).slice(0, 2)
+          : character.sentenceCandidates
+        return {
+          ...character,
+          wordCandidates: replacement,
+          sentenceCandidates: linkedSentences,
+        }
+      }),
+    })
+    setWorksheetDoc(null)
+    setCandidateNotice((previous) => ({
+      ...previous,
+      [noticeKey]: isWords ? '已換一批語詞，預覽同步更新' : '已換一批例句，預覽同步更新',
+    }))
   }
 
   // 純前端瀏覽器端 PDF 匯出 (完全在用戶端執行，不呼叫任何外部 API 或雲端服務)
@@ -352,6 +449,115 @@ export const PrintPreviewPage: React.FC = () => {
             </div>
           )}
         </section>
+
+        {analysisResult && analysisResult.characters.length > 0 && (
+          <section className="preview-candidate-panel" aria-labelledby="preview-candidate-heading">
+            <div className="preview-candidate-panel__heading">
+              <div>
+                <h2 id="preview-candidate-heading">匯出前候選內容確認</h2>
+                <p>可直接替換最終學習單使用的語詞與例句；每次只會從本機教育部辭典候選中抽選。</p>
+              </div>
+              <span>語詞最多 3 個・例句最多 2 則</span>
+            </div>
+
+            <div className="preview-candidate-list" role="region" aria-label="生字候選內容折疊清單">
+              {analysisResult.characters.map((item, characterIndex) => {
+                const isExpanded = expandedCharacterIndices.has(characterIndex)
+                return (
+                  <article
+                    className={`preview-candidate-item ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
+                    key={`${item.character}-${characterIndex}`}
+                  >
+                    <button
+                      type="button"
+                      className="preview-candidate-summary"
+                      onClick={() => toggleCharacterExpanded(characterIndex)}
+                      aria-expanded={isExpanded}
+                      aria-controls={`preview-candidate-details-${characterIndex}`}
+                      aria-label={`生字「${item.character}」候選內容，目前${isExpanded ? '已展開' : '已收合'}，點擊切換`}
+                    >
+                      <div className="preview-candidate-summary__title">
+                        <div className="preview-candidate-character" aria-hidden="true">
+                          {item.character}
+                        </div>
+                        <span className="preview-candidate-label">
+                          生字「{item.character}」
+                        </span>
+                      </div>
+                      <div className="preview-candidate-arrow-wrap">
+                        <span className="preview-candidate-toggle-hint">
+                          {isExpanded ? '點擊收合' : '點擊展開'}
+                        </span>
+                        <span className="preview-candidate-arrow" aria-hidden="true">
+                          {isExpanded ? '▼' : '▶'}
+                        </span>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div
+                        id={`preview-candidate-details-${characterIndex}`}
+                        className="preview-candidate-details"
+                      >
+                        <div className="preview-candidate-groups">
+                          <div className="preview-candidate-group">
+                            <div>
+                              <strong>語詞候選</strong>
+                              <p>
+                                {item.wordCandidates
+                                  .slice(0, 3)
+                                  .map(getCandidateText)
+                                  .filter(Boolean)
+                                  .join('、') || '（目前沒有語詞）'}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary preview-candidate-button"
+                              onClick={() => handleReplaceCandidates(characterIndex, 'words')}
+                              aria-label={`為「${item.character}」換一批語詞候選`}
+                            >
+                              🎲 換一批語詞
+                            </button>
+                            {candidateNotice[`${characterIndex}-words`] && (
+                              <small role="status">{candidateNotice[`${characterIndex}-words`]}</small>
+                            )}
+                          </div>
+
+                          <div className="preview-candidate-group">
+                            <div>
+                              <strong>例句候選</strong>
+                              {item.sentenceCandidates.length > 0 ? (
+                                <ol>
+                                  {item.sentenceCandidates.slice(0, 2).map((sentence, sentenceIndex) => (
+                                    <li key={`${sentence}-${sentenceIndex}`}>{sentence}</li>
+                                  ))}
+                                </ol>
+                              ) : (
+                                <p>（目前沒有例句）</p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary preview-candidate-button"
+                              onClick={() => handleReplaceCandidates(characterIndex, 'sentences')}
+                              aria-label={`為「${item.character}」換一批例句候選`}
+                            >
+                              🎲 換一批例句
+                            </button>
+                            {candidateNotice[`${characterIndex}-sentences`] && (
+                              <small role="status">{candidateNotice[`${characterIndex}-sentences`]}</small>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* A4 紙張預覽區（支援多頁依序呈現） */}

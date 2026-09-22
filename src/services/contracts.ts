@@ -114,6 +114,7 @@ export interface BuildWorksheetOptions {
   title?: string
   images?: readonly WorksheetImage[]
   grade?: ElementaryGrade
+  docxTemplateId?: string
 }
 
 export interface WorksheetDoc {
@@ -131,5 +132,7 @@ export interface WorksheetDoc {
   pages: WorksheetPage[]
   sourceAnalysis: AnalysisResult
   images?: WorksheetImage[]
+  /** 建置時由離線 Word 範本 registry 選取的範本。 */
+  docxTemplateId?: string
   createdAt: string
 }

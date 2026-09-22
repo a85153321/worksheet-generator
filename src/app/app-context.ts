@@ -16,6 +16,8 @@ export interface AppContextType {
   setWorksheetImages: React.Dispatch<React.SetStateAction<Record<string, WorksheetImage>>>
   selectedTemplate: WorksheetTemplate
   setSelectedTemplate: (template: WorksheetTemplate) => void
+  selectedDocxTemplateId: string | null
+  setSelectedDocxTemplateId: (templateId: string | null) => void
   worksheetDoc: WorksheetDoc | null
   setWorksheetDoc: React.Dispatch<React.SetStateAction<WorksheetDoc | null>>
   typedCharacters: string[]
