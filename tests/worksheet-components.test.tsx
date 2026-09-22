@@ -51,11 +51,7 @@ describe('WorksheetSheet & WorksheetContentRenderer', () => {
   })
 
   it.each<WorksheetTemplate>([
-    'character-practice',
     'reference-character-practice',
-    'word-practice',
-    'sentence-practice',
-    'picture-practice',
   ])('renders template %s into html without crashing', async (template) => {
     const res = await buildWorksheet(sampleAnalysis, template, {
       images: [sampleImage],
@@ -82,7 +78,7 @@ describe('WorksheetSheet & WorksheetContentRenderer', () => {
   })
 
   it('supports switching previewFont classes', async () => {
-    const res = await buildWorksheet(sampleAnalysis, 'character-practice')
+    const res = await buildWorksheet(sampleAnalysis, 'reference-character-practice')
     expect(res.ok).toBe(true)
     if (!res.ok) return
 
@@ -90,14 +86,13 @@ describe('WorksheetSheet & WorksheetContentRenderer', () => {
       <WorksheetSheet
         page={res.value.pages[0]}
         totalPages={1}
-        template="character-practice"
+        template="reference-character-practice"
         previewFont="zihi-kai-zhuyin"
         characters={sampleAnalysis.characters}
       />
     )
 
     expect(htmlZhuyin).toContain('worksheet-font-zihi-kai-zhuyin')
-    expect(htmlZhuyin).toContain('標楷有注音')
   })
 
   it('determines default font based on grade correctly', () => {

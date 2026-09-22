@@ -231,9 +231,7 @@ export const PrintPreviewPage: React.FC = () => {
   const activeTitle =
     worksheetDoc?.title && worksheetDoc.title !== '範例生字學習單'
       ? worksheetDoc.title
-      : activeTemplate === 'reference-character-practice'
-        ? '生字注音學習單'
-        : TEMPLATE_NAMES[activeTemplate] || '學習單'
+      : '生字注音學習單'
 
   // 取得 WorksheetDoc 中組裝之頁面陣列（支援多頁），若為空則預設 1 頁
   const pages: WorksheetPage[] = worksheetDoc?.pages && worksheetDoc.pages.length > 0

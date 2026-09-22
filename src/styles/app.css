@@ -516,6 +516,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 0.25rem 0.65rem;
+  font-family: 'ㄅ字嗨注音而已 R', 'BpmfZihiOnly-R', '標楷體', 'DFKai-SB', serif;
   font-size: 0.88rem;
   font-weight: 500;
   border-radius: var(--radius-sm);

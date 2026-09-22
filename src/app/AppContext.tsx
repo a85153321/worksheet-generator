@@ -27,7 +27,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [typedCharacters, setTypedCharacters] = useState<string[]>([])
   const [selectedGrade, setSelectedGrade] = useState(3)
   const [worksheetImages, setWorksheetImages] = useState<Record<string, WorksheetImage>>({})
-  const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('character-practice')
+  const [selectedTemplate, setSelectedTemplate] = useState<WorksheetTemplate>('reference-character-practice')
   const [selectedDocxTemplateId, setSelectedDocxTemplateId] = useState<string | null>(
     getDefaultWordTemplateId(),
   )
