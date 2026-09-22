@@ -664,22 +664,9 @@ export const PrintPreviewPage: React.FC = () => {
                 activeWordDefinition.entries.map((entry, eIdx) => (
                   <div key={entry.wordNumber || eIdx} className="word-def-entry">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
                         {entry.wordName}
                       </span>
-                      <span className="zhuyin-text" style={{ color: 'var(--color-primary-dark)', fontSize: '1.05rem' }}>
-                        {entry.zhuyin}
-                      </span>
-                      {entry.radical && (
-                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                          部首：{entry.radical}
-                        </span>
-                      )}
-                      {entry.strokeCount > 0 && (
-                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                          筆畫：{entry.strokeCount}
-                        </span>
-                      )}
                     </div>
                     <div className="word-def-text">
                       {entry.definition}
