@@ -64,6 +64,7 @@ export const ReviewPage: React.FC = () => {
     analysisResult,
     setAnalysisResult,
     navigate,
+    readingFontMode,
   } = useApp()
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -859,28 +860,42 @@ export const ReviewPage: React.FC = () => {
                       <div className="reading-buttons" role="group" aria-label={`「${item.character}」候選讀音切換`}>
                         {item.zhuyinCandidates.map((candidate) => {
                           const isSelected = item.zhuyin === candidate
+                          const displayText =
+                            readingFontMode === 'vertical'
+                              ? resolveBopomofoDisplayCharacter(item.character, candidate)
+                              : candidate
                           return (
                             <button
                               key={candidate}
                               type="button"
                               className={`reading-button ${isSelected ? 'selected' : ''}`}
                               aria-pressed={isSelected}
+                              aria-label={candidate}
+                              title={candidate}
                               onClick={() => handleSelectZhuyin(idx, candidate)}
                               disabled={isSaving}
                             >
-                              <span className="zhuyin-text">{candidate}</span>
+                              <span className="zhuyin-text">{displayText}</span>
                             </button>
                           )
                         })}
                       </div>
                     </div>
                     <div className="reading-fallback-text">
-                      目前讀音：<span className="zhuyin-text reading-highlight">{item.zhuyin}</span>
+                      目前讀音：<span className="zhuyin-text reading-highlight">
+                        {readingFontMode === 'vertical'
+                          ? resolveBopomofoDisplayCharacter(item.character, item.zhuyin)
+                          : item.zhuyin}
+                      </span>
                     </div>
                   </>
                 ) : (
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
-                    讀音：<span className="zhuyin-text single-reading-display">{item.zhuyin}</span>
+                    讀音：<span className="zhuyin-text single-reading-display">
+                      {readingFontMode === 'vertical'
+                        ? resolveBopomofoDisplayCharacter(item.character, item.zhuyin)
+                        : item.zhuyin}
+                    </span>
                   </div>
                 )}
               </div>

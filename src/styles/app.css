@@ -706,6 +706,20 @@ body[data-reading-font="vertical"] .zhuyin-form-input,
   font-family: 'BpmfZihiOnly', 'BpmfZihiOnly-R', 'ㄅ字嗨注音而已 R', 'Bpmf Zihi Only R', 'ㄅ字嗨注音而已', serif !important;
 }
 
+body[data-reading-font="vertical"] .reading-button,
+[data-reading-font="vertical"] .reading-button {
+  min-width: 2.2rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 1.25rem;
+}
+
+body[data-reading-font="vertical"] .reading-highlight,
+body[data-reading-font="vertical"] .single-reading-display,
+[data-reading-font="vertical"] .reading-highlight,
+[data-reading-font="vertical"] .single-reading-display {
+  font-size: 1.25rem;
+}
+
 /* 語詞候選點擊查看詞義樣式 */
 .word-candidate-link {
   display: inline-flex;
