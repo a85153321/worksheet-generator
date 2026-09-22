@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/worksheet-generator/',
   plugins: [
     {
       name: 'docx-template-base64',
