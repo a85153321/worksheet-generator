@@ -611,11 +611,12 @@ textarea:focus-visible {
 }
 
 .zhuyin-text,
+.reading-button,
 .reading-fallback-text strong,
 .single-reading-display,
 .zhuyin-form-input,
 .reading-highlight {
-  font-family: var(--font-worksheet-zihi-only) !important;
+  font-family: '標楷體', 'DFKai-SB', 'BiauKai', 'Kaiti TC', 'TW-Kai', var(--font-worksheet-zihi-only) !important;
   font-weight: 400;
   font-size: 1.05rem;
   letter-spacing: 0.05em;
