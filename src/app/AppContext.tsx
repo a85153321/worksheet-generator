@@ -40,7 +40,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [])
 
   useEffect(() => {
-    document.title = `${ROUTE_METAS[currentRoute].title} - 國小本機學習單生成器`
+    document.title = `${ROUTE_METAS[currentRoute].title} - 國小學習單生成器`
   }, [currentRoute])
 
   const navigate = (route: AppRoute) => {
