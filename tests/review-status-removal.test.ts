@@ -1,9 +1,7 @@
-import { Packer } from 'docx'
 import { describe, expect, it } from 'vitest'
 import { analysisResultSchema, type AnalysisResult } from '../src/domain'
 import {
   buildWorksheet,
-  createDocxDocument,
   updateAnalysisResult,
 } from '../src/services'
 
@@ -40,7 +38,7 @@ describe('analysis without review status', () => {
     expect(parsed.characters[0]).not.toHaveProperty('editableState')
   })
 
-  it('validates, saves teacher edits, and builds worksheet and Word output', async () => {
+  it('validates, saves teacher edits, and builds the reference worksheet', async () => {
     expect(analysisResultSchema.safeParse(analysisWithoutReviewStatus).success).toBe(true)
 
     const edited: AnalysisResult = {
@@ -53,13 +51,8 @@ describe('analysis without review status', () => {
     expect(updateResult).toEqual({ ok: true, value: edited })
     if (!updateResult.ok) return
 
-    const worksheetResult = await buildWorksheet(updateResult.value, 'word-practice')
+    const worksheetResult = await buildWorksheet(updateResult.value, 'reference-character-practice')
     expect(worksheetResult.ok).toBe(true)
-    if (!worksheetResult.ok) return
-
-    const document = createDocxDocument(worksheetResult.value)
-    const buffer = await Packer.toBuffer(document)
-    expect(buffer.length).toBeGreaterThan(1000)
   })
 
   it('stores no more than three words and two sentences after teacher confirmation', async () => {

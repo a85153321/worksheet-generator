@@ -30,6 +30,8 @@ const values = [
   ['會', 'ㄎㄨㄞˋ', '曰', 13],
   ['鳥', 'ㄋㄧㄠˇ', '鳥', 11],
   ['山', 'ㄕㄢ', '山', 3],
+  ['三', 'ㄙㄢ', '一', 3],
+  ['槍', 'ㄑㄧㄤ', '木', 14],
 ] as const
 const pngBytes = Uint8Array.from(Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -158,6 +160,24 @@ describe('migrated teacher Word template', () => {
     expect(xml.match(/<w:gridCol w:w="216"\/>/g)).toHaveLength(4)
     expect(xml.match(/┄/g)).toHaveLength(4)
     expect(xml.match(/┆/g)).toHaveLength(4)
+  })
+
+  it('keeps each information row attached to its practice grid across page breaks', async () => {
+    const { documentXml } = await outputArchive(8)
+    const rootRows = documentXml.match(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g) ?? []
+    const informationRows = rootRows.filter((row) => row.includes('第 ') && row.includes('題'))
+    const practiceRows = rootRows.filter((row) => row.includes('EF4444') && row.includes('7030A0'))
+    expect(informationRows).toHaveLength(8)
+    expect(practiceRows).toHaveLength(8)
+    expect(informationRows.every((row) => row.includes('<w:cantSplit'))).toBe(true)
+    expect(practiceRows.every((row) => row.includes('<w:cantSplit'))).toBe(true)
+
+    const informationTables = documentXml.match(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g) ?? []
+    const protectedInformationTables = informationTables.filter(
+      (table) => table.includes('第 ') && table.includes('題'),
+    )
+    expect(protectedInformationTables).toHaveLength(8)
+    expect(protectedInformationTables.every((table) => table.includes('<w:keepNext'))).toBe(true)
   })
 
   it('selects the annotated font for lower grades and honors a forced override', () => {

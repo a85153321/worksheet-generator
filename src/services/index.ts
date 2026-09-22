@@ -8,7 +8,6 @@ export type { CharacterDictionaryLookup, WordCandidateDetail } from '../infrastr
 export { buildWorksheet } from './worksheet-builder'
 export {
   DOCX_FONT_FULL_NAMES,
-  createDocxDocument,
   generateDocxBlob,
   exportWorksheetToDocx,
 } from './docx-builder'
@@ -40,9 +39,6 @@ export type {
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,
-  PictureWorksheetSection,
-  SentenceWorksheetSection,
-  WordWorksheetSection,
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,

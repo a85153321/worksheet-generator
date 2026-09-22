@@ -2,12 +2,10 @@ import {
   analysisResultSchema,
   type AnalysisResult,
   type AppError,
-  type CharacterAnalysis,
   type Result,
 } from '../domain'
 import type {
   BuildWorksheetOptions,
-  WorksheetImage,
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
@@ -18,18 +16,14 @@ import type {
 const SECTIONS_PER_PAGE = 6
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
-  'character-practice': '生字',
   'reference-character-practice': '範例生字',
-  'word-practice': '語詞',
-  'sentence-practice': '句子',
-  'picture-practice': '看圖',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
   return `${kind}-${encodeURIComponent(character)}-${index + 1}`
 }
 
-function characterSection(item: CharacterAnalysis, index: number): WorksheetSection {
+function characterSection(item: AnalysisResult['characters'][number], index: number): WorksheetSection {
   return {
     kind: 'character',
     id: sectionId('character', item.character, index),
@@ -44,81 +38,15 @@ function characterSection(item: CharacterAnalysis, index: number): WorksheetSect
   }
 }
 
-function wordSection(item: CharacterAnalysis, index: number): WorksheetSection | null {
-  if (item.wordCandidates.length === 0) return null
-  return {
-    kind: 'word',
-    id: sectionId('word', item.character, index),
-    instructions: '讀一讀語詞，並在空白處各寫一次。',
-    item: {
-      character: item.character,
-      words: item.wordCandidates.slice(0, 3).map((text) => ({ text, practiceLineCount: 1 })),
-    },
-  }
-}
-
-function sentenceSection(item: CharacterAnalysis, index: number): WorksheetSection | null {
-  if (item.sentenceCandidates.length === 0) return null
-  return {
-    kind: 'sentence',
-    id: sectionId('sentence', item.character, index),
-    instructions: '讀一讀例句，再仿寫一句完整的句子。',
-    item: {
-      character: item.character,
-      sentences: item.sentenceCandidates.slice(0, 2).map((text) => ({ text, answerLineCount: 2 })),
-    },
-  }
-}
-
-function pictureSection(
-  item: CharacterAnalysis,
-  index: number,
-  images: ReadonlyMap<string, WorksheetImage>,
-): WorksheetSection | null {
-  const image = images.get(item.character)
-  if (!image) return null
-
-  return {
-    kind: 'picture',
-    id: sectionId('picture', item.character, index),
-    instructions: '看圖後，寫出對應的生字或語詞。',
-    item: {
-      character: item.character,
-      prompt: `教師為「${item.character}」上傳的教學圖片`,
-      rationale: '教師選擇的看圖練習。',
-      image: image
-        ? { id: image.id, url: image.url, file: image.file, mimeType: image.mimeType }
-        : null,
-      needsImage: !image,
-    },
-  }
-}
-
-function buildSections(
-  analysis: AnalysisResult,
-  template: WorksheetTemplate,
-  images: ReadonlyMap<string, WorksheetImage>,
-): WorksheetSection[] {
-  const sections: WorksheetSection[] = []
-  analysis.characters.forEach((item, index) => {
-    const candidates =
-      template === 'character-practice' || template === 'reference-character-practice'
-          ? [characterSection(item, index)]
-          : template === 'word-practice'
-            ? [wordSection(item, index)]
-            : template === 'sentence-practice'
-              ? [sentenceSection(item, index)]
-              : [pictureSection(item, index, images)]
-    sections.push(...candidates.filter((section): section is WorksheetSection => section !== null))
-  })
-  return sections
+function buildSections(analysis: AnalysisResult): WorksheetSection[] {
+  return analysis.characters.map(characterSection)
 }
 
 function sectionCharacter(section: WorksheetSection): string | null {
   return section.item.character
 }
 
-function worksheetBlock(item: CharacterAnalysis): WorksheetBlock {
+function worksheetBlock(item: AnalysisResult['characters'][number]): WorksheetBlock {
   return {
     character: item.character,
     zhuyin: item.zhuyin,
@@ -152,7 +80,7 @@ function buildPages(
 }
 
 export function findCharacterPaginationIssues(
-  expectedCharacters: readonly CharacterAnalysis[],
+  expectedCharacters: readonly AnalysisResult['characters'][number][],
   pages: readonly WorksheetPage[],
 ): string[] {
   const expected = new Map<string, number>()
@@ -199,18 +127,7 @@ export async function buildWorksheet(
     }
   }
 
-  const images = new Map((options.images ?? []).map((image) => [image.character, image]))
-  const sections = buildSections(canonicalAnalysis, template, images)
-  if (sections.length === 0) {
-    return {
-      ok: false,
-      error: {
-        type: 'validation',
-        message: `分析結果沒有可用於「${TEMPLATE_LABELS[template]}」模板的內容。`,
-        retryable: false,
-      },
-    }
-  }
+  const sections = buildSections(canonicalAnalysis)
 
   const pages = buildPages(
     sections,

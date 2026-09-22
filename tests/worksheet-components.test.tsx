@@ -39,11 +39,7 @@ const sampleImage: WorksheetImage = {
 
 describe('WorksheetSheet & WorksheetContentRenderer', () => {
   it('has consistent template names and font labels', () => {
-    expect(TEMPLATE_NAMES['character-practice']).toBe('生字田字格練習單')
     expect(TEMPLATE_NAMES['reference-character-practice']).toBe('範例注音生字學習單')
-    expect(TEMPLATE_NAMES['word-practice']).toBe('語詞積木擴展單')
-    expect(TEMPLATE_NAMES['sentence-practice']).toBe('句型仿寫應用單')
-    expect(TEMPLATE_NAMES['picture-practice']).toBe('看圖識字練習單')
 
     expect(WORKSHEET_FONT_LABELS['standard-kai']).toBe('標楷體')
     expect(WORKSHEET_FONT_LABELS['zihi-kai-zhuyin']).toBe('標楷有注音')

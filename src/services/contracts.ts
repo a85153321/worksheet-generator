@@ -38,12 +38,7 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
   options?: ImageProcessingOptions
 }
 
-export type WorksheetTemplate =
-  | 'character-practice'
-  | 'reference-character-practice'
-  | 'word-practice'
-  | 'sentence-practice'
-  | 'picture-practice'
+export type WorksheetTemplate = 'reference-character-practice'
 
 export type WorksheetFont =
   | 'standard-kai'
@@ -71,38 +66,7 @@ export interface CharacterWorksheetSection extends WorksheetSectionBase {
   }
 }
 
-export interface WordWorksheetSection extends WorksheetSectionBase {
-  kind: 'word'
-  item: {
-    character: CharacterAnalysis['character']
-    words: Array<{ text: string; practiceLineCount: number }>
-  }
-}
-
-export interface SentenceWorksheetSection extends WorksheetSectionBase {
-  kind: 'sentence'
-  item: {
-    character: CharacterAnalysis['character']
-    sentences: Array<{ text: string; answerLineCount: number }>
-  }
-}
-
-export interface PictureWorksheetSection extends WorksheetSectionBase {
-  kind: 'picture'
-  item: {
-    character: CharacterAnalysis['character']
-    prompt: string
-    rationale: string
-    image: Pick<WorksheetImage, 'id' | 'url' | 'file' | 'mimeType'> | null
-    needsImage: boolean
-  }
-}
-
-export type WorksheetSection =
-  | CharacterWorksheetSection
-  | WordWorksheetSection
-  | SentenceWorksheetSection
-  | PictureWorksheetSection
+export type WorksheetSection = CharacterWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -121,7 +85,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '生字' | '範例生字' | '語詞' | '句子' | '看圖'
+  templateLabel: '範例生字'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {

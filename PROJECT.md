@@ -162,10 +162,10 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 | 3：資料完整性 | 匯入腳本可重現、必要欄位驗證、版本與授權 metadata |
 | 4：教師工作流 | 候選詞語／例句選擇、編輯與 schema 再驗證 |
 | 5：自備配圖 | 教師本機上傳、替換／刪除，不提供自動生成 |
-| 6：學習單引擎 | 生字、詞語、句子與看圖模板 |
+| 6：學習單引擎 | 動態 Word 範本 registry 與生字學習單資料組裝 |
 | 7：輸出 | A4 預覽、Word、列印 CSS、PDF 匯出與測試 |
 
-`buildWorksheet` 完全在本機將已驗證的 `AnalysisResult` 組裝成 `WorksheetDoc`。模板識別值為 `character-practice`、`word-practice`、`sentence-practice`、`picture-practice`。每頁的 `sections` 是預覽／列印的主要資料來源，`blocks` 保留為相容索引。資料不足時只省略不適用部分或回傳明確驗證錯誤，不得呼叫其他資料源補齊。
+`buildWorksheet` 完全在本機將已驗證的 `AnalysisResult` 組裝成 `WorksheetDoc`。`WorksheetTemplate` 目前只保留 `reference-character-practice`；多份不同 DOCX 版型由 `word-template-registry.ts` 提供的 `docxTemplateId` 動態識別，不把檔名或 registry ID 混入學習單種類型別。每頁的 `sections` 提供生字預覽資料，`blocks` 保留為相容索引。資料不足時回傳明確驗證錯誤，不得呼叫其他資料源補齊。Word 匯出只走 easy-template-x，不保留 `docx` 套件的程式化組版備援路徑。
 
 ## 7a. Phase 0 起手式（具體步驟）
 

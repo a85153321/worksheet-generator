@@ -1278,7 +1278,7 @@ textarea:focus-visible {
   margin-bottom: 4px;
 }
 
-/* 生字田字格模板專用 */
+/* 圖片選擇頁與生字卡片共用 */
 .sheet-char-card {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -1302,110 +1302,6 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-/* 語詞積木擴展單專用 */
-.sheet-word-card {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #ffffff;
-}
-
-.sheet-word-char-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px dashed #cbd5e1;
-  padding-bottom: 6px;
-}
-
-.sheet-word-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sheet-word-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 8px 12px;
-}
-
-.sheet-word-badge {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  min-width: 90px;
-  font-family: inherit;
-}
-
-.sheet-word-boxes {
-  display: flex;
-  gap: 6px;
-}
-
-.sheet-word-line {
-  flex: 1;
-  border-bottom: 1px dashed #94a3b8;
-  height: 20px;
-  margin-left: 8px;
-}
-
-/* 句型仿寫應用單專用 */
-.sheet-sentence-card {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #ffffff;
-}
-
-.sheet-sentence-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px dashed #e2e8f0;
-  padding-bottom: 6px;
-}
-
-.sheet-sentence-example {
-  background-color: #f0fdf4;
-  border-left: 4px solid #16a34a;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 14px;
-  color: #166534;
-}
-
-.sheet-sentence-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.sheet-writing-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sheet-writing-rule {
-  flex: 1;
-  height: 28px;
-  border-bottom: 1.5px solid #64748b;
-  position: relative;
-  background: linear-gradient(to bottom, transparent 48%, #cbd5e1 49%, transparent 52%);
 }
 
 /* 動態 Word 範本的 HTML 模擬：保留五大格視覺語言；實際 Word 題數由 items 迴圈決定。 */
