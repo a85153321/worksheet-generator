@@ -51,6 +51,7 @@ export const PrintPreviewPage: React.FC = () => {
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
   const [isFontReminderExpanded, setIsFontReminderExpanded] = useState(false)
+  const [isCandidatePanelExpanded, setIsCandidatePanelExpanded] = useState(false)
   const [expandedCharacterIndices, setExpandedCharacterIndices] = useState<Set<number>>(() => new Set())
   const [candidateNotice, setCandidateNotice] = useState<Record<string, string>>({})
   const sheetsContainerRef = useRef<HTMLDivElement>(null)
@@ -451,16 +452,44 @@ export const PrintPreviewPage: React.FC = () => {
         </section>
 
         {analysisResult && analysisResult.characters.length > 0 && (
-          <section className="preview-candidate-panel" aria-labelledby="preview-candidate-heading">
-            <div className="preview-candidate-panel__heading">
-              <div>
-                <h2 id="preview-candidate-heading">匯出前候選內容確認</h2>
-                <p>可直接替換最終學習單使用的語詞與例句；每次只會從本機教育部辭典候選中抽選。</p>
+          <section
+            className={`preview-candidate-panel ${isCandidatePanelExpanded ? 'is-expanded' : 'is-collapsed'}`}
+            aria-labelledby="preview-candidate-heading"
+          >
+            <button
+              type="button"
+              className="preview-candidate-panel__header"
+              onClick={() => setIsCandidatePanelExpanded((prev) => !prev)}
+              aria-expanded={isCandidatePanelExpanded}
+              aria-controls="preview-candidate-content"
+              aria-label={`匯出前候選內容確認，共 ${analysisResult.characters.length} 個生字，目前${isCandidatePanelExpanded ? '已展開' : '已收合'}，點擊切換`}
+            >
+              <div className="preview-candidate-panel__title-group">
+                <span className="preview-candidate-panel__icon" aria-hidden="true">📋</span>
+                <h2 id="preview-candidate-heading" className="preview-candidate-panel__title">
+                  匯出前候選內容確認 ({analysisResult.characters.length} 個生字)
+                </h2>
+                <span className="preview-candidate-panel__badge">
+                  語詞最多 3 個・例句最多 2 則
+                </span>
               </div>
-              <span>語詞最多 3 個・例句最多 2 則</span>
-            </div>
+              <div className="preview-candidate-panel__toggle">
+                <span className="preview-candidate-panel__toggle-text">
+                  {isCandidatePanelExpanded ? '點擊收合' : '點擊展開'}
+                </span>
+                <span className="preview-candidate-panel__arrow" aria-hidden="true">
+                  {isCandidatePanelExpanded ? '▼' : '▶'}
+                </span>
+              </div>
+            </button>
 
-            <div className="preview-candidate-list" role="region" aria-label="生字候選內容折疊清單">
+            {isCandidatePanelExpanded && (
+              <div id="preview-candidate-content" className="preview-candidate-panel__body">
+                <p className="preview-candidate-panel__desc">
+                  可直接替換最終學習單使用的語詞與例句；每次只會從本機教育部辭典候選中抽選。
+                </p>
+
+                <div className="preview-candidate-list" role="region" aria-label="生字候選內容折疊清單">
               {analysisResult.characters.map((item, characterIndex) => {
                 const isExpanded = expandedCharacterIndices.has(characterIndex)
                 return (
@@ -553,11 +582,12 @@ export const PrintPreviewPage: React.FC = () => {
                       </div>
                     )}
                   </article>
-                )
-              })}
+                )})}
+              </div>
             </div>
-          </section>
-        )}
+          )}
+        </section>
+      )}
       </div>
 
       {/* A4 紙張預覽區（支援多頁依序呈現） */}

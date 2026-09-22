@@ -25,3 +25,6 @@ dist-ssr
 
 # Office temporary files
 ~$*
+
+# Temporary test / QA outputs
+.tmp

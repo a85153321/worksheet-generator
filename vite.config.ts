@@ -30,6 +30,7 @@ export default defineConfig({
       ignored: [
         '**/src/assets/docx-templates/**',
         '**/~$*',
+        '**/.tmp/**',
       ],
     },
   },
