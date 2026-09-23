@@ -48,6 +48,10 @@ export interface WorksheetTemplateItem {
   wordCandidates: WordCandidateTemplateItem[]
   sentenceCandidatesText: string
   sentenceCandidates: SentenceCandidateTemplateItem[]
+  targetWord: string
+  originalSentence: string
+  sentenceBeforeBlank: string
+  sentenceAfterBlank: string
   image?: TemplateImage
 }
 
@@ -123,6 +127,10 @@ async function templateItem(
     wordCandidates: wordCandidates.map((text) => ({ text })),
     sentenceCandidatesText: sentenceCandidates.join('；'),
     sentenceCandidates: sentenceCandidates.map((text) => ({ text })),
+    targetWord: item.wordSentenceBlank?.targetWord ?? '',
+    originalSentence: item.wordSentenceBlank?.originalSentence ?? '',
+    sentenceBeforeBlank: item.wordSentenceBlank?.sentenceBeforeBlank ?? '',
+    sentenceAfterBlank: item.wordSentenceBlank?.sentenceAfterBlank ?? '',
     image: await templateImage(image),
   }
 }
@@ -145,6 +153,10 @@ export async function createWorksheetTemplateData(
     wordCandidates: [],
     sentenceCandidatesText: '',
     sentenceCandidates: [],
+    targetWord: '',
+    originalSentence: '',
+    sentenceBeforeBlank: '',
+    sentenceAfterBlank: '',
   }
   return { title: doc.title, ...first, items }
 }

@@ -12,6 +12,13 @@ export const sourceLocationSchema = z
     message: '來源頁面與區塊至少需要提供一項',
   })
 
+export const wordSentenceBlankSchema = z.object({
+  targetWord: z.string().min(1),
+  originalSentence: z.string().min(1),
+  sentenceBeforeBlank: z.string(),
+  sentenceAfterBlank: z.string(),
+})
+
 export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
@@ -26,6 +33,8 @@ export const characterAnalysisSchema = z.object({
     .transform((candidates) => candidates.slice(0, MAX_WORD_CANDIDATES)),
   sentenceCandidates: z.array(z.string().trim().min(1))
     .transform((candidates) => candidates.slice(0, MAX_SENTENCE_CANDIDATES)),
+  // 僅保存教師最終選定的一組挖空；完整語詞例句關聯仍留在 lookup-only pool。
+  wordSentenceBlank: wordSentenceBlankSchema.nullable().optional(),
   source: sourceLocationSchema,
 }).refine(({ zhuyin, zhuyinCandidates }) => zhuyinCandidates.includes(zhuyin), {
   message: 'zhuyin 必須是 zhuyinCandidates 中的其中一個讀音',
@@ -37,5 +46,6 @@ export const analysisResultSchema = z.object({
 })
 
 export type SourceLocation = z.infer<typeof sourceLocationSchema>
+export type WordSentenceBlank = z.infer<typeof wordSentenceBlankSchema>
 export type CharacterAnalysis = z.infer<typeof characterAnalysisSchema>
 export type AnalysisResult = z.infer<typeof analysisResultSchema>

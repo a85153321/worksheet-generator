@@ -4,6 +4,7 @@ export {
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
   resolveSentenceCandidatesForWords,
+  resolveOwnSentencesForWord,
   updateAnalysisResult,
 } from './use-cases'
 export type { CharacterDictionaryLookup, DictionaryEntry, WordCandidateDetail } from '../infrastructure'

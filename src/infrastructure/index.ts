@@ -13,6 +13,7 @@ export {
   matchReadingForWord,
   MOE_CONCISED_DICTIONARY_METADATA,
   resolveSentenceCandidatesForWords,
+  resolveOwnSentencesForWord,
 } from './moe-dictionary'
 export type {
   CharacterDictionaryLookup,

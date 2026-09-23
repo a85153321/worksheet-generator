@@ -49,6 +49,12 @@ function analysisFor(count: number): AnalysisResult {
       strokeCount,
       wordCandidates: [`${character}字`, `${character}詞`],
       sentenceCandidates: [`這是「${character}」的例句。`],
+      wordSentenceBlank: {
+        targetWord: `${character}字`,
+        originalSentence: `這是${character}字的挖空例句。`,
+        sentenceBeforeBlank: '這是',
+        sentenceAfterBlank: '的挖空例句。',
+      },
       source: { page: 1, block: '範例測試' },
     })),
   }
@@ -230,6 +236,12 @@ describe('migrated teacher Word template', () => {
     ])
     expect(data.items[0].sentenceCandidatesText).toBe('句一；句二')
     expect(data.items[0].sentenceCandidates).toEqual([{ text: '句一' }, { text: '句二' }])
+    expect(data.items[0]).toMatchObject({
+      targetWord: '看字',
+      originalSentence: '這是看字的挖空例句。',
+      sentenceBeforeBlank: '這是',
+      sentenceAfterBlank: '的挖空例句。',
+    })
   })
 
   it('embeds File or Blob bytes through the image plugin and leaves missing images blank', async () => {

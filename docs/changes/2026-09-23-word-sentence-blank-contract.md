@@ -1,0 +1,9 @@
+## Handoff
+- Owner: Codex
+- Goal: 新增保留辭典詞條 ownership 的「語詞例句挖空」底層契約，讓教師日後可從目前語詞候選指定一個 `targetWord`，並將唯一一組結果帶到 worksheet 與 Word template data。
+- Changed files: `src/domain/analysis-result.ts`, `src/domain/sentence-blank.ts`, `src/domain/index.ts`, `src/infrastructure/moe-dictionary.ts`, `src/infrastructure/index.ts`, `src/services/use-cases.ts`, `src/services/contracts.ts`, `src/services/worksheet-builder.ts`, `src/services/reference-template-docx.ts`, `src/services/index.ts`, `tests/sentence-blank.test.ts`, `tests/worksheet-builder.test.ts`, `tests/reference-template-docx.test.ts`, `PROJECT.md`, `docs/word-template-design-guide.md`, `docs/changes/2026-09-23-word-sentence-blank-contract.md`
+- Dictionary version: unchanged (`2014_20260626`)
+- Contract change: `characterAnalysisSchema` 新增 optional／nullable 的巢狀 `wordSentenceBlank`；`CharacterWorksheetSection.item` 與 `WorksheetTemplateItem` 帶入同一組資料。既有不含此欄位的資料仍通過驗證。Word template data 新增 `{targetWord}`, `{originalSentence}`, `{sentenceBeforeBlank}`, `{sentenceAfterBlank}`，未指定時輸出空字串。`WorksheetTemplate` 仍只有 `reference-character-practice`。
+- Verified: `createSentenceBlank` 覆蓋句中、句首、句尾、不含目標詞、重複出現只挖第一次與原文不變；`resolveOwnSentencesForWord` 覆蓋無自有例句時不 fallback；worksheet 與 Word template data 傳遞測試。指定回歸測試 5 檔共 34 案例通過；完整 `npm test` 為 10 檔 52 案例全數通過；`npm run lint` 通過；`npm run build` 通過（只有既有大型 chunk 警告）。
+- Risks / open questions: UI 尚未提供指定 `targetWord` 的操作，因此現有流程不會自動填入 `wordSentenceBlank`；本次未修改任何 DOCX，使用新標籤前需另由範本設計工作加入標籤。
+- Next owner action: Antigravity 實作「教師從 `wordCandidates` 指定一個填空題 `targetWord`」的 UI。在 lookup 尚可用時，先呼叫 `resolveOwnSentencesForWord(lookup, targetWord)`；依回傳順序對每句呼叫 `createSentenceBlank(sentence, targetWord)`，取第一個非 `null` 結果，並只把該結果寫入 `AnalysisResult.characters[n].wordSentenceBlank`。若沒有結果則寫入 `null` 或省略欄位，不得改用整體 sentence pool、其他語詞或 `wordCandidates[0]`。

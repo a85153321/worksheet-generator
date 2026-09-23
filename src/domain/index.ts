@@ -11,12 +11,15 @@ export {
   MAX_SENTENCE_CANDIDATES,
   MAX_WORD_CANDIDATES,
   sourceLocationSchema,
+  wordSentenceBlankSchema,
 } from './analysis-result'
 export type {
   AnalysisResult,
   CharacterAnalysis,
   SourceLocation,
+  WordSentenceBlank,
 } from './analysis-result'
+export { createSentenceBlank } from './sentence-blank'
 
 export {
   appErrorSchema,

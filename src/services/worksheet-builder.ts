@@ -34,6 +34,9 @@ function characterSection(item: AnalysisResult['characters'][number], index: num
       radical: item.radical,
       strokeCount: item.strokeCount,
       practiceBoxCount: 8,
+      wordSentenceBlank: item.wordSentenceBlank
+        ? { ...item.wordSentenceBlank }
+        : item.wordSentenceBlank,
     },
   }
 }

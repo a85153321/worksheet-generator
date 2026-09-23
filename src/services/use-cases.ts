@@ -12,6 +12,7 @@ import {
   lookupDictionaryEntriesByTerm as lookupLocalDictionaryEntriesByTerm,
   putAnalysisCache,
   resolveSentenceCandidatesForWords as resolveLinkedSentences,
+  resolveOwnSentencesForWord as resolveOwnSentences,
 } from '../infrastructure'
 import type { CharacterDictionaryLookup, DictionaryEntry } from '../infrastructure'
 import type { AnalyzeTypedCharactersInput } from './contracts'
@@ -38,6 +39,13 @@ export function resolveSentenceCandidatesForWords(
   selectedWords: readonly string[],
 ): string[] {
   return resolveLinkedSentences(lookup, selectedWords)
+}
+
+export function resolveOwnSentencesForWord(
+  lookup: CharacterDictionaryLookup,
+  word: string,
+): string[] {
+  return resolveOwnSentences(lookup, word)
 }
 
 export function analyzeTypedCharacters(

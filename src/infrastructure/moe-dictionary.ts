@@ -194,4 +194,18 @@ export function resolveSentenceCandidatesForWords(
   return linked.length > 0 ? linked : [...lookup.sentenceCandidates]
 }
 
+/** 回傳指定語詞自己的例句；沒有時維持空陣列，不使用整體例句池 fallback。 */
+export function resolveOwnSentencesForWord(
+  lookup: CharacterDictionaryLookup,
+  word: string,
+): string[] {
+  const targetWord = word.trim()
+  if (!targetWord) return []
+  return unique(
+    lookup.wordCandidateDetails
+      .filter((candidate) => candidate.text === targetWord)
+      .flatMap((candidate) => candidate.sentenceCandidates),
+  )
+}
+
 export const MOE_CONCISED_DICTIONARY_METADATA = dictionaryAsset.metadata

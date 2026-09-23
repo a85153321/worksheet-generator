@@ -73,6 +73,7 @@ src/
 - `strokeCount`
 - `wordCandidates`
 - `sentenceCandidates`
+- `wordSentenceBlank`（optional／nullable；只保存教師最終指定語詞的一組原始例句挖空資料）
 
 `AnalysisResult` 中的教師確認候選有固定上限：`wordCandidates` 最多 3 個、`sentenceCandidates` 最多 2 則。辭典 lookup 的完整候選只供教師手動換選，不直接進入預覽或匯出資料。
 - `source`
@@ -107,6 +108,8 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 ```
 
 `wordCandidateDetails` 保留每個相關詞條自己的字詞號、注音與 `[例]`；同名但不同詞條可各自保留。`wordCandidates` 仍是去重後的字串陣列，供既有 UI 與 `AnalysisResult` 使用。初次分析與教師換例句時，先合併目前已選語詞對應 detail 的例句；若這些詞條都沒有例句，才回退到整體 `sentenceCandidates` 池。
+
+語詞挖空候選使用不帶 fallback 的 `resolveOwnSentencesForWord(lookup, word)` 保留詞條 ownership，再由 `createSentenceBlank(sentence, targetWord)` 只挖除第一次出現位置。完整候選仍是 lookup-only；canonical `AnalysisResult` 只保存教師最終選定的一組 `wordSentenceBlank`，未選定時可省略或為 `null`。
 
 `analyzeTypedCharacters` 是同步、本機函式。查無資料不得用猜測值補齊；應回傳 `dictionary-not-found`。注音與其他辭典欄位一律隨查詢回傳，不提供省略注音的查詢開關。
 

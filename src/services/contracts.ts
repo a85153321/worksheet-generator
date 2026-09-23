@@ -63,6 +63,7 @@ export interface CharacterWorksheetSection extends WorksheetSectionBase {
   kind: 'character'
   item: Pick<CharacterAnalysis, 'character' | 'zhuyin' | 'radical' | 'strokeCount'> & {
     practiceBoxCount: number
+    wordSentenceBlank?: CharacterAnalysis['wordSentenceBlank']
   }
 }
 

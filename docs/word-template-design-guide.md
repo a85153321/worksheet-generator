@@ -18,12 +18,18 @@
 | `{strokeCount}` | 數字或文字 | 總筆畫；無資料時為 `—` |
 | `{wordCandidatesText}` | 文字 | 教師目前確認的語詞候選，以 `、` 串接，最多 3 個 |
 | `{sentenceCandidatesText}` | 文字 | 教師目前確認的例句候選，以 `；` 串接，最多 2 則 |
+| `{targetWord}` | 文字 | 教師指定作為挖空題答案的語詞；未指定時為空字串 |
+| `{originalSentence}` | 文字 | 教育部辭典原始例句，完整保留；未指定時為空字串 |
+| `{sentenceBeforeBlank}` | 文字 | `targetWord` 第一次出現位置之前的原文 |
+| `{sentenceAfterBlank}` | 文字 | `targetWord` 第一次出現位置之後的原文 |
 | `{#wordCandidates}{text}{/wordCandidates}` | 陣列迴圈 | 逐一輸出語詞候選 |
 | `{#sentenceCandidates}{text}{/sentenceCandidates}` | 陣列迴圈 | 逐一輸出例句候選 |
 | `{#items}...{/items}` | 陣列迴圈 | 逐一產生所有生字題目 |
 | `{image}` | 圖片 | 該生字的教師上傳圖片；沒有原始 File／Blob 時不提供資料 |
 
 `AnalysisResult` 是預覽與匯出的唯一候選資料來源：`wordCandidates` 實際只保存最多 3 個，`sentenceCandidates` 實際只保存最多 2 則。教育部辭典 lookup 另以 `wordCandidateDetails` 保留詞條字詞號、讀音及該詞條自己的例句，供教師換選時優先取得與目前語詞相符的例句；只有已選詞條都沒有例句時才使用整體例句池。這個 detail 結構不直接暴露成 Word 標籤，範本仍只讀取教師確認後的字串與陣列。
+
+`wordSentenceBlank` 只保存教師最終指定語詞的一組挖空資料，不保存其他候選語詞的結果。Word 範本不負責判斷 `targetWord` 是否存在於例句；這項檢查完全由 domain 層的 `createSentenceBlank` 負責，找不到時不提供挖空資料，也不猜測或改寫辭典原文。
 
 頂層的單一欄位取第一個生字，適合一份文件只處理一題的範本。多題範本應把題目區塊放在 `{#items}` 與 `{/items}` 之間；迴圈內可使用全部單一欄位、候選陣列與圖片。
 
@@ -102,7 +108,23 @@
 
 巢狀迴圈放在 `{#items}` 內時，會使用當前生字的候選資料。
 
-## 五 圖片標籤
+## 五 語詞例句挖空
+
+學生版建議把挖空前後文字與空格放在同一題內：
+
+```text
+{sentenceBeforeBlank}＿＿＿＿{sentenceAfterBlank}
+```
+
+教師答案版建議直接顯示完整原文：
+
+```text
+{originalSentence}
+```
+
+需要另列答案時可使用 `{targetWord}`。這四個標籤來自同一個巢狀資料物件；未指定挖空語詞時均為空字串。範本不得自行搜尋、刪除或替換句中文字。
+
+## 六 圖片標籤
 
 ### 建議做法 圖片佔位符
 
@@ -135,7 +157,7 @@
 
 也可以直接在一般段落輸入 `{image}`。此模式會在標籤位置插入行內圖片，適合表格儲存格或不需浮動定位的版面。圖片的實際二進位資料仍來自原始 File／Blob。
 
-## 六 生字字元樣式與自動字型
+## 七 生字字元樣式與自動字型
 
 所有 `{character}` 標籤必須套用 Word 字元樣式：
 
@@ -158,7 +180,7 @@ WorksheetCharacter
 
 重要：不要在 `{character}` 所在 run 上保留直接設定的 `w:rFonts`，否則 Word 的直接格式可能蓋過 `WorksheetCharacter`。字級、顏色、粗體與位置可以直接設定；字型應交給字元樣式。
 
-## 七 動態範本 registry
+## 八 動態範本 registry
 
 範本來源資料夾：
 
@@ -172,7 +194,7 @@ registry ID 由去掉副檔名後的檔名正規化而來；顯示名稱是原�
 
 資料夾為空時，UI 會顯示「目前沒有可用的 Word 動態範本」，但其他程式化模板仍可使用。
 
-## 八 Word 編輯注意事項
+## 九 Word 編輯注意事項
 
 ### easy-template-x 已處理的問題
 
@@ -195,7 +217,7 @@ registry ID 由去掉副檔名後的檔名正規化而來；顯示名稱是原�
 - 注音字型不嵌入輸出 DOCX。開啟文件的電腦仍需安裝對應字型，否則 Word 會替代字型。
 - 瀏覽器 HTML 預覽仍是共用模擬版面，不會自動解析任意 DOCX 成像素一致的預覽；Word 檔本身是動態範本的版面權威。
 
-## 九 新範本交付前檢查清單
+## 十 新範本交付前檢查清單
 
 - [ ] 範本位於 `src/assets/docx-templates/`，副檔名為 `.docx`。
 - [ ] 已用 Word 的「檢查文件」或等效工具清除文件屬性與個人資訊；`docProps/core.xml` 的 `creator` 與 `lastModifiedBy` 不得含值。專案測試會檢查資料夾內每份 DOCX。

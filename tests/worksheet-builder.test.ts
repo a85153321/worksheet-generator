@@ -16,6 +16,12 @@ const analysis: AnalysisResult = {
       strokeCount: 11,
       wordCandidates: ['小鳥', '飛鳥'],
       sentenceCandidates: ['小鳥在天空中飛翔。'],
+      wordSentenceBlank: {
+        targetWord: '小鳥',
+        originalSentence: '小鳥在天空中飛翔。',
+        sentenceBeforeBlank: '',
+        sentenceAfterBlank: '在天空中飛翔。',
+      },
       source: { page: 1, block: '第二段' },
     },
   ],
@@ -40,6 +46,11 @@ describe('buildWorksheet', () => {
         ['character'],
       )
       expect(result.value.pages[0]?.blocks[0]?.character).toBe('鳥')
+      const section = result.value.pages[0]?.sections[0]
+      expect(section?.item.character).toBe(analysis.characters[0]?.character)
+      expect(section?.item.wordSentenceBlank).toEqual(
+        analysis.characters[0]?.wordSentenceBlank,
+      )
     }
     expect(networkRequest).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
