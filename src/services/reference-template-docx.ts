@@ -1,4 +1,9 @@
 import { resolveBopomofoDisplayCharacter } from '../infrastructure'
+import type {
+  ScopeDataResolver,
+  TemplateContent,
+  TemplateData,
+} from 'easy-template-x'
 import {
   MAX_SENTENCE_CANDIDATES,
   MAX_WORD_CANDIDATES,
@@ -55,9 +60,39 @@ export interface WorksheetTemplateItem {
   image?: TemplateImage
 }
 
+export interface WorksheetTemplateItemRow {
+  left: WorksheetTemplateItem
+  right?: WorksheetTemplateItem
+}
+
 export interface WorksheetTemplateData extends WorksheetTemplateItem {
   title: string
   items: WorksheetTemplateItem[]
+  topItems: WorksheetTemplateItem[]
+  itemRows: WorksheetTemplateItemRow[]
+}
+
+function valueAtPath(value: unknown, path: readonly string[]): unknown {
+  let current = value
+  for (const key of path) {
+    if (current === null || current === undefined || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[key]
+  }
+  return current
+}
+
+/** 支援 itemRows 版型的 left.*／right.*，並讓 optional right 可作為條件迴圈。 */
+export const resolveWorksheetTemplateScope: ScopeDataResolver = ({ data, strPath }) => {
+  const tagName = strPath.at(-1) ?? ''
+  const tagPath = tagName.split('.')
+  const scopePath = strPath.slice(0, -1)
+  for (let length = scopePath.length; length >= 0; length -= 1) {
+    const value = valueAtPath(data, [...scopePath.slice(0, length), ...tagPath])
+    if (value === undefined) continue
+    if ((tagName === 'left' || tagName === 'right') && typeof value === 'object') return true
+    return value as TemplateContent | TemplateData[]
+  }
+  return undefined as unknown as TemplateContent
 }
 
 async function convertWebpToPng(file: Blob): Promise<ArrayBuffer> {
@@ -158,7 +193,29 @@ export async function createWorksheetTemplateData(
     sentenceBeforeBlank: '',
     sentenceAfterBlank: '',
   }
-  return { title: doc.title, ...first, items }
+  const itemsByQuestionNumber = new Map(items.map((item) => [item.questionNumber, item]))
+  const wordSentenceSections = doc.pages
+    .flatMap((page) => page.sections)
+    .filter((section) => section.kind === 'word-sentence-blank')
+  const topItems = wordSentenceSections[0]?.topItems.flatMap((item) => {
+    const templateItem = itemsByQuestionNumber.get(item.questionNumber)
+    return templateItem ? [templateItem] : []
+  }) ?? []
+  const itemRows = wordSentenceSections.flatMap((section) => section.itemRows.flatMap((row) => {
+    const left = itemsByQuestionNumber.get(row.left.questionNumber)
+    if (!left) return []
+    const right = row.right
+      ? itemsByQuestionNumber.get(row.right.questionNumber)
+      : undefined
+    return [right ? { left, right } : { left }]
+  }))
+  return {
+    title: doc.title,
+    ...first,
+    items,
+    topItems,
+    itemRows,
+  }
 }
 
 function replaceStyleFonts(styleXml: string, fontName: string): string {
@@ -206,7 +263,10 @@ export async function createReferenceTemplateDocxBuffer(
   const styledTemplate = await patchWorksheetCharacterStyle(templateBytes, font)
   const data = await createWorksheetTemplateData(doc, font)
   const { TemplateHandler } = await import('easy-template-x')
-  const handler = new TemplateHandler({ maxXmlDepth: 100 })
+  const handler = new TemplateHandler({
+    maxXmlDepth: 100,
+    scopeDataResolver: resolveWorksheetTemplateScope,
+  })
   const result = await handler.process(
     styledTemplate,
     data as never,

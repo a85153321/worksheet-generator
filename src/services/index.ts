@@ -17,7 +17,17 @@ export {
 export type {
   WorksheetTemplateData,
   WorksheetTemplateItem,
+  WorksheetTemplateItemRow,
 } from './reference-template-docx'
+export {
+  resolveWorksheetTemplateScope,
+} from './reference-template-docx'
+export {
+  pairWordSentenceBlankItems,
+  selectWordSentenceBlankTopItems,
+  WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT,
+} from './word-sentence-blank-layout'
+export type { WordSentenceBlankItemRow } from './word-sentence-blank-layout'
 export {
   WORD_TEMPLATE_REGISTRY,
   findWordTemplate,
@@ -47,6 +57,9 @@ export type {
   WorksheetPage,
   WorksheetSection,
   WorksheetTemplate,
+  WordSentenceBlankWorksheetItem,
+  WordSentenceBlankWorksheetItemRow,
+  WordSentenceBlankWorksheetSection,
   WorksheetImage,
   WorksheetFont,
 } from './contracts'

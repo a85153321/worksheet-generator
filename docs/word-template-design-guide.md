@@ -25,6 +25,8 @@
 | `{#wordCandidates}{text}{/wordCandidates}` | 陣列迴圈 | 逐一輸出語詞候選 |
 | `{#sentenceCandidates}{text}{/sentenceCandidates}` | 陣列迴圈 | 逐一輸出例句候選 |
 | `{#items}...{/items}` | 陣列迴圈 | 逐一產生所有生字題目 |
+| `{#topItems}...{/topItems}` | 陣列迴圈 | 最多輸出前 5 個生字與填空語詞配對；第 6 題以後仍會出現在下方題目區 |
+| `{#itemRows}...{/itemRows}` | 陣列迴圈 | 將 `items` 每兩筆配成一列，供兩欄題目版型使用 |
 | `{image}` | 圖片 | 該生字的教師上傳圖片；沒有原始 File／Blob 時不提供資料 |
 
 `AnalysisResult` 是預覽與匯出的唯一候選資料來源：`wordCandidates` 實際只保存最多 3 個，`sentenceCandidates` 實際只保存最多 2 則。教育部辭典 lookup 另以 `wordCandidateDetails` 保留詞條字詞號、讀音及該詞條自己的例句，供教師換選時優先取得與目前語詞相符的例句；只有已選詞條都沒有例句時才使用整體例句池。這個 detail 結構不直接暴露成 Word 標籤，範本仍只讀取教師確認後的字串與陣列。
@@ -77,13 +79,30 @@
 
 現行生字範本使用「資訊表格所有段落 keepNext → 橋接段落 keepNext → 練習格表格」的鏈，並在兩個表格列上使用 `cantSplit`。設計新範本時，至少以 8 題資料在 Microsoft Word 實際跨頁驗證；只檢查 XML 不足以證明 Word 排版結果。
 
-若迴圈位於表格內，`easy-template-x` 會依位置判斷要重複儲存格、欄或列。為避免誤判，題目型迴圈建議使用獨立段落；確實需要指定策略時，可使用套件的 tag options，例如：
+若迴圈位於表格內，`easy-template-x` 會依開、關標籤所在位置判斷要重複儲存格、欄或列。本專案範本只使用純粹的 `{#loop}...{/loop}` 語法，不在標籤內加入參數。需要穩定重複完整題目區塊時，應比照已驗證的 `生字注音學習單.docx`，把開、關標籤各放在表格外的獨立段落：
 
 ```text
-{#items[loopOver:"paragraph"]}
-...
+{#items}
+完整題目表格
 {/items}
 ```
+
+### 每列兩題的 itemRows 契約
+
+`buildWorksheet(..., 'word-sentence-blank')` 會在每頁的 section 先將最多 8 題資料組成下列結構；預覽與 Word 匯出都讀取這份已計算完成的資料：
+
+```ts
+itemRows: Array<{
+  left: WorksheetTemplateItem
+  right?: WorksheetTemplateItem
+}>
+```
+
+模板以 `{#itemRows}...{/itemRows}` 重複整列，左欄使用 `{left.character}`、`{left.targetWord}`、`{left.sentenceBeforeBlank}`、`{left.sentenceAfterBlank}`；右欄使用相同的 `right.*` 標籤。右欄內容必須包在 `{#right}...{/right}` 中，奇數題最後一列沒有 `right` 時，整個右欄保持空白。這些點號路徑由本專案 Word 匯出層的 scope resolver 處理，不是範本自行運算資料；裁切與配對只在 worksheet builder 執行一次。
+
+上方橫向摘要表固定只使用 `topItems` 的前 5 筆。以 8 筆資料實際輸出時，若取消限制讓欄位持續橫向重複，第 1 與第 8 欄會超出橫式 A4 的可用頁寬而遭裁切；5 欄是目前欄寬下完整可讀的安全上限。這項限制只作用於摘要表，下方 `itemRows` 仍包含所有題目。
+
+`wordSentenceBlank` 由教師指定 `targetWord` 後產生。若上游 UI 尚未寫入該欄位，`targetWord`、`sentenceBeforeBlank` 與 `sentenceAfterBlank` 會依契約輸出空字串；模板不會自行猜測語詞或例句。
 
 ## 四 候選內容迴圈
 

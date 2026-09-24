@@ -11,12 +11,20 @@ import type {
   WorksheetPage,
   WorksheetSection,
   WorksheetTemplate,
+  WordSentenceBlankWorksheetItem,
+  WordSentenceBlankWorksheetSection,
 } from './contracts'
+import {
+  pairWordSentenceBlankItems,
+  selectWordSentenceBlankTopItems,
+} from './word-sentence-blank-layout'
 
 const SECTIONS_PER_PAGE = 6
+const WORD_SENTENCE_BLANK_ITEMS_PER_PAGE = 8
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
   'reference-character-practice': '範例生字',
+  'word-sentence-blank': '語詞例句填空',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
@@ -41,12 +49,49 @@ function characterSection(item: AnalysisResult['characters'][number], index: num
   }
 }
 
-function buildSections(analysis: AnalysisResult): WorksheetSection[] {
-  return analysis.characters.map(characterSection)
+function wordSentenceBlankItem(
+  item: AnalysisResult['characters'][number],
+  index: number,
+): WordSentenceBlankWorksheetItem {
+  return {
+    questionNumber: index + 1,
+    character: item.character,
+    targetWord: item.wordSentenceBlank?.targetWord ?? '',
+    originalSentence: item.wordSentenceBlank?.originalSentence ?? '',
+    sentenceBeforeBlank: item.wordSentenceBlank?.sentenceBeforeBlank ?? '',
+    sentenceAfterBlank: item.wordSentenceBlank?.sentenceAfterBlank ?? '',
+  }
+}
+
+function buildWordSentenceBlankSections(
+  analysis: AnalysisResult,
+): WordSentenceBlankWorksheetSection[] {
+  const items = analysis.characters.map(wordSentenceBlankItem)
+  const sections: WordSentenceBlankWorksheetSection[] = []
+  for (let start = 0; start < items.length; start += WORD_SENTENCE_BLANK_ITEMS_PER_PAGE) {
+    const pageItems = items.slice(start, start + WORD_SENTENCE_BLANK_ITEMS_PER_PAGE)
+    sections.push({
+      kind: 'word-sentence-blank',
+      id: `word-sentence-blank-${sections.length + 1}`,
+      instructions: '依生字與例句線索，將正確語詞填入空格。',
+      topItems: selectWordSentenceBlankTopItems(pageItems),
+      itemRows: pairWordSentenceBlankItems(pageItems),
+    })
+  }
+  return sections
+}
+
+function buildSections(
+  analysis: AnalysisResult,
+  template: WorksheetTemplate,
+): WorksheetSection[] {
+  return template === 'word-sentence-blank'
+    ? buildWordSentenceBlankSections(analysis)
+    : analysis.characters.map(characterSection)
 }
 
 function sectionCharacter(section: WorksheetSection): string | null {
-  return section.item.character
+  return section.kind === 'character' ? section.item.character : null
 }
 
 function worksheetBlock(item: AnalysisResult['characters'][number]): WorksheetBlock {
@@ -61,8 +106,28 @@ function worksheetBlock(item: AnalysisResult['characters'][number]): WorksheetBl
 function buildPages(
   sections: WorksheetSection[],
   analysis: AnalysisResult,
+  template: WorksheetTemplate,
   sectionsPerPage = SECTIONS_PER_PAGE,
 ): WorksheetPage[] {
+  if (template === 'word-sentence-blank') {
+    const sourceByQuestionNumber = new Map(
+      analysis.characters.map((item, index) => [index + 1, item]),
+    )
+    return sections.map((section, index) => {
+      if (section.kind !== 'word-sentence-blank') {
+        return { pageNumber: index + 1, blocks: [], sections: [section] }
+      }
+      const pageItems = section.itemRows.flatMap((row) => row.right
+        ? [row.left, row.right]
+        : [row.left])
+      const blocks = pageItems.flatMap((item) => {
+        const source = sourceByQuestionNumber.get(item.questionNumber)
+        return source ? [worksheetBlock(source)] : []
+      })
+      return { pageNumber: index + 1, blocks, sections: [section] }
+    })
+  }
+
   const characterMap = new Map(analysis.characters.map((item) => [item.character, item]))
   const pages: WorksheetPage[] = []
   for (let start = 0; start < sections.length; start += sectionsPerPage) {
@@ -130,11 +195,12 @@ export async function buildWorksheet(
     }
   }
 
-  const sections = buildSections(canonicalAnalysis)
+  const sections = buildSections(canonicalAnalysis, template)
 
   const pages = buildPages(
     sections,
     canonicalAnalysis,
+    template,
     SECTIONS_PER_PAGE,
   )
 
@@ -147,7 +213,10 @@ export async function buildWorksheet(
       templateLabel: TEMPLATE_LABELS[template],
       grade: options.grade ?? 3,
       locale: 'zh-TW',
-      pageSetup: { size: 'A4', orientation: 'portrait' },
+      pageSetup: {
+        size: 'A4',
+        orientation: template === 'word-sentence-blank' ? 'landscape' : 'portrait',
+      },
       status: 'draft',
       pages,
       sourceAnalysis: structuredClone(canonicalAnalysis),

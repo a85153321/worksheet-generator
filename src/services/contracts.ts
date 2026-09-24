@@ -38,7 +38,9 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
   options?: ImageProcessingOptions
 }
 
-export type WorksheetTemplate = 'reference-character-practice'
+export type WorksheetTemplate =
+  | 'reference-character-practice'
+  | 'word-sentence-blank'
 
 export type WorksheetFont =
   | 'standard-kai'
@@ -67,7 +69,29 @@ export interface CharacterWorksheetSection extends WorksheetSectionBase {
   }
 }
 
-export type WorksheetSection = CharacterWorksheetSection
+export interface WordSentenceBlankWorksheetItem {
+  questionNumber: number
+  character: string
+  targetWord: string
+  originalSentence: string
+  sentenceBeforeBlank: string
+  sentenceAfterBlank: string
+}
+
+export interface WordSentenceBlankWorksheetItemRow {
+  left: WordSentenceBlankWorksheetItem
+  right?: WordSentenceBlankWorksheetItem
+}
+
+export interface WordSentenceBlankWorksheetSection extends WorksheetSectionBase {
+  kind: 'word-sentence-blank'
+  topItems: WordSentenceBlankWorksheetItem[]
+  itemRows: WordSentenceBlankWorksheetItemRow[]
+}
+
+export type WorksheetSection =
+  | CharacterWorksheetSection
+  | WordSentenceBlankWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -86,12 +110,12 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '範例生字'
+  templateLabel: '範例生字' | '語詞例句填空'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {
     size: 'A4'
-    orientation: 'portrait'
+    orientation: 'portrait' | 'landscape'
   }
   status: 'draft' | 'ready'
   pages: WorksheetPage[]

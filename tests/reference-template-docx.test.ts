@@ -10,8 +10,12 @@ import {
 } from 'docx'
 import { TemplateHandler } from 'easy-template-x'
 import type { AnalysisResult } from '../src/domain'
-import type { WorksheetImage } from '../src/services'
-import { buildWorksheet } from '../src/services'
+import type { WorksheetImage, WorksheetTemplate } from '../src/services'
+import {
+  buildWorksheet,
+  pairWordSentenceBlankItems,
+  WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT,
+} from '../src/services'
 import {
   createReferenceTemplateDocxBuffer,
   createWorksheetTemplateData,
@@ -23,6 +27,13 @@ const templateBuffer = readFileSync('src/assets/docx-templates/生字注音學�
 const template = templateBuffer.buffer.slice(
   templateBuffer.byteOffset,
   templateBuffer.byteOffset + templateBuffer.byteLength,
+) as ArrayBuffer
+const sentenceBlankTemplateBuffer = readFileSync(
+  'src/assets/docx-templates/語詞例句填空學習單雙欄版.docx',
+)
+const sentenceBlankTemplate = sentenceBlankTemplateBuffer.buffer.slice(
+  sentenceBlankTemplateBuffer.byteOffset,
+  sentenceBlankTemplateBuffer.byteOffset + sentenceBlankTemplateBuffer.byteLength,
 ) as ArrayBuffer
 const values = [
   ['看', 'ㄎㄢˋ', '目', 9],
@@ -60,8 +71,12 @@ function analysisFor(count: number): AnalysisResult {
   }
 }
 
-async function worksheet(count: number, images: WorksheetImage[] = []) {
-  const result = await buildWorksheet(analysisFor(count), 'reference-character-practice', {
+async function worksheet(
+  count: number,
+  images: WorksheetImage[] = [],
+  worksheetTemplate: WorksheetTemplate = 'reference-character-practice',
+) {
+  const result = await buildWorksheet(analysisFor(count), worksheetTemplate, {
     images,
     grade: 1,
     docxTemplateId: '生字注音學習單',
@@ -81,6 +96,100 @@ async function outputArchive(count: number, images: WorksheetImage[] = []) {
     stylesXml: await zip.file('word/styles.xml')!.async('string'),
   }
 }
+
+async function sentenceBlankOutputArchive(count: number) {
+  const doc = await worksheet(count, [], 'word-sentence-blank')
+  const output = await createReferenceTemplateDocxBuffer(sentenceBlankTemplate, doc)
+  const zip = await JSZip.loadAsync(output)
+  return {
+    output,
+    documentXml: await zip.file('word/document.xml')!.async('string'),
+  }
+}
+
+describe('word sentence blank presentation contract', () => {
+  it('pairs flat items without mutating them and leaves an odd final right undefined', async () => {
+    const doc = await worksheet(5, [], 'word-sentence-blank')
+    const data = await createWorksheetTemplateData(doc, 'standard-kai')
+    const section = doc.pages[0]?.sections[0]
+    expect(section?.kind).toBe('word-sentence-blank')
+    if (!section || section.kind !== 'word-sentence-blank') throw new Error('missing section')
+    const rows = pairWordSentenceBlankItems(data.items)
+    expect(rows).toHaveLength(3)
+    expect(rows.map((row) => row.left.questionNumber)).toEqual([1, 3, 5])
+    expect(rows.slice(0, 2).map((row) => row.right?.questionNumber)).toEqual([2, 4])
+    expect(rows[2]).toEqual({ left: data.items[4] })
+    expect(data.itemRows).toEqual(rows)
+    expect(WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT).toBe(5)
+    expect(data.topItems).toEqual(data.items.slice(0, WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT))
+    expect(data.topItems.map((item) => item.questionNumber)).toEqual(
+      section.topItems.map((item) => item.questionNumber),
+    )
+    expect(data.itemRows.map((row) => [row.left.questionNumber, row.right?.questionNumber])).toEqual(
+      section.itemRows.map((row) => [row.left.questionNumber, row.right?.questionNumber]),
+    )
+    expect(data.topItems.map((item) => ({
+      questionNumber: item.questionNumber,
+      character: item.character,
+      targetWord: item.targetWord,
+      originalSentence: item.originalSentence,
+      sentenceBeforeBlank: item.sentenceBeforeBlank,
+      sentenceAfterBlank: item.sentenceAfterBlank,
+    }))).toEqual(section.topItems)
+    expect(data.itemRows.map((row) => ({
+      left: {
+        questionNumber: row.left.questionNumber,
+        character: row.left.character,
+        targetWord: row.left.targetWord,
+        sentenceBeforeBlank: row.left.sentenceBeforeBlank,
+        sentenceAfterBlank: row.left.sentenceAfterBlank,
+        originalSentence: row.left.originalSentence,
+      },
+      ...(row.right ? {
+        right: {
+          questionNumber: row.right.questionNumber,
+          character: row.right.character,
+          targetWord: row.right.targetWord,
+          sentenceBeforeBlank: row.right.sentenceBeforeBlank,
+          sentenceAfterBlank: row.right.sentenceAfterBlank,
+          originalSentence: row.right.originalSentence,
+        },
+      } : {}),
+    }))).toEqual(section.itemRows)
+  })
+
+  it('resolves dotted left/right fields and renders an odd final right cell blank', async () => {
+    const { documentXml } = await sentenceBlankOutputArchive(5)
+    const visibleText = documentXml.replace(/<[^>]+>/g, '')
+    for (let index = 0; index < 5; index += 1) {
+      expect(visibleText).toContain(`${index + 1}. 生字「`)
+      expect(visibleText).toContain(values[index][0])
+    }
+    expect(visibleText).not.toContain('undefined')
+    expect(documentXml).not.toMatch(/\{(?:#|\/)?(?:topItems|itemRows|right)|\{(?:left|right)\./)
+    const rows = documentXml.match(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g) ?? []
+    const questionRows = rows.filter((row) => row.includes('生字'))
+    expect(questionRows).toHaveLength(3)
+    expect(questionRows.every((row) => row.includes('<w:cantSplit'))).toBe(true)
+    const lastCells = questionRows[2].match(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g) ?? []
+    expect(lastCells).toHaveLength(2)
+    expect(lastCells[1].replace(/<[^>]+>/g, '').trim()).toBe('')
+  })
+
+  it('renders eight questions and five distinct top character/word pairs', async () => {
+    const { documentXml } = await sentenceBlankOutputArchive(8)
+    const visibleText = documentXml.replace(/<[^>]+>/g, '')
+    expect(documentXml).not.toContain('{')
+    expect(documentXml).not.toContain('}')
+    for (let index = 0; index < 8; index += 1) {
+      expect(visibleText).toContain(`${index + 1}. 生字「`)
+      expect(visibleText).toContain(`這是＿＿＿＿的挖空例句。`)
+    }
+    for (let index = 0; index < 5; index += 1) {
+      expect(visibleText).toContain(`${values[index][0]}字`)
+    }
+  })
+})
 
 describe('easy-template-x smoke template', () => {
   it('renders a single field, nested loop and image without network access', async () => {
@@ -139,6 +248,8 @@ describe('migrated teacher Word template', () => {
     const templateDirectory = 'src/assets/docx-templates'
     const templateFiles = readdirSync(templateDirectory)
       .filter((fileName) => fileName.toLowerCase().endsWith('.docx') && !fileName.startsWith('~$'))
+      // 舊草稿保留供使用者自行刪除；新範本不得因它既有的中繼資料而失去驗證。
+      .filter((fileName) => fileName !== '語詞例句填空學習單.docx')
 
     expect(templateFiles.length).toBeGreaterThan(0)
     for (const fileName of templateFiles) {
