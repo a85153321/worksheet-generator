@@ -78,6 +78,7 @@ export const PrintPreviewPage: React.FC = () => {
   }
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
+  const isWordSentenceBlankTemplate = activeTemplate === 'word-sentence-blank'
 
   const toggleCharacterExpanded = (index: number) => {
     setExpandedCharacterIndices((previous) => {
@@ -543,7 +544,21 @@ export const PrintPreviewPage: React.FC = () => {
                                     .map(getCandidateText)
                                     .filter(Boolean)
                                     .map((word) => {
-                                      const isTargetWord = item.wordSentenceBlank?.targetWord === word
+                                      const isTargetWord = isWordSentenceBlankTemplate && item.wordSentenceBlank?.targetWord === word
+                                      if (!isWordSentenceBlankTemplate) {
+                                        return (
+                                          <button
+                                            key={word}
+                                            type="button"
+                                            className="word-candidate-link"
+                                            onClick={() => handleViewWordDefinition(word)}
+                                            title={`查看「${word}」教育部詞義`}
+                                          >
+                                            <span>{word}</span>
+                                            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>📖</span>
+                                          </button>
+                                        )
+                                      }
                                       return (
                                         <div
                                           key={word}
@@ -592,7 +607,7 @@ export const PrintPreviewPage: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            {item.wordSentenceBlank && (
+                            {isWordSentenceBlankTemplate && item.wordSentenceBlank && (
                               <div
                                 style={{
                                   margin: '0.4rem 0',
@@ -630,7 +645,7 @@ export const PrintPreviewPage: React.FC = () => {
                                 </button>
                               </div>
                             )}
-                            {candidateNotice[`${characterIndex}-targetWord`] && (
+                            {isWordSentenceBlankTemplate && candidateNotice[`${characterIndex}-targetWord`] && (
                               <div
                                 className="callout callout-warning"
                                 style={{

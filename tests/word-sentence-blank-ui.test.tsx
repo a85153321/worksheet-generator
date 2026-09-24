@@ -100,6 +100,20 @@ describe('word-sentence-blank UI and targetWord workflow', () => {
     expect(previewHtml).toContain('📝 下載 Word 檔 (.docx)')
     expect(previewHtml).not.toContain('下載 PDF 學習單')
     expect(previewHtml).not.toContain('瀏覽器列印')
+
+    // 檢查套用生字學習單時，絕不出現填空題相關功能
+    const charPreviewHtml = renderToString(
+      <AppContext.Provider
+        value={createMockContext({
+          currentRoute: 'preview',
+          selectedTemplate: 'reference-character-practice',
+        })}
+      >
+        <PrintPreviewPage />
+      </AppContext.Provider>,
+    )
+    expect(charPreviewHtml).not.toContain('設為填空')
+    expect(charPreviewHtml).not.toContain('🎯 填空題：')
   })
 
   it('correctly maps 語詞例句填空學習單-雙欄版 to word-sentence-blank in TemplateSelectionPage', () => {
