@@ -35,7 +35,7 @@ export const WorksheetSheet: React.FC<WorksheetSheetProps> = ({
   const displayTitle =
     title && title !== '範例生字學習單'
       ? title
-      : '生字注音學習單'
+      : (template === 'word-sentence-blank' ? '語詞例句填空學習單' : '生字注音學習單')
 
   return (
     <article

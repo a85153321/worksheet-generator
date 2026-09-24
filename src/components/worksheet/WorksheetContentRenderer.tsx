@@ -4,6 +4,8 @@ import { VerticalZhuyin, TianzigeWithZhuyin } from '../VerticalZhuyin'
 import type {
   WorksheetSection,
   CharacterWorksheetSection,
+  WordSentenceBlankWorksheetSection,
+  WordSentenceBlankWorksheetItem,
   WorksheetTemplate,
   WorksheetImage,
 } from '../../services'
@@ -17,6 +19,7 @@ export interface WorksheetContentRendererProps {
 }
 
 export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> = ({
+  template,
   pageSections,
   pageNumber = 1,
   characters = [],
@@ -173,6 +176,148 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
         })}
       </div>
     )
+  }
+
+  // 語詞例句填空學習單 (word-sentence-blank: 橫式雙欄排版、上方 5 欄摘要、下方雙欄題目)
+  const renderWordSentenceBlank = (section: WordSentenceBlankWorksheetSection) => {
+    const hasAnyTargetWord = section.itemRows.some(
+      (row) => Boolean(row.left.targetWord) || Boolean(row.right?.targetWord),
+    )
+
+    if (!hasAnyTargetWord) {
+      return (
+        <div className="word-sentence-blank-empty" role="region" aria-label="未設定填空語詞提示">
+          <div
+            className="callout callout-warning"
+            style={{
+              margin: '2rem auto',
+              maxWidth: '620px',
+              textAlign: 'center',
+              padding: '1.5rem',
+              backgroundColor: '#fffbeb',
+              borderColor: '#f59e0b',
+              borderRadius: '8px',
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📝</div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#b45309', marginBottom: '0.5rem' }}>
+              尚未設定填空語詞題目
+            </h3>
+            <p style={{ color: '#92400e', fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
+              目前所有生字題目均未指定填空目標語詞。<br />
+              請返回「<strong>步驟 2：生字審查</strong>」，在生字卡片的「語詞候選」中點選「<strong>設為填空</strong>」，系統將自動擷取專屬例句並產出挖空練習題。
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    const renderQuestionCard = (item: WordSentenceBlankWorksheetItem) => (
+      <div className="wsb-question-card">
+        <div className="wsb-question-header">
+          {`${item.questionNumber}. 生字「${item.character}」`}
+        </div>
+        <div className="wsb-question-body">
+          {item.targetWord ? (
+            <span>
+              {item.sentenceBeforeBlank}
+              <span className="wsb-blank-line">______</span>
+              {item.sentenceAfterBlank}
+            </span>
+          ) : (
+            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+              （尚未指定填空語詞）
+            </span>
+          )}
+        </div>
+        <div className="wsb-question-answer-line">
+          答案：____________
+        </div>
+      </div>
+    )
+
+    return (
+      <div className="word-sentence-blank-container">
+        {pageNumber === 1 && section.topItems.length > 0 && (
+          <div className="wsb-top-section">
+            <div className="wsb-section-title">一、生字與語詞</div>
+            <table className="wsb-top-table">
+              <tbody>
+                <tr className="wsb-top-row-char">
+                  {section.topItems.map((item) => (
+                    <td key={item.questionNumber} className="wsb-top-cell-char">
+                      {item.character}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="wsb-top-row-word">
+                  {section.topItems.map((item) => (
+                    <td key={item.questionNumber} className="wsb-top-cell-word">
+                      {item.targetWord || '—'}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="wsb-questions-section">
+          {pageNumber === 1 && (
+            <div className="wsb-section-title">二、把正確語詞填入例句</div>
+          )}
+          <div className="wsb-questions-grid">
+            {section.itemRows.map((row, rIdx) => (
+              <div key={`row-${rIdx}`} className="wsb-question-row">
+                <div className="wsb-question-col">
+                  {renderQuestionCard(row.left)}
+                </div>
+                <div className="wsb-question-col">
+                  {row.right ? (
+                    renderQuestionCard(row.right)
+                  ) : (
+                    <div className="wsb-question-empty-col" aria-hidden="true" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const wordSentenceSection = pageSections.find(
+    (s): s is WordSentenceBlankWorksheetSection => s.kind === 'word-sentence-blank',
+  )
+
+  if (template === 'word-sentence-blank' || wordSentenceSection) {
+    if (!wordSentenceSection) {
+      return (
+        <div className="word-sentence-blank-empty" role="region" aria-label="未設定填空語詞提示">
+          <div
+            className="callout callout-warning"
+            style={{
+              margin: '2rem auto',
+              maxWidth: '620px',
+              textAlign: 'center',
+              padding: '1.5rem',
+              backgroundColor: '#fffbeb',
+              borderColor: '#f59e0b',
+              borderRadius: '8px',
+            }}
+          >
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#b45309', marginBottom: '0.5rem' }}>
+              尚未設定填空語詞題目
+            </h3>
+            <p style={{ color: '#92400e', fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
+              目前尚未為生字指定填空目標語詞。請返回「<strong>步驟 2：生字審查</strong>」進行設定。
+            </p>
+          </div>
+        </div>
+      )
+    }
+    return renderWordSentenceBlank(wordSentenceSection)
   }
 
   return renderReferenceCharacterPractice()

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useApp } from '../../app/index'
 import {
   buildWorksheet,
@@ -25,7 +25,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'reference'
+  wireframeType: 'reference' | 'word-sentence-blank'
 }
 
 const defaultSampleAnalysis: AnalysisResult = {
@@ -88,50 +88,72 @@ export const TemplateSelectionPage: React.FC = () => {
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
 
-  const templateOptions: TemplateOption[] = WORD_TEMPLATE_REGISTRY.length > 0
-    ? WORD_TEMPLATE_REGISTRY.map((template) => ({
-        id: 'reference-character-practice' as const,
-        docxTemplateId: template.id,
-        title: template.displayName,
-        badge: 'Word 動態範本',
-        targetGrade: '適合國小一至六年級',
-        description: '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
-        features: [
-          `範本檔名：${template.fileName}`,
-          '每頁 5 題・多題迴圈與自動換頁',
-          '支援注音 IVS 字型與插圖',
-        ],
-        icon: '📝',
-        wireframeType: 'reference' as const,
-      }))
-    : [
-        {
-          id: 'reference-character-practice' as const,
-          title: '範例注音生字學習單',
-          badge: 'Word 動態範本',
-          targetGrade: '適合國小一至六年級',
-          description: '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
-          features: ['標準 5 格排版母版', '注音與紫色部首格', '多題迴圈與自備配圖'],
-          icon: '📝',
-          wireframeType: 'reference' as const,
-        },
-      ]
+  const templateOptions: TemplateOption[] = useMemo(() => (
+    WORD_TEMPLATE_REGISTRY.length > 0
+      ? WORD_TEMPLATE_REGISTRY.map((template) => {
+          const isWordSentenceBlank =
+            template.fileName.includes('語詞例句填空') ||
+            template.displayName.includes('語詞例句填空')
+          const id: WorksheetTemplate = isWordSentenceBlank
+            ? 'word-sentence-blank'
+            : 'reference-character-practice'
+          return {
+            id,
+            docxTemplateId: template.id,
+            title: template.displayName,
+            badge: isWordSentenceBlank ? '橫式雙欄範本' : 'Word 動態範本',
+            targetGrade: isWordSentenceBlank ? '適合國小中高年級' : '適合國小一至六年級',
+            description: isWordSentenceBlank
+              ? '橫式 A4 雙欄排版、上方 5 欄語詞摘要與下方挖空題目，適合語詞與例句練習'
+              : '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
+            features: isWordSentenceBlank
+              ? [
+                  `範本檔名：${template.fileName}`,
+                  '橫式 A4 雙欄排版・每頁 8 題',
+                  '上方 5 欄摘要・下方倒序挖空',
+                ]
+              : [
+                  `範本檔名：${template.fileName}`,
+                  '每頁 5 題・多題迴圈與自動換頁',
+                  '支援注音 IVS 字型與插圖',
+                ],
+            icon: isWordSentenceBlank ? '📖' : '📝',
+            wireframeType: isWordSentenceBlank ? 'word-sentence-blank' : 'reference',
+          }
+        })
+      : [
+          {
+            id: 'reference-character-practice' as const,
+            title: '範例注音生字學習單',
+            badge: 'Word 動態範本',
+            targetGrade: '適合國小一至六年級',
+            description: '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
+            features: ['標準 5 格排版母版', '注音與紫色部首格', '多題迴圈與自備配圖'],
+            icon: '📝',
+            wireframeType: 'reference' as const,
+          },
+        ]
+  ), [])
 
   const currentOption = templateOptions.find((option) =>
-    option.docxTemplateId ? option.docxTemplateId === selectedDocxTemplateId : true,
+    option.docxTemplateId ? option.docxTemplateId === selectedDocxTemplateId : option.id === selectedTemplate,
   ) ?? templateOptions[0]
 
   const uploadedImageCount = Object.keys(worksheetImages).length
 
-  // 確保 selectedTemplate 預設為 reference-character-practice，並確保有合法的 selectedDocxTemplateId
+  // 確保 selectedTemplate 與 selectedDocxTemplateId 同步且具備合法初始值
   useEffect(() => {
-    if (selectedTemplate !== 'reference-character-practice') {
-      setSelectedTemplate('reference-character-practice')
-    }
     if (!selectedDocxTemplateId && WORD_TEMPLATE_REGISTRY.length > 0) {
-      setSelectedDocxTemplateId(WORD_TEMPLATE_REGISTRY[0].id)
+      const defaultTpl = templateOptions[0]
+      setSelectedDocxTemplateId(defaultTpl.docxTemplateId ?? null)
+      setSelectedTemplate(defaultTpl.id)
+    } else if (selectedDocxTemplateId) {
+      const matched = templateOptions.find((opt) => opt.docxTemplateId === selectedDocxTemplateId)
+      if (matched && matched.id !== selectedTemplate) {
+        setSelectedTemplate(matched.id)
+      }
     }
-  }, [selectedTemplate, selectedDocxTemplateId, setSelectedTemplate, setSelectedDocxTemplateId])
+  }, [selectedTemplate, selectedDocxTemplateId, setSelectedTemplate, setSelectedDocxTemplateId, templateOptions])
 
   // ESC 鍵關閉放大預覽彈窗與背景滾動控制
   useEffect(() => {
@@ -164,7 +186,7 @@ export const TemplateSelectionPage: React.FC = () => {
     setIsPreviewLoading(true)
     const imageList = Object.values(worksheetImages)
 
-    buildWorksheet(activeAnalysis, 'reference-character-practice', {
+    buildWorksheet(activeAnalysis, currentOption.id, {
       images: imageList,
       grade: selectedGrade as ElementaryGrade,
       docxTemplateId: selectedDocxTemplateId ?? undefined,
@@ -186,7 +208,7 @@ export const TemplateSelectionPage: React.FC = () => {
     return () => {
       isCancelled = true
     }
-  }, [selectedDocxTemplateId, analysisResult, worksheetImages, selectedGrade])
+  }, [selectedDocxTemplateId, analysisResult, worksheetImages, selectedGrade, currentOption.id])
 
   // 串接 buildWorksheet use case
   const handleCreateWorksheet = async () => {
@@ -202,7 +224,7 @@ export const TemplateSelectionPage: React.FC = () => {
     setSuccessNotice(null)
 
     try {
-      const res = await buildWorksheet(analysisResult, 'reference-character-practice', {
+      const res = await buildWorksheet(analysisResult, currentOption.id, {
         images: imageList,
         grade: selectedGrade as ElementaryGrade,
         docxTemplateId: selectedDocxTemplateId ?? undefined,
@@ -230,8 +252,32 @@ export const TemplateSelectionPage: React.FC = () => {
     setBuildError(null)
   }
 
-  // 渲染卡片內線框縮圖 (Wireframe Mini Illustration: 僅保留 reference 母版)
-  const renderWireframe = () => {
+  // 渲染卡片內線框縮圖
+  const renderWireframe = (type: 'reference' | 'word-sentence-blank') => {
+    if (type === 'word-sentence-blank') {
+      return (
+        <div className="template-wireframe" aria-hidden="true">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '2px', marginBottom: '3px' }}>
+            <div style={{ background: '#2563eb', height: '8px', borderRadius: '1px' }}></div>
+            <div style={{ background: '#2563eb', height: '8px', borderRadius: '1px' }}></div>
+            <div style={{ background: '#2563eb', height: '8px', borderRadius: '1px' }}></div>
+            <div style={{ background: '#2563eb', height: '8px', borderRadius: '1px' }}></div>
+            <div style={{ background: '#2563eb', height: '8px', borderRadius: '1px' }}></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginBottom: '3px' }}>
+            <div style={{ border: '1px dashed #94a3b8', height: '14px', borderRadius: '2px', padding: '1px' }}>
+              <div style={{ background: '#cbd5e1', height: '3px', width: '70%', marginBottom: '2px' }}></div>
+              <div style={{ background: '#e2e8f0', height: '3px', width: '40%' }}></div>
+            </div>
+            <div style={{ border: '1px dashed #94a3b8', height: '14px', borderRadius: '2px', padding: '1px' }}>
+              <div style={{ background: '#cbd5e1', height: '3px', width: '70%', marginBottom: '2px' }}></div>
+              <div style={{ background: '#e2e8f0', height: '3px', width: '40%' }}></div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="template-wireframe" aria-hidden="true">
         <div className="wireframe-header-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
@@ -362,14 +408,14 @@ export const TemplateSelectionPage: React.FC = () => {
               key={tpl.docxTemplateId ?? tpl.id}
               className={`template-card ${isSelected ? 'selected' : ''}`}
               onClick={() => {
-                setSelectedTemplate('reference-character-practice')
+                setSelectedTemplate(tpl.id)
                 setSelectedDocxTemplateId(tpl.docxTemplateId ?? null)
                 setBuildError(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  setSelectedTemplate('reference-character-practice')
+                  setSelectedTemplate(tpl.id)
                   setSelectedDocxTemplateId(tpl.docxTemplateId ?? null)
                   setBuildError(null)
                 }
@@ -404,7 +450,7 @@ export const TemplateSelectionPage: React.FC = () => {
                 </p>
 
                 {/* 模板線框圖示意 */}
-                {renderWireframe()}
+                {renderWireframe(tpl.wireframeType)}
 
                 <ul
                   style={{
@@ -484,44 +530,49 @@ export const TemplateSelectionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 縮小版即時模擬 A4 紙張（scale: 0.60） */}
-        <div className="worksheet-scaled-viewport" style={{ maxHeight: '720px' }}>
-          {isPreviewLoading && !previewDoc ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-              <span className="spinner-sm" style={{ marginRight: '6px' }}></span>
-              正在組裝即時排版預覽...
+        {/* 縮小版即時模擬 A4 紙張 */}
+        {(() => {
+          const isLandscape = currentOption.id === 'word-sentence-blank'
+          return (
+            <div className="worksheet-scaled-viewport" style={{ maxHeight: '720px' }}>
+              {isPreviewLoading && !previewDoc ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                  <span className="spinner-sm" style={{ marginRight: '6px' }}></span>
+                  正在組裝即時排版預覽...
+                </div>
+              ) : (
+                <div
+                  className="worksheet-scaled-stage"
+                  style={{
+                    width: isLandscape ? '617px' : '476px', // 297mm * 0.55 or 794px * 0.6
+                    height: isLandscape ? '437px' : '674px', // 210mm * 0.55 or 1123px * 0.6
+                    overflow: 'hidden',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: isLandscape ? 'scale(0.55)' : 'scale(0.6)',
+                      transformOrigin: 'top left',
+                      width: isLandscape ? '297mm' : '210mm',
+                    }}
+                  >
+                    <WorksheetSheet
+                      page={previewPage}
+                      totalPages={previewDoc?.pages.length || 1}
+                      template={currentOption.id}
+                      title={previewDoc?.title || TEMPLATE_NAMES[currentOption.id]}
+                      previewFont={previewFont}
+                      characters={activeCharacters}
+                      images={worksheetImages}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div
-              className="worksheet-scaled-stage"
-              style={{
-                width: '476px', // 794px * 0.6
-                height: '674px', // 1123px * 0.6
-                overflow: 'hidden',
-                borderRadius: '4px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-              }}
-            >
-              <div
-                style={{
-                  transform: 'scale(0.6)',
-                  transformOrigin: 'top left',
-                  width: '210mm',
-                }}
-              >
-                <WorksheetSheet
-                  page={previewPage}
-                  totalPages={previewDoc?.pages.length || 1}
-                  template="reference-character-practice"
-                  title={previewDoc?.title || TEMPLATE_NAMES['reference-character-practice']}
-                  previewFont={previewFont}
-                  characters={activeCharacters}
-                  images={worksheetImages}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+          )
+        })()}
       </section>
 
       {/* 底部導引與建立學習單按鈕 */}
@@ -567,7 +618,7 @@ export const TemplateSelectionPage: React.FC = () => {
         >
           <div
             className="modal-content"
-            style={{ width: 'min(94vw, 860px)' }}
+            style={{ width: currentOption.id === 'word-sentence-blank' ? 'min(96vw, 1150px)' : 'min(94vw, 860px)' }}
             onClick={(e) => e.stopPropagation()}
             role="document"
           >
@@ -587,12 +638,12 @@ export const TemplateSelectionPage: React.FC = () => {
             </div>
 
             <div className="modal-body" style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: '100%', maxWidth: '794px' }}>
+              <div style={{ width: '100%', maxWidth: currentOption.id === 'word-sentence-blank' ? '1122px' : '794px' }}>
                 <WorksheetSheet
                   page={previewPage}
                   totalPages={previewDoc?.pages.length || 1}
-                  template="reference-character-practice"
-                  title={previewDoc?.title || TEMPLATE_NAMES['reference-character-practice']}
+                  template={currentOption.id}
+                  title={previewDoc?.title || TEMPLATE_NAMES[currentOption.id]}
                   previewFont={previewFont}
                   characters={activeCharacters}
                   images={worksheetImages}

@@ -1749,6 +1749,165 @@ body[data-reading-font="vertical"] .single-reading-display,
   margin-bottom: 6px;
 }
 
+/* ==========================================================================
+   語詞例句填空學習單（橫式雙欄母版 word-sentence-blank）
+   ========================================================================== */
+
+.a4-sheet.template-word-sentence-blank {
+  width: 297mm;
+  min-height: 210mm;
+  padding: 10mm 15mm;
+  gap: 10px;
+}
+
+.template-word-sentence-blank .sheet-header {
+  border-bottom: 0;
+  padding-bottom: 4px;
+  gap: 6px;
+  align-items: center;
+}
+
+.template-word-sentence-blank .sheet-header-top {
+  justify-content: center;
+}
+
+.template-word-sentence-blank .sheet-title {
+  font-size: 24px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.template-word-sentence-blank .sheet-info-row {
+  justify-content: flex-end;
+  gap: 20px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.template-word-sentence-blank .sheet-content {
+  gap: 0;
+}
+
+.word-sentence-blank-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.wsb-top-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wsb-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.wsb-top-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid #000000;
+  text-align: center;
+}
+
+.wsb-top-table td {
+  border: 1px solid #000000;
+  padding: 6px 4px;
+  vertical-align: middle;
+}
+
+.wsb-top-cell-char {
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 18px;
+  height: 32px;
+}
+
+.wsb-top-cell-word {
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  font-size: 15px;
+  height: 32px;
+}
+
+.wsb-questions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wsb-questions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.wsb-question-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.wsb-question-col {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.wsb-question-card {
+  border: 1px solid #000000;
+  border-radius: 2px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.wsb-question-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.wsb-question-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.wsb-blank-line {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0 4px;
+}
+
+.wsb-question-answer-line {
+  font-size: 14px;
+  color: #334155;
+  margin-top: 2px;
+}
+
+.wsb-question-empty-col {
+  border: 1px solid #000000;
+  border-radius: 2px;
+  min-height: 80px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+
 /* 模板推薦反白與高亮樣式 */
 .template-card.recommended {
   border-color: #86efac;
@@ -2198,6 +2357,14 @@ body[data-reading-font="vertical"] .single-reading-display,
   .a4-sheet:last-of-type {
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+
+  .a4-sheet.template-word-sentence-blank {
+    width: 297mm !important;
+    min-height: 210mm !important;
+    max-height: 210mm !important;
+    height: 210mm !important;
+    padding: 10mm 15mm !important;
   }
 
   /* 題目卡片避免跨頁斷開 */

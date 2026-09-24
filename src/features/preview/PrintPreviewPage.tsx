@@ -91,15 +91,13 @@ export const PrintPreviewPage: React.FC = () => {
       if (
         !worksheetDoc ||
         worksheetDoc.template !== selectedTemplate ||
-        (selectedTemplate === 'reference-character-practice' && worksheetDoc.docxTemplateId !== selectedDocxTemplateId)
+        worksheetDoc.docxTemplateId !== (selectedDocxTemplateId ?? undefined)
       ) {
         const imageList = Object.values(worksheetImages)
         buildWorksheet(analysisResult, selectedTemplate, {
           images: imageList,
           grade: selectedGrade as ElementaryGrade,
-          docxTemplateId: selectedTemplate === 'reference-character-practice'
-            ? selectedDocxTemplateId ?? undefined
-            : undefined,
+          docxTemplateId: selectedDocxTemplateId ?? undefined,
         }).then((res) => {
           if (res.ok) {
             setWorksheetDoc(res.value)
@@ -110,6 +108,19 @@ export const PrintPreviewPage: React.FC = () => {
       }
     }
   }, [selectedTemplate, selectedDocxTemplateId, selectedGrade, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
+
+  // 列印橫式/直式頁面動態設定
+  useEffect(() => {
+    if (activeTemplate === 'word-sentence-blank') {
+      const style = document.createElement('style')
+      style.id = 'print-landscape-style'
+      style.innerHTML = '@page { size: A4 landscape; margin: 0; }'
+      document.head.appendChild(style)
+      return () => {
+        document.getElementById('print-landscape-style')?.remove()
+      }
+    }
+  }, [activeTemplate])
 
   const handlePrint = () => {
     window.print()
@@ -246,7 +257,7 @@ export const PrintPreviewPage: React.FC = () => {
   const activeTitle =
     worksheetDoc?.title && worksheetDoc.title !== '範例生字學習單'
       ? worksheetDoc.title
-      : '生字注音學習單'
+      : (activeTemplate === 'word-sentence-blank' ? '語詞例句填空學習單' : '生字注音學習單')
 
   // 取得 WorksheetDoc 中組裝之頁面陣列（支援多頁），若為空則預設 1 頁
   const pages: WorksheetPage[] = worksheetDoc?.pages && worksheetDoc.pages.length > 0
