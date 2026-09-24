@@ -10,6 +10,7 @@ import {
   getCandidatesForCharacterReading as getCandidatesForCharacterReadingInfra,
   lookupCharacterFromDictionary as lookupLocalDictionary,
   lookupDictionaryEntriesByTerm as lookupLocalDictionaryEntriesByTerm,
+  lookupLookalikeCandidates as lookupLocalLookalikeCandidates,
   putAnalysisCache,
   resolveSentenceCandidatesForWords as resolveLinkedSentences,
   resolveOwnSentencesForWord as resolveOwnSentences,
@@ -32,6 +33,14 @@ export function lookupCharacterFromDictionary(
   character: string,
 ): CharacterDictionaryLookup | null {
   return lookupLocalDictionary(character)
+}
+
+/**
+ * 只供 UI 即時顯示「可能想加入」的形近字建議。
+ * 回傳值不得自動寫入 lookalikeGroups；必須由教師手動勾選或輸入後成組。
+ */
+export function lookupLookalikeCandidateSuggestions(character: string): string[] {
+  return lookupLocalLookalikeCandidates(character)
 }
 
 export function resolveSentenceCandidatesForWords(

@@ -9,4 +9,5 @@ export const WORKSHEET_FONT_LABELS: Record<WorksheetFont, string> = {
 export const TEMPLATE_NAMES: Record<WorksheetTemplate, string> = {
   'reference-character-practice': '範例注音生字學習單',
   'word-sentence-blank': '語詞例句填空',
+  'character-lookalike-practice': '形近字辨析',
 }

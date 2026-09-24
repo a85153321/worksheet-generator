@@ -5,8 +5,10 @@ import {
   exportWorksheetToDocx,
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
+  lookupLookalikeCandidateSuggestions,
   resolveSentenceCandidatesForWords,
   resolveOwnSentencesForWord,
+  updateAnalysisResult,
   type WorksheetPage,
   type WorksheetTemplate,
   type WorksheetFont,
@@ -62,6 +64,11 @@ export const PrintPreviewPage: React.FC = () => {
   const [isCandidatePanelExpanded, setIsCandidatePanelExpanded] = useState(false)
   const [expandedCharacterIndices, setExpandedCharacterIndices] = useState<Set<number>>(() => new Set())
   const [candidateNotice, setCandidateNotice] = useState<Record<string, string>>({})
+  const [isLookalikeGroupPanelExpanded, setIsLookalikeGroupPanelExpanded] = useState(true)
+  const [lookalikeSelection, setLookalikeSelection] = useState<Set<string>>(() => new Set())
+  const [lookalikeSuggestions, setLookalikeSuggestions] = useState<string[]>([])
+  const [lookalikeGroupError, setLookalikeGroupError] = useState<string | null>(null)
+  const [lookalikeGroupNotice, setLookalikeGroupNotice] = useState<string | null>(null)
   const sheetsContainerRef = useRef<HTMLDivElement>(null)
 
   // 語詞釋義彈窗狀態 (教育部國語辭典簡編本)
@@ -79,6 +86,18 @@ export const PrintPreviewPage: React.FC = () => {
 
   const activeTemplate: WorksheetTemplate = worksheetDoc?.template || selectedTemplate
   const isWordSentenceBlankTemplate = activeTemplate === 'word-sentence-blank'
+  const isCharacterLookalikeTemplate = activeTemplate === 'character-lookalike-practice'
+
+  const commitAnalysisUpdate = async (updated: AnalysisResult): Promise<boolean> => {
+    const result = await updateAnalysisResult(updated)
+    if (!result.ok) {
+      setLookalikeGroupError(result.error.message)
+      return false
+    }
+    setAnalysisResult(result.value)
+    setWorksheetDoc(null)
+    return true
+  }
 
   const toggleCharacterExpanded = (index: number) => {
     setExpandedCharacterIndices((previous) => {
@@ -116,14 +135,14 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }, [selectedTemplate, selectedDocxTemplateId, selectedGrade, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
 
-  const handleSelectTargetWord = (characterIndex: number, word: string) => {
+  const handleSelectTargetWord = async (characterIndex: number, word: string) => {
     if (!analysisResult) return
     const item = analysisResult.characters[characterIndex]
     if (!item) return
 
     // 如果點選已經選中的語詞，則取消選取
     if (item.wordSentenceBlank?.targetWord === word) {
-      handleClearTargetWord(characterIndex)
+      await handleClearTargetWord(characterIndex)
       return
     }
 
@@ -162,12 +181,11 @@ export const PrintPreviewPage: React.FC = () => {
       }
     })
 
-    const updated: AnalysisResult = { characters: updatedChars }
-    setAnalysisResult(updated)
-    setWorksheetDoc(null)
+    const updated: AnalysisResult = { ...analysisResult, characters: updatedChars }
+    await commitAnalysisUpdate(updated)
   }
 
-  const handleClearTargetWord = (characterIndex: number) => {
+  const handleClearTargetWord = async (characterIndex: number) => {
     if (!analysisResult) return
     const updatedChars = analysisResult.characters.map((char, idx) => {
       if (idx !== characterIndex) return char
@@ -183,12 +201,11 @@ export const PrintPreviewPage: React.FC = () => {
       return next
     })
 
-    const updated: AnalysisResult = { characters: updatedChars }
-    setAnalysisResult(updated)
-    setWorksheetDoc(null)
+    const updated: AnalysisResult = { ...analysisResult, characters: updatedChars }
+    await commitAnalysisUpdate(updated)
   }
 
-  const handleReplaceCandidates = (characterIndex: number, kind: CandidateKind) => {
+  const handleReplaceCandidates = async (characterIndex: number, kind: CandidateKind) => {
     if (!analysisResult) return
     const item = analysisResult.characters[characterIndex]
     if (!item) return
@@ -217,7 +234,7 @@ export const PrintPreviewPage: React.FC = () => {
       return
     }
 
-    setAnalysisResult({
+    const updated: AnalysisResult = {
       ...analysisResult,
       characters: analysisResult.characters.map((character, index) => {
         if (index !== characterIndex) return character
@@ -232,16 +249,92 @@ export const PrintPreviewPage: React.FC = () => {
           sentenceCandidates: linkedSentences,
         }
       }),
-    })
-    setWorksheetDoc(null)
+    }
+    if (!await commitAnalysisUpdate(updated)) return
     setCandidateNotice((previous) => ({
       ...previous,
       [noticeKey]: isWords ? '已換一批語詞，預覽同步更新' : '已換一批例句，預覽同步更新',
     }))
   }
 
+  const assignedLookalikeGroupByCharacter = new Map<string, number>()
+  ;(analysisResult?.lookalikeGroups ?? []).forEach((group, groupIndex) => {
+    group.characters.forEach((character) => assignedLookalikeGroupByCharacter.set(character, groupIndex))
+  })
+
+  const toggleLookalikeCharacter = (character: string) => {
+    if (!analysisResult || assignedLookalikeGroupByCharacter.has(character)) return
+    setLookalikeGroupError(null)
+    setLookalikeGroupNotice(null)
+    setLookalikeSelection((previous) => {
+      const next = new Set(previous)
+      if (next.has(character)) {
+        next.delete(character)
+      } else {
+        if (next.size >= 6) {
+          setLookalikeGroupError('每組最多只能選擇 6 個字。')
+          return previous
+        }
+        next.add(character)
+        const available = new Set(analysisResult.characters.map((item) => item.character))
+        setLookalikeSuggestions(
+          lookupLookalikeCandidateSuggestions(character).filter((candidate) => (
+            candidate !== character &&
+            available.has(candidate) &&
+            !assignedLookalikeGroupByCharacter.has(candidate)
+          )),
+        )
+      }
+      return next
+    })
+  }
+
+  const handleConfirmLookalikeGroup = async () => {
+    if (!analysisResult) return
+    const selected = [...lookalikeSelection]
+    if (selected.length < 2 || selected.length > 6) {
+      setLookalikeGroupError('請選擇 2 到 6 個字後再確認分組。')
+      return
+    }
+    const available = new Set(analysisResult.characters.map((item) => item.character))
+    const missing = selected.filter((character) => !available.has(character))
+    if (missing.length > 0) {
+      setLookalikeGroupError(`以下字元不在本次教材中：${missing.join('、')}`)
+      return
+    }
+    const assigned = selected.filter((character) => assignedLookalikeGroupByCharacter.has(character))
+    if (assigned.length > 0) {
+      setLookalikeGroupError(`以下字元已屬於其他組：${assigned.join('、')}`)
+      return
+    }
+    const nextGroups = [
+      ...(analysisResult.lookalikeGroups ?? []),
+      { id: `lookalike-${Date.now()}`, characters: selected },
+    ]
+    if (!await commitAnalysisUpdate({ ...analysisResult, lookalikeGroups: nextGroups })) return
+    setLookalikeSelection(new Set())
+    setLookalikeSuggestions([])
+    setLookalikeGroupError(null)
+    setLookalikeGroupNotice(`已建立第 ${nextGroups.length} 組：${selected.join('、')}`)
+  }
+
+  const handleDeleteLookalikeGroup = async (groupId: string) => {
+    if (!analysisResult) return
+    const nextGroups = (analysisResult.lookalikeGroups ?? []).filter((group) => group.id !== groupId)
+    if (!await commitAnalysisUpdate({ ...analysisResult, lookalikeGroups: nextGroups })) return
+    setLookalikeSelection(new Set())
+    setLookalikeSuggestions([])
+    setLookalikeGroupError(null)
+    setLookalikeGroupNotice('已解散分組，原有字元可重新選擇。')
+  }
+
   // 純前端瀏覽器端 Word (.docx) 匯出 (完全在用戶端執行，不呼叫任何外部後端或雲端服務)
   const handleExportDocx = async () => {
+    if (activeTemplate === 'character-lookalike-practice') {
+      setExportSuccess(null)
+      setExportError('此學習單類型尚未提供 Word 範本，請先使用畫面預覽。')
+      return
+    }
     if (!worksheetDoc) return
     setIsExportingDocx(true)
     setExportError(null)
@@ -264,7 +357,11 @@ export const PrintPreviewPage: React.FC = () => {
   const activeTitle =
     worksheetDoc?.title && worksheetDoc.title !== '範例生字學習單'
       ? worksheetDoc.title
-      : (activeTemplate === 'word-sentence-blank' ? '語詞例句填空學習單' : '生字注音學習單')
+      : (activeTemplate === 'word-sentence-blank'
+          ? '語詞例句填空學習單'
+          : activeTemplate === 'character-lookalike-practice'
+            ? '形近字辨析學習單'
+            : '生字注音學習單')
 
   // 取得 WorksheetDoc 中組裝之頁面陣列（支援多頁），若為空則預設 1 頁
   const pages: WorksheetPage[] = worksheetDoc?.pages && worksheetDoc.pages.length > 0
@@ -705,6 +802,122 @@ export const PrintPreviewPage: React.FC = () => {
                   </article>
                 )})}
               </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {isCharacterLookalikeTemplate && analysisResult && analysisResult.characters.length > 0 && (
+        <section
+          className={`preview-candidate-panel ${isLookalikeGroupPanelExpanded ? 'is-expanded' : 'is-collapsed'}`}
+          aria-labelledby="lookalike-group-heading"
+          style={{ marginTop: '1rem' }}
+        >
+          <button
+            type="button"
+            className="preview-candidate-panel__header"
+            onClick={() => setIsLookalikeGroupPanelExpanded((value) => !value)}
+            aria-expanded={isLookalikeGroupPanelExpanded}
+            aria-controls="lookalike-group-content"
+          >
+            <div className="preview-candidate-panel__title-group">
+              <span className="preview-candidate-panel__icon" aria-hidden="true">🔎</span>
+              <h2 id="lookalike-group-heading" className="preview-candidate-panel__title">形近字分組</h2>
+              <span className="preview-candidate-panel__badge">每組 2–6 字・由教師確認</span>
+            </div>
+            <div className="preview-candidate-panel__toggle">
+              <span className="preview-candidate-panel__toggle-text">
+                {isLookalikeGroupPanelExpanded ? '點擊收合' : '點擊展開'}
+              </span>
+              <span className="preview-candidate-panel__arrow" aria-hidden="true">
+                {isLookalikeGroupPanelExpanded ? '▼' : '▶'}
+              </span>
+            </div>
+          </button>
+
+          {isLookalikeGroupPanelExpanded && (
+            <div id="lookalike-group-content" className="preview-candidate-panel__body">
+              <p className="preview-candidate-panel__desc">
+                勾選本次教材中的生字，確認後才會建立分組。候選建議僅供參考，不會自動成組。
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', marginBottom: '0.9rem' }}>
+                {analysisResult.characters.map((item) => {
+                  const groupIndex = assignedLookalikeGroupByCharacter.get(item.character)
+                  const isAssigned = groupIndex !== undefined
+                  const isSelected = lookalikeSelection.has(item.character)
+                  return (
+                    <button
+                      key={item.character}
+                      type="button"
+                      className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                      disabled={isAssigned}
+                      onClick={() => toggleLookalikeCharacter(item.character)}
+                      aria-pressed={isSelected}
+                      title={isAssigned ? `已屬於第 ${groupIndex + 1} 組` : `${isSelected ? '取消選取' : '選取'}「${item.character}」`}
+                      style={{ minWidth: '5.5rem' }}
+                    >
+                      {isSelected ? '✓ ' : ''}{item.character}
+                      {isAssigned && <small style={{ display: 'block' }}>第 {groupIndex + 1} 組</small>}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div style={{ padding: '0.75rem', border: '1px solid var(--color-border)', borderRadius: '8px', background: '#f8fafc' }}>
+                <strong>目前選取：{Array.from(lookalikeSelection).join('、') || '尚未選取'}（{lookalikeSelection.size}/6）</strong>
+                {lookalikeSuggestions.length > 0 && (
+                  <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span>你可能還想加：</span>
+                    {lookalikeSuggestions.map((character) => (
+                      <button
+                        key={character}
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => toggleLookalikeCharacter(character)}
+                        disabled={lookalikeSelection.size >= 6}
+                        style={{ padding: '0.15rem 0.55rem', minHeight: 'auto' }}
+                      >
+                        ＋{character}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '0.55rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                  <button type="button" className="btn btn-primary" onClick={handleConfirmLookalikeGroup}>
+                    確認建立分組
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setLookalikeSelection(new Set())
+                      setLookalikeSuggestions([])
+                      setLookalikeGroupError(null)
+                    }}
+                  >
+                    清除選取
+                  </button>
+                </div>
+              </div>
+
+              {lookalikeGroupError && <div className="callout callout-warning" role="alert" style={{ marginTop: '0.75rem' }}>⚠️ {lookalikeGroupError}</div>}
+              {lookalikeGroupNotice && <div className="callout callout-info" role="status" style={{ marginTop: '0.75rem' }}>✅ {lookalikeGroupNotice}</div>}
+
+              {(analysisResult.lookalikeGroups ?? []).length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <strong>已建立的分組</strong>
+                  <div style={{ display: 'grid', gap: '0.55rem', marginTop: '0.5rem' }}>
+                    {(analysisResult.lookalikeGroups ?? []).map((group, groupIndex) => (
+                      <div key={group.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                        <span><strong>第 {groupIndex + 1} 組：</strong>{group.characters.join('、')}</span>
+                        <button type="button" className="btn btn-secondary" onClick={() => handleDeleteLookalikeGroup(group.id)}>
+                          解散此組
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>

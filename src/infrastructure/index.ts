@@ -21,6 +21,10 @@ export type {
   WordCandidateDetail,
 } from './moe-dictionary'
 export {
+  CHAIZI_LOOKALIKE_METADATA,
+  lookupLookalikeCandidates,
+} from './chaizi-lookalike'
+export {
   clearAnalysisCache,
   deleteAnalysisCache,
   getAnalysisCache,

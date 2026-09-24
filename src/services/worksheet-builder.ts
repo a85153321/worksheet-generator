@@ -6,6 +6,7 @@ import {
 } from '../domain'
 import type {
   BuildWorksheetOptions,
+  CharacterLookalikeWorksheetSection,
   WorksheetBlock,
   WorksheetDoc,
   WorksheetPage,
@@ -21,10 +22,12 @@ import {
 
 const SECTIONS_PER_PAGE = 6
 const WORD_SENTENCE_BLANK_ITEMS_PER_PAGE = 8
+export const CHARACTER_LOOKALIKE_GROUPS_PER_PAGE = 2
 
 const TEMPLATE_LABELS: Record<WorksheetTemplate, WorksheetDoc['templateLabel']> = {
   'reference-character-practice': '範例生字',
   'word-sentence-blank': '語詞例句填空',
+  'character-lookalike-practice': '形近字辨析',
 }
 
 function sectionId(kind: WorksheetSection['kind'], character: string, index: number): string {
@@ -85,9 +88,27 @@ function buildSections(
   analysis: AnalysisResult,
   template: WorksheetTemplate,
 ): WorksheetSection[] {
-  return template === 'word-sentence-blank'
-    ? buildWordSentenceBlankSections(analysis)
-    : analysis.characters.map(characterSection)
+  if (template === 'word-sentence-blank') return buildWordSentenceBlankSections(analysis)
+  if (template === 'character-lookalike-practice') {
+    const itemByCharacter = new Map(analysis.characters.map((item) => [item.character, item]))
+    return (analysis.lookalikeGroups ?? []).map((group): CharacterLookalikeWorksheetSection => ({
+      kind: 'character-lookalike',
+      id: `character-lookalike-${encodeURIComponent(group.id)}`,
+      instructions: '觀察各字的字形、讀音與語詞，辨認容易混淆的差異。',
+      groupCharacters: group.characters.map((character) => {
+        const item = itemByCharacter.get(character)
+        if (!item) throw new Error('Validated lookalike group references a missing character')
+        return {
+          character: item.character,
+          zhuyin: item.zhuyin,
+          radical: item.radical,
+          strokeCount: item.strokeCount,
+          wordCandidates: [...item.wordCandidates],
+        }
+      }),
+    }))
+  }
+  return analysis.characters.map(characterSection)
 }
 
 function sectionCharacter(section: WorksheetSection): string | null {
@@ -126,6 +147,23 @@ function buildPages(
       })
       return { pageNumber: index + 1, blocks, sections: [section] }
     })
+  }
+
+  if (template === 'character-lookalike-practice') {
+    const pages: WorksheetPage[] = []
+    for (let start = 0; start < sections.length; start += CHARACTER_LOOKALIKE_GROUPS_PER_PAGE) {
+      const pageSections = sections.slice(start, start + CHARACTER_LOOKALIKE_GROUPS_PER_PAGE)
+      const blocks = pageSections.flatMap((section) => section.kind === 'character-lookalike'
+        ? section.groupCharacters.map((item) => ({
+            character: item.character,
+            zhuyin: item.zhuyin,
+            wordCandidates: [...item.wordCandidates],
+            sentenceCandidates: [],
+          }))
+        : [])
+      pages.push({ pageNumber: pages.length + 1, blocks, sections: pageSections })
+    }
+    return pages
   }
 
   const characterMap = new Map(analysis.characters.map((item) => [item.character, item]))
@@ -215,7 +253,7 @@ export async function buildWorksheet(
       locale: 'zh-TW',
       pageSetup: {
         size: 'A4',
-        orientation: template === 'word-sentence-blank' ? 'landscape' : 'portrait',
+        orientation: template === 'reference-character-practice' ? 'portrait' : 'landscape',
       },
       status: 'draft',
       pages,

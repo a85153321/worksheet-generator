@@ -25,7 +25,7 @@ interface TemplateOption {
   targetGrade: string
   features: string[]
   icon: string
-  wireframeType: 'reference' | 'word-sentence-blank'
+  wireframeType: 'reference' | 'word-sentence-blank' | 'character-lookalike'
 }
 
 const defaultSampleAnalysis: AnalysisResult = {
@@ -88,8 +88,8 @@ export const TemplateSelectionPage: React.FC = () => {
   const characters: CharacterAnalysis[] = analysisResult?.characters || []
   const isEmpty = characters.length === 0
 
-  const templateOptions: TemplateOption[] = useMemo(() => (
-    WORD_TEMPLATE_REGISTRY.length > 0
+  const templateOptions: TemplateOption[] = useMemo(() => {
+    const wordTemplateOptions: TemplateOption[] = WORD_TEMPLATE_REGISTRY.length > 0
       ? WORD_TEMPLATE_REGISTRY.map((template) => {
           const isWordSentenceBlank =
             template.fileName.includes('語詞例句填空') ||
@@ -140,7 +140,20 @@ export const TemplateSelectionPage: React.FC = () => {
             wireframeType: 'reference' as const,
           },
         ]
-  ), [])
+    return [
+      ...wordTemplateOptions,
+      {
+        id: 'character-lookalike-practice',
+        title: '形近字辨析',
+        badge: '即時預覽',
+        targetGrade: '適合國小一至六年級',
+        description: '由教師手動核定形近字分組，呈現字音、部首、筆畫與語詞候選',
+        features: ['每組 2–6 字', '步驟 6 可新增、解散分組', '目前尚未提供 Word 範本'],
+        icon: '🔎',
+        wireframeType: 'character-lookalike',
+      },
+    ]
+  }, [])
 
   const currentOption = templateOptions.find((option) =>
     option.docxTemplateId ? option.docxTemplateId === selectedDocxTemplateId : option.id === selectedTemplate,
@@ -150,7 +163,7 @@ export const TemplateSelectionPage: React.FC = () => {
 
   // 確保 selectedTemplate 與 selectedDocxTemplateId 同步且具備合法初始值
   useEffect(() => {
-    if (!selectedDocxTemplateId && WORD_TEMPLATE_REGISTRY.length > 0) {
+    if (!selectedDocxTemplateId && selectedTemplate !== 'character-lookalike-practice' && WORD_TEMPLATE_REGISTRY.length > 0) {
       const defaultTpl = templateOptions[0]
       setSelectedDocxTemplateId(defaultTpl.docxTemplateId ?? null)
       setSelectedTemplate(defaultTpl.id)
@@ -260,7 +273,22 @@ export const TemplateSelectionPage: React.FC = () => {
   }
 
   // 渲染卡片內線框縮圖
-  const renderWireframe = (type: 'reference' | 'word-sentence-blank') => {
+  const renderWireframe = (type: TemplateOption['wireframeType']) => {
+    if (type === 'character-lookalike') {
+      return (
+        <div className="template-wireframe" aria-hidden="true" style={{ display: 'grid', gap: '4px' }}>
+          {[['堅', '賢', '腎'], ['緊', '竪']].map((group) => (
+            <div key={group.join('')} style={{ display: 'grid', gridTemplateColumns: `repeat(${group.length}, 1fr)`, gap: '3px' }}>
+              {group.map((character) => (
+                <div key={character} style={{ border: '1px solid #94a3b8', borderRadius: '3px', textAlign: 'center', padding: '3px', color: '#3730a3', fontWeight: 700 }}>
+                  {character}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )
+    }
     if (type === 'word-sentence-blank') {
       return (
         <div className="template-wireframe" aria-hidden="true">
@@ -401,15 +429,15 @@ export const TemplateSelectionPage: React.FC = () => {
       {/* 範本選擇卡片網格 */}
       <div style={{ marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '0.5rem' }}>
-          1. 選擇 Word 學習單範本：
+          1. 選擇學習單範本：
         </h2>
       </div>
 
       <div className="template-grid" role="radiogroup" aria-label="學習單範本選項">
         {templateOptions.map((tpl) => {
-          const isSelected = selectedDocxTemplateId
+          const isSelected = tpl.docxTemplateId
             ? tpl.docxTemplateId === selectedDocxTemplateId
-            : true
+            : selectedDocxTemplateId === null && tpl.id === selectedTemplate
           return (
             <div
               key={tpl.docxTemplateId ?? tpl.id}

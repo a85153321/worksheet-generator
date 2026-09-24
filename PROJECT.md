@@ -24,6 +24,10 @@ Browser (React + TypeScript)
 │  ├─ entries keyed by wordNumber
 │  ├─ entryIdsByTerm
 │  └─ entryIdsByCharacter
+├─ bundled kfcd/chaizi traditional component index
+│  ├─ componentsByCharacter
+│  ├─ charactersByComponent
+│  └─ candidatesByCharacter
 ├─ domain schemas and local lookup services
 ├─ optional IndexedDB for teacher-edited results
 ├─ local image upload / preprocessing
@@ -38,6 +42,7 @@ Optional static host
 | 資料 | 位置 | 備註 |
 | --- | --- | --- |
 | 《國語辭典簡編本》索引 | 隨前端打包的唯讀資產 | 保留版本、來源、授權與字詞號索引 |
+| 《漢字拆字字典》繁體版衍生索引 | 隨前端打包的唯讀資產 | 只提供共用部件的形近字候選；保留上游 revision、來源與 CC BY 3.0 授權 |
 | 教師輸入與查詢結果 | React state；需要持久化時使用 IndexedDB | 不自動上傳 |
 | 教師自行提供的配圖 | 瀏覽器工作階段／本機儲存 | 同時保留預覽 URL 與原始 File／Blob，供 DOCX 嵌入；不送往外部服務 |
 | Log / analytics | 預設關閉或匿名化 | 不得含教師輸入、完整辭典內容或本機圖片 |
@@ -46,7 +51,7 @@ Optional static host
 
 ## 4. 技術邊界與介面契約
 
-資料與領域邏輯是 UI 的唯一資料來源；UI 不自行解析辭典資產、不複製 domain type，也不直接猜測生字資料。
+資料與領域邏輯是 UI 的唯一資料來源；UI 不自行解析辭典資產、不複製 domain type，也不直接猜測生字資料。教育部辭典仍是字詞、讀音、部首、筆畫與例句的唯一來源；開放詞典網《漢字拆字字典》只用於提供共用字形部件的候選，不補寫或覆蓋教育部欄位。
 
 ```text
 UI → use cases / services → domain schemas → MOE dictionary index
@@ -74,6 +79,7 @@ src/
 - `wordCandidates`
 - `sentenceCandidates`
 - `wordSentenceBlank`（optional／nullable；只保存教師最終指定語詞的一組原始例句挖空資料）
+- 頂層 `lookalikeGroups`（optional；每組 2–6 個已存在於 `characters` 的字，同一字最多屬於一組；只保存教師手動核定的跨字分組）
 
 `AnalysisResult` 中的教師確認候選有固定上限：`wordCandidates` 最多 3 個、`sentenceCandidates` 最多 2 則。辭典 lookup 的完整候選只供教師手動換選，不直接進入預覽或匯出資料。
 - `source`
@@ -103,6 +109,8 @@ lookupCharacterFromDictionary(character): {
   sentenceCandidates: string[]
   entryWordNumbers: string[]
 } | null
+
+lookupLookalikeCandidateSuggestions(character): string[]
 
 analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 ```
@@ -142,6 +150,8 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 
 整個生字查詢流程不使用 fetch、不連線到外部 API、不需要重試或配額管理。
 
+形近字候選由隨前端打包的 `src/assets/chaizi/lookalike-index.json` 同步查詢。候選只表示兩字共用至少一個拆字部件，不代表它們必然適合放入同一道題；查詢最多回傳 8 筆，只能作為 UI 即時建議。`AnalysisResult.lookalikeGroups` 必須由教師手動勾選或輸入後建立，worksheet builder 不呼叫候選查詢，也不自動分組。
+
 ## 6. 辭典資料與授權規範
 
 - 唯一資料來源為教育部《國語辭典簡編本》文字資料，版本 `dict_concised_2014_20260626`。
@@ -154,6 +164,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 - 查不到的字元回傳 `null` 或 `dictionary-not-found`，不得以其他資料源靜默補值。
 - 教師手動修改後的內容屬教師工作資料，必須與原始辭典資料區分，不得反寫或覆蓋唯讀辭典資產。
 - 完整資料直接打包過大時，可提出按字元分片或 SQLite/WASM 方案；任何改動須同步說明載入方式、同步／非同步契約及離線可用性。
+- 形近字候選的字形部件資料只來自開放詞典網《漢字拆字字典》繁體版，依 CC BY 3.0 使用並保留署名、上游 revision 與原始檔 SHA-256；不得將它當作教育部辭典的語文欄位來源。
 
 ## 7. 開發里程碑
 
@@ -168,7 +179,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 | 6：學習單引擎 | 動態 Word 範本 registry 與生字學習單資料組裝 |
 | 7：輸出 | A4 預覽、Word (.docx) 匯出與測試 |
 
-`buildWorksheet` 完全在本機將已驗證的 `AnalysisResult` 組裝成 `WorksheetDoc`。`WorksheetTemplate` 目前只保留 `reference-character-practice`；多份不同 DOCX 版型由 `word-template-registry.ts` 提供的 `docxTemplateId` 動態識別，不把檔名或 registry ID 混入學習單種類型別。每頁的 `sections` 提供生字預覽資料，`blocks` 保留為相容索引。資料不足時回傳明確驗證錯誤，不得呼叫其他資料源補齊。Word 匯出只走 easy-template-x，不保留 `docx` 套件的程式化組版備援路徑。
+`buildWorksheet` 完全在本機將已驗證的 `AnalysisResult` 組裝成 `WorksheetDoc`。`WorksheetTemplate` 支援 `reference-character-practice`、`word-sentence-blank` 與尚待 UI／Word 範本實作的 `character-lookalike-practice`。形近字練習只使用教師核定的 `lookalikeGroups`，每組建立一個不可拆分的 `character-lookalike` section，每頁最多 2 組；沒有分組時產生空 section/page，不自動取用建議候選。每頁的 `sections` 提供預覽資料，`blocks` 保留為相容索引。資料不足時回傳明確驗證錯誤，不得呼叫其他資料源補齊。Word 匯出只走 easy-template-x，不保留 `docx` 套件的程式化組版備援路徑。
 
 ## 7a. Phase 0 起手式（具體步驟）
 

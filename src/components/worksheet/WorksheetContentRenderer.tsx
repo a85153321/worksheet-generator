@@ -6,6 +6,7 @@ import type {
   CharacterWorksheetSection,
   WordSentenceBlankWorksheetSection,
   WordSentenceBlankWorksheetItem,
+  CharacterLookalikeWorksheetSection,
   WorksheetTemplate,
   WorksheetImage,
 } from '../../services'
@@ -292,6 +293,37 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
   const wordSentenceSection = pageSections.find(
     (s): s is WordSentenceBlankWorksheetSection => s.kind === 'word-sentence-blank',
   )
+
+  const lookalikeSections = pageSections.filter(
+    (section): section is CharacterLookalikeWorksheetSection => section.kind === 'character-lookalike',
+  )
+
+  if (template === 'character-lookalike-practice' || lookalikeSections.length > 0) {
+    if (lookalikeSections.length === 0) return null
+    return (
+      <div className="character-lookalike-groups" style={{ display: 'grid', gap: '1rem' }}>
+        {lookalikeSections.map((section, groupIndex) => (
+          <section key={section.id} style={{ border: '2px solid #94a3b8', borderRadius: '10px', overflow: 'hidden', breakInside: 'avoid' }}>
+            <header style={{ padding: '0.6rem 0.85rem', background: '#eef2ff', borderBottom: '1px solid #cbd5e1', fontWeight: 700 }}>
+              第 {(pageNumber - 1) * 2 + groupIndex + 1} 組{'\u3000'}<span>{section.instructions}</span>
+            </header>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${section.groupCharacters.length}, minmax(0, 1fr))` }}>
+              {section.groupCharacters.map((item) => (
+                <div key={item.character} style={{ padding: '0.8rem 0.55rem', textAlign: 'center', borderRight: '1px solid #cbd5e1' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 700 }}>{item.character}</div>
+                  <div style={{ color: '#475569', marginTop: '0.25rem' }}>注音：{item.zhuyin || '—'}</div>
+                  <div style={{ color: '#475569' }}>部首：{item.radical || '—'}<span>{'\u3000'}筆畫：</span>{item.strokeCount || '—'}</div>
+                  <div style={{ marginTop: '0.45rem', fontSize: '0.88rem' }}>
+                    語詞：{item.wordCandidates.length > 0 ? item.wordCandidates.slice(0, 3).join('、') : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    )
+  }
 
   if (template === 'word-sentence-blank' || wordSentenceSection) {
     if (!wordSentenceSection) {

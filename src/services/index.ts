@@ -3,12 +3,16 @@ export {
   getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
+  lookupLookalikeCandidateSuggestions,
   resolveSentenceCandidatesForWords,
   resolveOwnSentencesForWord,
   updateAnalysisResult,
 } from './use-cases'
 export type { CharacterDictionaryLookup, DictionaryEntry, WordCandidateDetail } from '../infrastructure'
-export { buildWorksheet } from './worksheet-builder'
+export {
+  buildWorksheet,
+  CHARACTER_LOOKALIKE_GROUPS_PER_PAGE,
+} from './worksheet-builder'
 export {
   DOCX_FONT_FULL_NAMES,
   generateDocxBlob,
@@ -49,6 +53,8 @@ export type {
   BuildWorksheetOptions,
   DocxExportOptions,
   CharacterWorksheetSection,
+  CharacterLookalikeWorksheetItem,
+  CharacterLookalikeWorksheetSection,
   InspectUploadedPdfInput,
   ProcessSelectedPdfPagesInput,
   ProcessUploadedImageInput,

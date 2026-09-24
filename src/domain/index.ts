@@ -11,11 +11,13 @@ export {
   MAX_SENTENCE_CANDIDATES,
   MAX_WORD_CANDIDATES,
   sourceLocationSchema,
+  lookalikeGroupSchema,
   wordSentenceBlankSchema,
 } from './analysis-result'
 export type {
   AnalysisResult,
   CharacterAnalysis,
+  LookalikeGroup,
   SourceLocation,
   WordSentenceBlank,
 } from './analysis-result'

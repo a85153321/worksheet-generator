@@ -19,6 +19,13 @@ export const wordSentenceBlankSchema = z.object({
   sentenceAfterBlank: z.string(),
 })
 
+export const lookalikeGroupSchema = z.object({
+  id: z.string().trim().min(1),
+  characters: z.array(z.string().refine((value) => [...value].length === 1, {
+    message: '形近字分組成員必須是單一字元',
+  })).min(2).max(6),
+})
+
 export const characterAnalysisSchema = z.object({
   character: z.string().refine((value) => [...value].length === 1, {
     message: 'character 必須是單一字元',
@@ -43,9 +50,36 @@ export const characterAnalysisSchema = z.object({
 
 export const analysisResultSchema = z.object({
   characters: z.array(characterAnalysisSchema),
+  lookalikeGroups: z.array(lookalikeGroupSchema).optional(),
+}).superRefine(({ characters, lookalikeGroups }, context) => {
+  if (!lookalikeGroups) return
+  const availableCharacters = new Set(characters.map((item) => item.character))
+  const assignedGroupByCharacter = new Map<string, number>()
+  lookalikeGroups.forEach((group, groupIndex) => {
+    group.characters.forEach((character, characterIndex) => {
+      if (!availableCharacters.has(character)) {
+        context.addIssue({
+          code: 'custom',
+          message: `形近字分組字元「${character}」不在 AnalysisResult.characters 中`,
+          path: ['lookalikeGroups', groupIndex, 'characters', characterIndex],
+        })
+      }
+      const previousGroup = assignedGroupByCharacter.get(character)
+      if (previousGroup !== undefined) {
+        context.addIssue({
+          code: 'custom',
+          message: `字元「${character}」最多只能屬於一個形近字分組`,
+          path: ['lookalikeGroups', groupIndex, 'characters', characterIndex],
+        })
+      } else {
+        assignedGroupByCharacter.set(character, groupIndex)
+      }
+    })
+  })
 })
 
 export type SourceLocation = z.infer<typeof sourceLocationSchema>
 export type WordSentenceBlank = z.infer<typeof wordSentenceBlankSchema>
+export type LookalikeGroup = z.infer<typeof lookalikeGroupSchema>
 export type CharacterAnalysis = z.infer<typeof characterAnalysisSchema>
 export type AnalysisResult = z.infer<typeof analysisResultSchema>

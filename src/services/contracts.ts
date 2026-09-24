@@ -41,6 +41,7 @@ export interface ProcessSelectedPdfPagesInput extends InspectUploadedPdfInput {
 export type WorksheetTemplate =
   | 'reference-character-practice'
   | 'word-sentence-blank'
+  | 'character-lookalike-practice'
 
 export type WorksheetFont =
   | 'standard-kai'
@@ -89,9 +90,23 @@ export interface WordSentenceBlankWorksheetSection extends WorksheetSectionBase 
   itemRows: WordSentenceBlankWorksheetItemRow[]
 }
 
+export interface CharacterLookalikeWorksheetItem {
+  character: string
+  zhuyin: string
+  radical: string
+  strokeCount: number
+  wordCandidates: string[]
+}
+
+export interface CharacterLookalikeWorksheetSection extends WorksheetSectionBase {
+  kind: 'character-lookalike'
+  groupCharacters: CharacterLookalikeWorksheetItem[]
+}
+
 export type WorksheetSection =
   | CharacterWorksheetSection
   | WordSentenceBlankWorksheetSection
+  | CharacterLookalikeWorksheetSection
 
 export interface WorksheetPage {
   pageNumber: number
@@ -110,7 +125,7 @@ export interface WorksheetDoc {
   id: string
   title: string
   template: WorksheetTemplate
-  templateLabel: '範例生字' | '語詞例句填空'
+  templateLabel: '範例生字' | '語詞例句填空' | '形近字辨析'
   grade: ElementaryGrade
   locale: 'zh-TW'
   pageSetup: {
