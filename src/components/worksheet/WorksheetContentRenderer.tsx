@@ -205,7 +205,7 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
             </h3>
             <p style={{ color: '#92400e', fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
               目前所有生字題目均未指定填空目標語詞。<br />
-              請返回「<strong>步驟 2：生字審查</strong>」，在生字卡片的「語詞候選」中點選「<strong>設為填空</strong>」，系統將自動擷取專屬例句並產出挖空練習題。
+              請展開上方的「<strong>匯出前候選內容確認</strong>」手風琴，在語詞候選中點選「<strong>設為填空</strong>」，系統將自動擷取專屬例句並產出挖空練習題。
             </p>
           </div>
         </div>
@@ -236,22 +236,24 @@ export const WorksheetContentRenderer: React.FC<WorksheetContentRendererProps> =
       </div>
     )
 
+    const boundedTopItems = section.topItems.slice(0, 5)
+
     return (
       <div className="word-sentence-blank-container">
-        {pageNumber === 1 && section.topItems.length > 0 && (
+        {pageNumber === 1 && boundedTopItems.length > 0 && (
           <div className="wsb-top-section">
             <div className="wsb-section-title">一、生字與語詞</div>
             <table className="wsb-top-table">
               <tbody>
                 <tr className="wsb-top-row-char">
-                  {section.topItems.map((item) => (
+                  {boundedTopItems.map((item) => (
                     <td key={item.questionNumber} className="wsb-top-cell-char">
                       {item.character}
                     </td>
                   ))}
                 </tr>
                 <tr className="wsb-top-row-word">
-                  {section.topItems.map((item) => (
+                  {boundedTopItems.map((item) => (
                     <td key={item.questionNumber} className="wsb-top-cell-word">
                       {item.targetWord || '—'}
                     </td>

@@ -6,16 +6,23 @@ import {
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
   resolveSentenceCandidatesForWords,
+  resolveOwnSentencesForWord,
   type WorksheetPage,
   type WorksheetTemplate,
   type WorksheetFont,
   type DictionaryEntry,
 } from '../../services'
-import type { ElementaryGrade } from '../../domain'
+import {
+  createSentenceBlank,
+  type ElementaryGrade,
+  type AnalysisResult,
+  type WordSentenceBlank,
+} from '../../domain'
 import {
   WorksheetSheet,
   TEMPLATE_NAMES,
 } from '../../components/worksheet'
+import { WordDefinitionModal } from '../../components/dictionary/WordDefinitionModal'
 import { selectReplacementCandidates } from './candidate-selection'
 
 type CandidateKind = 'words' | 'sentences'
@@ -48,7 +55,6 @@ export const PrintPreviewPage: React.FC = () => {
 
   const previewFont: WorksheetFont =
     (selectedGrade ?? 3) <= 2 ? 'zihi-kai-zhuyin' : 'standard-kai'
-  const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [isExportingDocx, setIsExportingDocx] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState<string | null>(null)
@@ -109,21 +115,76 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }, [selectedTemplate, selectedDocxTemplateId, selectedGrade, analysisResult, worksheetDoc, worksheetImages, setWorksheetDoc])
 
-  // 列印橫式/直式頁面動態設定
-  useEffect(() => {
-    if (activeTemplate === 'word-sentence-blank') {
-      const style = document.createElement('style')
-      style.id = 'print-landscape-style'
-      style.innerHTML = '@page { size: A4 landscape; margin: 0; }'
-      document.head.appendChild(style)
-      return () => {
-        document.getElementById('print-landscape-style')?.remove()
+  const handleSelectTargetWord = (characterIndex: number, word: string) => {
+    if (!analysisResult) return
+    const item = analysisResult.characters[characterIndex]
+    if (!item) return
+
+    // 如果點選已經選中的語詞，則取消選取
+    if (item.wordSentenceBlank?.targetWord === word) {
+      handleClearTargetWord(characterIndex)
+      return
+    }
+
+    const lookup = lookupCharacterFromDictionary(item.character)
+    // 呼叫既有契約 resolveOwnSentencesForWord 取得專屬例句（不 fallback 至通用例句）
+    const ownSentences = lookup ? resolveOwnSentencesForWord(lookup, word) : []
+
+    let blankResult: WordSentenceBlank | null = null
+    for (const sentence of ownSentences) {
+      const blank = createSentenceBlank(sentence, word)
+      if (blank) {
+        blankResult = blank
+        break
       }
     }
-  }, [activeTemplate])
 
-  const handlePrint = () => {
-    window.print()
+    if (!blankResult) {
+      setCandidateNotice((previous) => ({
+        ...previous,
+        [`${characterIndex}-targetWord`]: '此語詞沒有可用的挖空例句，請換一個候選',
+      }))
+      return
+    }
+
+    setCandidateNotice((previous) => {
+      const next = { ...previous }
+      delete next[`${characterIndex}-targetWord`]
+      return next
+    })
+
+    const updatedChars = analysisResult.characters.map((char, idx) => {
+      if (idx !== characterIndex) return char
+      return {
+        ...char,
+        wordSentenceBlank: blankResult,
+      }
+    })
+
+    const updated: AnalysisResult = { characters: updatedChars }
+    setAnalysisResult(updated)
+    setWorksheetDoc(null)
+  }
+
+  const handleClearTargetWord = (characterIndex: number) => {
+    if (!analysisResult) return
+    const updatedChars = analysisResult.characters.map((char, idx) => {
+      if (idx !== characterIndex) return char
+      return {
+        ...char,
+        wordSentenceBlank: undefined,
+      }
+    })
+
+    setCandidateNotice((previous) => {
+      const next = { ...previous }
+      delete next[`${characterIndex}-targetWord`]
+      return next
+    })
+
+    const updated: AnalysisResult = { characters: updatedChars }
+    setAnalysisResult(updated)
+    setWorksheetDoc(null)
   }
 
   const handleReplaceCandidates = (characterIndex: number, kind: CandidateKind) => {
@@ -178,61 +239,6 @@ export const PrintPreviewPage: React.FC = () => {
     }))
   }
 
-  // 純前端瀏覽器端 PDF 匯出 (完全在用戶端執行，不呼叫任何外部 API 或雲端服務)
-  const handleExportPdf = async () => {
-    if (!sheetsContainerRef.current) return
-    const sheetElements = sheetsContainerRef.current.querySelectorAll<HTMLElement>('.a4-sheet')
-    if (sheetElements.length === 0) return
-
-    setIsExportingPdf(true)
-    setExportError(null)
-    setExportSuccess(null)
-
-    try {
-      // 動態引入 jspdf 與 html2canvas，維持純前端本機輸出。
-      const { jsPDF } = await import('jspdf')
-      const html2canvasModule = await import('html2canvas')
-      const html2canvas = html2canvasModule.default || html2canvasModule
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      })
-
-      for (let i = 0; i < sheetElements.length; i++) {
-        const sheetEl = sheetElements[i]
-        // 擷取高解析度 canvas (scale: 2)
-        const canvas = await html2canvas(sheetEl, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          windowWidth: sheetEl.scrollWidth || 794,
-        })
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95)
-        if (i > 0) {
-          pdf.addPage('a4', 'portrait')
-        }
-        // A4 標準規格為 210mm x 297mm
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST')
-      }
-
-      const cleanTitle = (worksheetDoc?.title || TEMPLATE_NAMES[activeTemplate] || '學習單').replace(/[\\/:*?"<>|]/g, '_')
-      const fileName = `${cleanTitle}.pdf`
-      pdf.save(fileName)
-
-      setExportSuccess(`✅ 已成功於瀏覽器端生成「${fileName}」並開始下載！（純本機運算，未傳輸至任何外部伺服器）`)
-      setTimeout(() => setExportSuccess(null), 6000)
-    } catch (err) {
-      console.error('PDF export error:', err)
-      setExportError('匯出 PDF 時發生錯誤，請確認瀏覽器支援或改用「🖨️ 瀏覽器列印」另存 PDF。')
-    } finally {
-      setIsExportingPdf(false)
-    }
-  }
-
   // 純前端瀏覽器端 Word (.docx) 匯出 (完全在用戶端執行，不呼叫任何外部後端或雲端服務)
   const handleExportDocx = async () => {
     if (!worksheetDoc) return
@@ -270,29 +276,12 @@ export const PrintPreviewPage: React.FC = () => {
       <div className="card no-print" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="card-title">🖨️ 步驟 6：A4 學習單預覽、列印與匯出</h1>
+            <h1 className="card-title">📝 步驟 6：A4 學習單預覽與匯出</h1>
             <p className="card-subtitle">
               已套用「{TEMPLATE_NAMES[activeTemplate] || '標準模板'}」· 國小 {selectedGrade} 年級；本步驟由純前端引擎執行，不會傳送資料到外部服務
             </p>
           </div>
           <div className="btn-group">
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ padding: '0.65rem 1.35rem', fontSize: '1rem' }}
-              onClick={handleExportPdf}
-              disabled={isExportingPdf}
-              aria-label="在瀏覽器端本機生成並下載 PDF 檔案"
-            >
-              {isExportingPdf ? (
-                <>
-                  <span className="spinner-sm" aria-hidden="true"></span>
-                  <span>正在生成 PDF（本機運算中）...</span>
-                </>
-              ) : (
-                '📥 下載 PDF 學習單'
-              )}
-            </button>
             <button
               type="button"
               className="btn btn-primary"
@@ -309,15 +298,6 @@ export const PrintPreviewPage: React.FC = () => {
               ) : (
                 '📝 下載 Word 檔 (.docx)'
               )}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ padding: '0.65rem 1.2rem', fontSize: '1rem' }}
-              onClick={handlePrint}
-              aria-label="開啟系統列印視窗，可直接列印或另存為 PDF"
-            >
-              🖨️ 瀏覽器列印
             </button>
             <button
               type="button"
@@ -562,18 +542,49 @@ export const PrintPreviewPage: React.FC = () => {
                                     .slice(0, 3)
                                     .map(getCandidateText)
                                     .filter(Boolean)
-                                    .map((word) => (
-                                      <button
-                                        key={word}
-                                        type="button"
-                                        className="word-candidate-link"
-                                        onClick={() => handleViewWordDefinition(word)}
-                                        title={`查看「${word}」教育部詞義`}
-                                      >
-                                        <span>{word}</span>
-                                        <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>📖</span>
-                                      </button>
-                                    ))
+                                    .map((word) => {
+                                      const isTargetWord = item.wordSentenceBlank?.targetWord === word
+                                      return (
+                                        <div
+                                          key={word}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            backgroundColor: isTargetWord ? '#eff6ff' : '#f8fafc',
+                                            border: isTargetWord ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                          }}
+                                        >
+                                          <button
+                                            type="button"
+                                            className="word-candidate-link"
+                                            onClick={() => handleViewWordDefinition(word)}
+                                            title={`查看「${word}」教育部詞義`}
+                                          >
+                                            <span>{word}</span>
+                                            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>📖</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className={`btn ${isTargetWord ? 'btn-primary' : 'btn-secondary'}`}
+                                            style={{
+                                              fontSize: '0.72rem',
+                                              padding: '1px 6px',
+                                              minHeight: 'auto',
+                                              lineHeight: '1.2',
+                                              borderRadius: '3px',
+                                            }}
+                                            onClick={() => handleSelectTargetWord(characterIndex, word)}
+                                            title={isTargetWord ? '點擊取消填空語詞設定' : `將「${word}」指定為填空題語詞`}
+                                            aria-label={isTargetWord ? `取消「${word}」設為填空語詞` : `將「${word}」設為填空語詞`}
+                                          >
+                                            {isTargetWord ? '✓ 已設為填空' : '設為填空'}
+                                          </button>
+                                        </div>
+                                      )
+                                    })
                                 ) : (
                                   <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>
                                     （目前沒有語詞）
@@ -581,6 +592,60 @@ export const PrintPreviewPage: React.FC = () => {
                                 )}
                               </div>
                             </div>
+                            {item.wordSentenceBlank && (
+                              <div
+                                style={{
+                                  margin: '0.4rem 0',
+                                  padding: '0.4rem 0.65rem',
+                                  backgroundColor: '#f0fdf4',
+                                  border: '1px solid #bbf7d0',
+                                  borderRadius: '4px',
+                                  fontSize: '0.82rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  flexWrap: 'wrap',
+                                  gap: '0.5rem',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                  <span style={{ color: '#166534', fontWeight: 700 }}>🎯 填空題：</span>
+                                  <span style={{ color: '#15803d', fontWeight: 600 }}>{`【${item.wordSentenceBlank.targetWord}】`}</span>
+                                  <span style={{ color: '#374151' }}>
+                                    {item.wordSentenceBlank.sentenceBeforeBlank}
+                                    <strong style={{ borderBottom: '2px solid #16a34a', padding: '0 6px', color: '#166534' }}>
+                                      {'（\u3000\u3000）'}
+                                    </strong>
+                                    {item.wordSentenceBlank.sentenceAfterBlank}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ fontSize: '0.75rem', padding: '1px 6px', minHeight: 'auto' }}
+                                  onClick={() => handleClearTargetWord(characterIndex)}
+                                  title="清除此生字的填空題目設定"
+                                >
+                                  ✕ 取消填空
+                                </button>
+                              </div>
+                            )}
+                            {candidateNotice[`${characterIndex}-targetWord`] && (
+                              <div
+                                className="callout callout-warning"
+                                style={{
+                                  margin: '0.35rem 0',
+                                  padding: '0.35rem 0.65rem',
+                                  fontSize: '0.82rem',
+                                  borderColor: '#f87171',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#991b1b',
+                                }}
+                                role="alert"
+                              >
+                                ⚠️ {candidateNotice[`${characterIndex}-targetWord`]}
+                              </div>
+                            )}
                             <button
                               type="button"
                               className="btn btn-secondary preview-candidate-button"
@@ -631,6 +696,23 @@ export const PrintPreviewPage: React.FC = () => {
       )}
       </div>
 
+      {/* 僅供參考提示（所有模板均適用） */}
+      <div
+        className="callout callout-info preview-disclaimer-callout"
+        style={{
+          maxWidth: '900px',
+          margin: '0 auto 1.5rem auto',
+          textAlign: 'center',
+          backgroundColor: 'var(--color-bg-secondary, #f8fafc)',
+          borderColor: 'var(--color-border, #cbd5e1)',
+          color: 'var(--color-text-muted, #64748b)',
+          fontSize: '0.92rem',
+        }}
+        role="note"
+      >
+        📌 此為預覽畫面，實際版面請以下載的 Word 文件為準
+      </div>
+
       {/* A4 紙張預覽區（支援多頁依序呈現） */}
       <div ref={sheetsContainerRef} className="a4-preview-container">
         {pages.map((page) => (
@@ -647,65 +729,10 @@ export const PrintPreviewPage: React.FC = () => {
         ))}
       </div>
       {/* 語詞釋義彈窗 (教育部國語辭典簡編本) */}
-      {activeWordDefinition && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="preview-word-def-title"
-          onClick={() => setActiveWordDefinition(null)}
-        >
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 id="preview-word-def-title" className="modal-title">
-                📖 辭典釋義：{activeWordDefinition.word}
-              </h2>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setActiveWordDefinition(null)}
-                aria-label="關閉語詞釋義"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {activeWordDefinition.entries.length > 0 ? (
-                activeWordDefinition.entries.map((entry, eIdx) => (
-                  <div key={entry.wordNumber || eIdx} className="word-def-entry">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
-                        {entry.wordName}
-                      </span>
-                    </div>
-                    <div className="word-def-text">
-                      {entry.definition}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: '1rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  《國語辭典簡編本》暫無「{activeWordDefinition.word}」之詳細釋義條目。
-                </div>
-              )}
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
-                資料來源：教育部《國語辭典簡編本》
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setActiveWordDefinition(null)}
-              >
-                關閉
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <WordDefinitionModal
+        definition={activeWordDefinition}
+        onClose={() => setActiveWordDefinition(null)}
+      />
     </div>
   )
 }

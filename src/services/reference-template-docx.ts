@@ -9,6 +9,7 @@ import {
   MAX_WORD_CANDIDATES,
   type CharacterAnalysis,
 } from '../domain'
+import { WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT } from './word-sentence-blank-layout'
 import type {
   DocxExportOptions,
   WorksheetDoc,
@@ -197,10 +198,10 @@ export async function createWorksheetTemplateData(
   const wordSentenceSections = doc.pages
     .flatMap((page) => page.sections)
     .filter((section) => section.kind === 'word-sentence-blank')
-  const topItems = wordSentenceSections[0]?.topItems.flatMap((item) => {
+  const topItems = (wordSentenceSections[0]?.topItems.flatMap((item) => {
     const templateItem = itemsByQuestionNumber.get(item.questionNumber)
     return templateItem ? [templateItem] : []
-  }) ?? []
+  }) ?? []).slice(0, WORD_SENTENCE_BLANK_TOP_ITEM_LIMIT)
   const itemRows = wordSentenceSections.flatMap((section) => section.itemRows.flatMap((row) => {
     const left = itemsByQuestionNumber.get(row.left.questionNumber)
     if (!left) return []

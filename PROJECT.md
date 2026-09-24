@@ -2,7 +2,7 @@
 
 ## 1. 產品定位
 
-一個給教師使用的 Local-First 學習單工具。教師直接輸入生字後，系統從隨專案提供的教育部《國語辭典簡編本》文字資料查詢注音、部首、筆畫、相關詞語與例句候選；教師確認與編輯後，可輸出 A4 學習單、PDF 與 Word 文件。
+一個給教師使用的 Local-First 學習單工具。教師直接輸入生字後，系統從隨專案提供的教育部《國語辭典簡編本》文字資料查詢注音、部首、筆畫、相關詞語與例句候選；教師確認與編輯後，可輸出 A4 學習單預覽與 Word (.docx) 文件。
 
 產品不使用生成式模型、外部分析服務或 API Key。《國語辭典簡編本》是生字分析資料的唯一來源，查詢與學習單組裝皆在瀏覽器本機完成。
 
@@ -13,7 +13,7 @@
 - 《國語辭典簡編本》資料須清楚標示來源與版本，遵守「創用CC－姓名標示－禁止改作 3.0 臺灣」授權；可重製、散布、傳輸及商業利用，但不得改寫辭典著作內容。
 - 辭典原文欄位與衍生索引必須可追溯到字詞號；查詢層只能整理儲存結構與建立索引，不得改寫注音、釋義或例句。
 - 教師輸入、分析結果與自行上傳的配圖留在使用者裝置，不自動上傳到第三方。
-- 排版、預覽、列印、PDF、Word 匯出與手動編輯必須在離線情況下可用。
+- 排版、預覽、Word 匯出與手動編輯必須在離線情況下可用。
 
 ## 3. 目標架構
 
@@ -27,7 +27,7 @@ Browser (React + TypeScript)
 ├─ domain schemas and local lookup services
 ├─ optional IndexedDB for teacher-edited results
 ├─ local image upload / preprocessing
-└─ local worksheet / Word / print / PDF engine
+└─ local worksheet / Word export engine
 
 Optional static host
 └─ only serves application files and dictionary assets
@@ -166,7 +166,7 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 | 4：教師工作流 | 候選詞語／例句選擇、編輯與 schema 再驗證 |
 | 5：自備配圖 | 教師本機上傳、替換／刪除，不提供自動生成 |
 | 6：學習單引擎 | 動態 Word 範本 registry 與生字學習單資料組裝 |
-| 7：輸出 | A4 預覽、Word、列印 CSS、PDF 匯出與測試 |
+| 7：輸出 | A4 預覽、Word (.docx) 匯出與測試 |
 
 `buildWorksheet` 完全在本機將已驗證的 `AnalysisResult` 組裝成 `WorksheetDoc`。`WorksheetTemplate` 目前只保留 `reference-character-practice`；多份不同 DOCX 版型由 `word-template-registry.ts` 提供的 `docxTemplateId` 動態識別，不把檔名或 registry ID 混入學習單種類型別。每頁的 `sections` 提供生字預覽資料，`blocks` 保留為相容索引。資料不足時回傳明確驗證錯誤，不得呼叫其他資料源補齊。Word 匯出只走 easy-template-x，不保留 `docx` 套件的程式化組版備援路徑。
 
@@ -185,6 +185,6 @@ analyzeTypedCharacters(input): Result<AnalysisResult, AppError>
 
 ## 8. 完成定義
 
-第一個端到端版本必須讓使用者能：直接輸入生字、從本機《國語辭典簡編本》取得通過 schema 驗證的注音／部首／筆畫／詞語與例句候選、手動選擇或修正結果、自行上傳配圖、選擇學習單模板，並在不依賴遠端分析服務的情況下完成 A4 預覽、Word、列印與 PDF 匯出。
+第一個端到端版本必須讓使用者能：直接輸入生字、從本機《國語辭典簡編本》取得通過 schema 驗證的注音／部首／筆畫／詞語與例句候選、手動選擇或修正結果、自行上傳配圖、選擇學習單模板，並在不依賴遠端分析服務的情況下完成 A4 預覽與 Word (.docx) 匯出。
 
 驗收時必須確認：離線查詢可用、查無資料狀態清楚、辭典署名與版本可追溯、教師修改不會改寫原始辭典資料，且執行中的程式碼不包含模型 client 或金鑰管理功能。

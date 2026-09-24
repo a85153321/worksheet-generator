@@ -1,21 +1,19 @@
 import React, { useState } from 'react'
 import { useApp } from '../../app/index'
 import {
-  createSentenceBlank,
   type AnalysisResult,
   type CharacterAnalysis,
-  type WordSentenceBlank,
 } from '../../domain'
 import {
   getCandidatesForCharacterReading,
   lookupCharacterFromDictionary,
   lookupDictionaryEntriesByTerm,
-  resolveOwnSentencesForWord,
   resolveSentenceCandidatesForWords,
   updateAnalysisResult,
   type DictionaryEntry,
 } from '../../services'
 import { resolveBopomofoDisplayCharacter } from '../../infrastructure'
+import { WordDefinitionModal } from '../../components/dictionary/WordDefinitionModal'
 
 const defaultSampleAnalysis: AnalysisResult = {
   characters: [
@@ -71,10 +69,8 @@ export const ReviewPage: React.FC = () => {
     setAnalysisResult,
     navigate,
     readingFontMode,
-    setWorksheetDoc,
   } = useApp()
 
-  const [targetWordNotice, setTargetWordNotice] = useState<Record<number, string>>({})
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditFormState>({
     character: '',
@@ -144,85 +140,6 @@ export const ReviewPage: React.FC = () => {
       setSaveError(e instanceof Error ? e.message : '儲存資料時發生非預期錯誤。')
       setIsSaving(false)
       return false
-    }
-  }
-
-  // 設定與切換填空目標語詞 (targetWord)
-  const handleSelectTargetWord = async (characterIndex: number, word: string) => {
-    if (!analysisResult) return
-    const item = analysisResult.characters[characterIndex]
-    if (!item) return
-
-    // 如果點選已經選中的語詞，則取消選取
-    if (item.wordSentenceBlank?.targetWord === word) {
-      await handleClearTargetWord(characterIndex)
-      return
-    }
-
-    const lookup = lookupCharacterFromDictionary(item.character)
-    // 呼叫 resolveOwnSentencesForWord 取得專屬例句（不 fallback 至通用例句）
-    const ownSentences = lookup ? resolveOwnSentencesForWord(lookup, word) : []
-
-    let blankResult: WordSentenceBlank | null = null
-    for (const sentence of ownSentences) {
-      const blank = createSentenceBlank(sentence, word)
-      if (blank) {
-        blankResult = blank
-        break
-      }
-    }
-
-    if (!blankResult) {
-      setTargetWordNotice((prev) => ({
-        ...prev,
-        [characterIndex]: '此語詞沒有可用的挖空例句，請換一個候選',
-      }))
-      return
-    }
-
-    // 清除該題警告訊息
-    setTargetWordNotice((prev) => {
-      const next = { ...prev }
-      delete next[characterIndex]
-      return next
-    })
-
-    const updatedChars = analysisResult.characters.map((char, idx) => {
-      if (idx !== characterIndex) return char
-      return {
-        ...char,
-        wordSentenceBlank: blankResult,
-      }
-    })
-
-    const updated: AnalysisResult = { characters: updatedChars }
-    const success = await saveAnalysisData(updated, { silent: true })
-    if (success) {
-      setWorksheetDoc(null)
-    }
-  }
-
-  // 清除填空目標語詞 (取消 targetWord)
-  const handleClearTargetWord = async (characterIndex: number) => {
-    if (!analysisResult) return
-    const updatedChars = analysisResult.characters.map((char, idx) => {
-      if (idx !== characterIndex) return char
-      return {
-        ...char,
-        wordSentenceBlank: undefined,
-      }
-    })
-
-    setTargetWordNotice((prev) => {
-      const next = { ...prev }
-      delete next[characterIndex]
-      return next
-    })
-
-    const updated: AnalysisResult = { characters: updatedChars }
-    const success = await saveAnalysisData(updated, { silent: true })
-    if (success) {
-      setWorksheetDoc(null)
     }
   }
 
@@ -1157,117 +1074,28 @@ export const ReviewPage: React.FC = () => {
               ) : (
                 /* 正常呈現狀態 */
                 <div style={{ marginTop: '0.5rem' }}>
-                  <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  <div style={{ fontSize: '0.88rem', marginBottom: '0.35rem' }}>
                     <strong>語詞候選：</strong>{' '}
                     {item.wordCandidates.slice(0, 3).length > 0 ? (
-                      item.wordCandidates.slice(0, 3).map((word, wIdx) => {
-                        const isTargetWord = item.wordSentenceBlank?.targetWord === word
-                        return (
-                          <div
-                            key={`${word}-${wIdx}`}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              backgroundColor: isTargetWord ? '#eff6ff' : '#f8fafc',
-                              border: isTargetWord ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                            }}
+                      item.wordCandidates.slice(0, 3).map((word, wIdx) => (
+                        <span key={`${word}-${wIdx}`}>
+                          <button
+                            type="button"
+                            className="word-candidate-link"
+                            onClick={() => handleViewWordDefinition(word)}
+                            title={`點擊查看「${word}」在教育部《國語辭典簡編本》之詞義`}
+                            aria-label={`查看語詞「${word}」詞義`}
                           >
-                            <button
-                              type="button"
-                              className="word-candidate-link"
-                              onClick={() => handleViewWordDefinition(word)}
-                              title={`點擊查看「${word}」在教育部《國語辭典簡編本》之詞義`}
-                              aria-label={`查看語詞「${word}」詞義`}
-                            >
-                              {word}
-                              <span className="word-def-icon" aria-hidden="true">📖</span>
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn ${isTargetWord ? 'btn-primary' : 'btn-secondary'}`}
-                              style={{
-                                fontSize: '0.72rem',
-                                padding: '1px 6px',
-                                minHeight: 'auto',
-                                lineHeight: '1.2',
-                                borderRadius: '3px',
-                              }}
-                              onClick={() => handleSelectTargetWord(idx, word)}
-                              disabled={isSaving}
-                              title={isTargetWord ? '點擊取消填空語詞設定' : `將「${word}」指定為填空題語詞`}
-                              aria-label={isTargetWord ? `取消「${word}」設為填空語詞` : `將「${word}」設為填空語詞`}
-                            >
-                              {isTargetWord ? '✓ 已設為填空' : '設為填空'}
-                            </button>
-                          </div>
-                        )
-                      })
+                            {word}
+                            <span className="word-def-icon" aria-hidden="true">📖</span>
+                          </button>
+                          {wIdx < Math.min(item.wordCandidates.length, 3) - 1 ? '、' : ''}
+                        </span>
+                      ))
                     ) : (
                       '（無語詞）'
                     )}
                   </div>
-
-                  {/* 填空題設定狀態與挖空例句預覽 */}
-                  {item.wordSentenceBlank && (
-                    <div
-                      style={{
-                        margin: '0.35rem 0 0.5rem',
-                        padding: '0.4rem 0.65rem',
-                        backgroundColor: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '4px',
-                        fontSize: '0.82rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                        <span style={{ color: '#166534', fontWeight: 700 }}>🎯 填空題：</span>
-                        <span style={{ color: '#15803d', fontWeight: 600 }}>{`【${item.wordSentenceBlank.targetWord}】`}</span>
-                        <span style={{ color: '#374151' }}>
-                          {item.wordSentenceBlank.sentenceBeforeBlank}
-                          <strong style={{ borderBottom: '2px solid #16a34a', padding: '0 6px', color: '#166534' }}>
-                            {'（\u3000\u3000）'}
-                          </strong>
-                          {item.wordSentenceBlank.sentenceAfterBlank}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ fontSize: '0.75rem', padding: '1px 6px', minHeight: 'auto' }}
-                        onClick={() => handleClearTargetWord(idx)}
-                        disabled={isSaving}
-                        title="清除此生字的填空題目設定"
-                      >
-                        ✕ 取消填空
-                      </button>
-                    </div>
-                  )}
-
-                  {/* 無可用例句提示 */}
-                  {targetWordNotice[idx] && (
-                    <div
-                      className="callout callout-warning"
-                      style={{
-                        margin: '0.35rem 0 0.5rem',
-                        padding: '0.35rem 0.65rem',
-                        fontSize: '0.82rem',
-                        borderColor: '#f87171',
-                        backgroundColor: '#fef2f2',
-                        color: '#991b1b',
-                      }}
-                      role="alert"
-                    >
-                      ⚠️ {targetWordNotice[idx]}
-                    </div>
-                  )}
                   <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                     <strong>例句候選：</strong>
                     {item.sentenceCandidates.slice(0, 2).length > 0 ? (
@@ -1341,66 +1169,10 @@ export const ReviewPage: React.FC = () => {
       </div>
 
       {/* 語詞釋義彈窗 Modal（教育部國語辭典簡編本） */}
-      {activeWordDefinition && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="word-def-title"
-          onClick={() => setActiveWordDefinition(null)}
-        >
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 id="word-def-title" className="modal-title">
-                📖 語詞釋義：{activeWordDefinition.word}
-              </h2>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setActiveWordDefinition(null)}
-                aria-label="關閉語詞釋義"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {activeWordDefinition.entries.length > 0 ? (
-                activeWordDefinition.entries.map((entry, eIdx) => (
-                  <div key={entry.wordNumber || eIdx} className="word-def-entry">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
-                        {entry.wordName}
-                      </span>
-                    </div>
-                    <div className="word-def-text">
-                      {entry.definition}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: '1rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  《國語辭典簡編本》暫無「{activeWordDefinition.word}」之詳細釋義條目。
-                </div>
-              )}
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
-                資料來源：教育部《國語辭典簡編本》
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ fontSize: '0.85rem', padding: '0.35rem 1rem' }}
-                onClick={() => setActiveWordDefinition(null)}
-              >
-                我知道了
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <WordDefinitionModal
+        definition={activeWordDefinition}
+        onClose={() => setActiveWordDefinition(null)}
+      />
     </div>
   )
 }

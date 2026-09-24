@@ -94,6 +94,9 @@ export const TemplateSelectionPage: React.FC = () => {
           const isWordSentenceBlank =
             template.fileName.includes('語詞例句填空') ||
             template.displayName.includes('語詞例句填空')
+          const isSingleColumn =
+            template.fileName.includes('單欄') ||
+            template.displayName.includes('單欄')
           const id: WorksheetTemplate = isWordSentenceBlank
             ? 'word-sentence-blank'
             : 'reference-character-practice'
@@ -101,16 +104,20 @@ export const TemplateSelectionPage: React.FC = () => {
             id,
             docxTemplateId: template.id,
             title: template.displayName,
-            badge: isWordSentenceBlank ? '橫式雙欄範本' : 'Word 動態範本',
+            badge: isWordSentenceBlank
+              ? (isSingleColumn ? '直式單欄範本（草稿）' : '橫式雙欄範本')
+              : 'Word 動態範本',
             targetGrade: isWordSentenceBlank ? '適合國小中高年級' : '適合國小一至六年級',
             description: isWordSentenceBlank
-              ? '橫式 A4 雙欄排版、上方 5 欄語詞摘要與下方挖空題目，適合語詞與例句練習'
+              ? (isSingleColumn
+                  ? '直式單欄排版草稿（建議改用橫式雙欄版以獲得最佳排版）'
+                  : '橫式 A4 雙欄排版、上方 5 欄語詞摘要與下方挖空題目，適合語詞與例句練習')
               : '由 easy-template-x 在瀏覽器本機套用標籤、迴圈、IVS 字型與教師配圖',
             features: isWordSentenceBlank
               ? [
                   `範本檔名：${template.fileName}`,
-                  '橫式 A4 雙欄排版・每頁 8 題',
-                  '上方 5 欄摘要・下方倒序挖空',
+                  isSingleColumn ? '直式 A4 單欄排版・每頁 5 題' : '橫式 A4 雙欄排版・每頁 8 題',
+                  '上方 5 欄摘要・下方挖空練習',
                 ]
               : [
                   `範本檔名：${template.fileName}`,

@@ -29,7 +29,7 @@ const template = templateBuffer.buffer.slice(
   templateBuffer.byteOffset + templateBuffer.byteLength,
 ) as ArrayBuffer
 const sentenceBlankTemplateBuffer = readFileSync(
-  'src/assets/docx-templates/語詞例句填空學習單雙欄版.docx',
+  'src/assets/docx-templates/語詞例句填空學習單-雙欄版.docx',
 )
 const sentenceBlankTemplate = sentenceBlankTemplateBuffer.buffer.slice(
   sentenceBlankTemplateBuffer.byteOffset,
@@ -249,7 +249,7 @@ describe('migrated teacher Word template', () => {
     const templateFiles = readdirSync(templateDirectory)
       .filter((fileName) => fileName.toLowerCase().endsWith('.docx') && !fileName.startsWith('~$'))
       // 舊草稿保留供使用者自行刪除；新範本不得因它既有的中繼資料而失去驗證。
-      .filter((fileName) => fileName !== '語詞例句填空學習單.docx')
+      .filter((fileName) => fileName !== '語詞例句填空學習單.docx' && fileName !== '語詞例句填空學習單-單欄版.docx')
 
     expect(templateFiles.length).toBeGreaterThan(0)
     for (const fileName of templateFiles) {

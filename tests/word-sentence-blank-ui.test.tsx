@@ -4,6 +4,7 @@ import { renderToString } from 'react-dom/server'
 import { AppContext, type AppContextType } from '../src/app/app-context'
 import { ReviewPage } from '../src/features/review/ReviewPage'
 import { TemplateSelectionPage } from '../src/features/templates/TemplateSelectionPage'
+import { PrintPreviewPage } from '../src/features/preview/PrintPreviewPage'
 import {
   buildWorksheet,
   generateDocxBlob,
@@ -60,7 +61,7 @@ function createMockContext(
     setWorksheetImages: vi.fn(),
     selectedTemplate: 'reference-character-practice',
     setSelectedTemplate: vi.fn(),
-    selectedDocxTemplateId: '語詞例句填空學習單雙欄版',
+    selectedDocxTemplateId: '語詞例句填空學習單-雙欄版',
     setSelectedDocxTemplateId: vi.fn(),
     worksheetDoc: null,
     setWorksheetDoc: vi.fn(),
@@ -71,30 +72,39 @@ function createMockContext(
 }
 
 describe('word-sentence-blank UI and targetWord workflow', () => {
-  it('renders targetWord selection buttons and status preview in ReviewPage', () => {
-    const html = renderToString(
+  it('verifies targetWord operations are removed from ReviewPage and PrintPreviewPage includes disclaimer without PDF/print', () => {
+    const reviewHtml = renderToString(
       <AppContext.Provider value={createMockContext()}>
         <ReviewPage />
       </AppContext.Provider>,
     )
 
-    // 檢查語詞候選有按鈕
-    expect(html).toContain('設為填空')
-    expect(html).toContain('✓ 已設為填空')
+    // 檢查 ReviewPage 不再有設為填空按鈕
+    expect(reviewHtml).not.toContain('設為填空')
+    expect(reviewHtml).not.toContain('取消填空')
+    expect(reviewHtml).not.toContain('🎯 填空題：')
 
-    // 第 1 題已選「學校」，應有填空題提示區塊
-    expect(html).toContain('🎯 填空題：')
-    expect(html).toContain('【學校】')
-    expect(html).toContain('我每天到')
-    expect(html).toContain('取消填空')
+    // 檢查 PrintPreviewPage 包含僅供參考提示，且無 PDF/列印按鈕
+    const previewHtml = renderToString(
+      <AppContext.Provider
+        value={createMockContext({
+          currentRoute: 'preview',
+          selectedTemplate: 'word-sentence-blank',
+        })}
+      >
+        <PrintPreviewPage />
+      </AppContext.Provider>,
+    )
 
-    // 第 2 題未選，不應顯示填空題指示
-    expect(html).not.toContain('【學習】')
+    expect(previewHtml).toContain('📌 此為預覽畫面，實際版面請以下載的 Word 文件為準')
+    expect(previewHtml).toContain('📝 下載 Word 檔 (.docx)')
+    expect(previewHtml).not.toContain('下載 PDF 學習單')
+    expect(previewHtml).not.toContain('瀏覽器列印')
   })
 
-  it('correctly maps 語詞例句填空學習單雙欄版 to word-sentence-blank in TemplateSelectionPage', () => {
+  it('correctly maps 語詞例句填空學習單-雙欄版 to word-sentence-blank in TemplateSelectionPage', () => {
     const doubleColumnTemplate = WORD_TEMPLATE_REGISTRY.find((tpl) =>
-      tpl.fileName.includes('語詞例句填空學習單雙欄版'),
+      tpl.fileName.includes('語詞例句填空學習單-雙欄版'),
     )
     expect(doubleColumnTemplate).toBeDefined()
 
@@ -110,7 +120,7 @@ describe('word-sentence-blank UI and targetWord workflow', () => {
       </AppContext.Provider>,
     )
 
-    expect(html).toContain('語詞例句填空學習單雙欄版')
+    expect(html).toContain('語詞例句填空學習單-雙欄版')
     expect(html).toContain('橫式雙欄範本')
     expect(html).toContain('橫式 A4 雙欄排版・每頁 8 題')
   })
@@ -148,7 +158,7 @@ describe('word-sentence-blank UI and targetWord workflow', () => {
     }
 
     const built = await buildWorksheet(nineCharsAnalysis, 'word-sentence-blank', {
-      docxTemplateId: '語詞例句填空學習單雙欄版',
+      docxTemplateId: '語詞例句填空學習單-雙欄版',
     })
 
     expect(built.ok).toBe(true)
